@@ -15,7 +15,8 @@ import {
   CircularProgress,
   Alert,
   Grid,
-  Typography
+  Typography,
+  Snackbar
 } from '@mui/material';
 import { masterService } from '../services/masterService';
 
@@ -26,6 +27,8 @@ const JenjangModal = ({ open, onClose, onSuccess, mode, data }) => {
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
+  const [snackbarOpen, setSnackbarOpen] = useState(false);
 
   useEffect(() => {
     if (open) {
@@ -41,12 +44,29 @@ const JenjangModal = ({ open, onClose, onSuccess, mode, data }) => {
         });
       }
       setError('');
+      setSuccessMessage('');
     }
   }, [open, mode, data]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const showSuccess = (message) => {
+    setSuccessMessage(message);
+    setSnackbarOpen(true);
+  };
+
+  const showError = (message) => {
+    setError(message);
+  };
+
+  const handleSnackbarClose = (event, reason) => {
+    if (reason === 'clickaway') {
+      return;
+    }
+    setSnackbarOpen(false);
   };
 
   const handleSubmit = async () => {
@@ -66,7 +86,13 @@ const JenjangModal = ({ open, onClose, onSuccess, mode, data }) => {
         await masterService.updateJenjang(data.id, formData);
         showSuccess('Jenjang berhasil diupdate');
       }
-      onSuccess();
+      
+      // Beri waktu untuk menampilkan pesan sukses
+      setTimeout(() => {
+        onSuccess();
+        onClose();
+      }, 1500);
+      
     } catch (error) {
       console.error('Error saving jenjang:', error);
       if (error.response?.data?.message) {
@@ -90,69 +116,85 @@ const JenjangModal = ({ open, onClose, onSuccess, mode, data }) => {
   ];
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
-      <DialogTitle>
-        {mode === 'add' ? 'Tambah Jenjang Baru' : 'Edit Jenjang'}
-      </DialogTitle>
-      <DialogContent dividers>
-        <Box sx={{ pt: 1 }}>
-          {error && (
-            <Alert severity="error" sx={{ mb: 3 }}>
-              {error}
-            </Alert>
-          )}
-          
-          <Grid container spacing={2}>
-            <Grid item xs={12}>
-              <TextField
-                fullWidth
-                label="Nama Jenjang"
-                name="nama_jenjang"
-                value={formData.nama_jenjang}
-                onChange={handleChange}
-                placeholder="Contoh: Ahli Pertama, Ahli Muda"
-                required
-                disabled={loading}
-              />
-            </Grid>
-            <Grid item xs={12}>
-              <FormControl fullWidth>
-                <InputLabel>Tingkat</InputLabel>
-                <Select
-                  name="tingkat"
-                  value={formData.tingkat}
+    <>
+      <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
+        <DialogTitle>
+          {mode === 'add' ? 'Tambah Jenjang Baru' : 'Edit Jenjang'}
+        </DialogTitle>
+        <DialogContent dividers>
+          <Box sx={{ pt: 1 }}>
+            {error && (
+              <Alert severity="error" sx={{ mb: 3 }} onClose={() => setError('')}>
+                {error}
+              </Alert>
+            )}
+            
+            <Grid container spacing={2}>
+              <Grid item xs={12}>
+                <TextField
+                  fullWidth
+                  label="Nama Jenjang"
+                  name="nama_jenjang"
+                  value={formData.nama_jenjang}
                   onChange={handleChange}
-                  label="Tingkat"
+                  placeholder="Contoh: Ahli Pertama, Ahli Muda"
+                  required
                   disabled={loading}
-                >
-                  {tingkatOptions.map((opt) => (
-                    <MenuItem key={opt.value} value={opt.value}>
-                      {opt.label}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
+                  error={!!error && !formData.nama_jenjang.trim()}
+                  helperText={error && !formData.nama_jenjang.trim() ? 'Nama jenjang wajib diisi' : ''}
+                />
+              </Grid>
+              <Grid item xs={12}>
+                <FormControl fullWidth>
+                  <InputLabel>Tingkat</InputLabel>
+                  <Select
+                    name="tingkat"
+                    value={formData.tingkat}
+                    onChange={handleChange}
+                    label="Tingkat"
+                    disabled={loading}
+                  >
+                    {tingkatOptions.map((opt) => (
+                      <MenuItem key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </Grid>
             </Grid>
-          </Grid>
-          
-          <Typography variant="caption" color="textSecondary" sx={{ display: 'block', mt: 2 }}>
-            Tingkat digunakan untuk menentukan urutan jenjang dan reuse kompetensi.
-          </Typography>
-        </Box>
-      </DialogContent>
-      <DialogActions>
-        <Button onClick={onClose} disabled={loading}>
-          Batal
-        </Button>
-        <Button
-          onClick={handleSubmit}
-          variant="contained"
-          disabled={loading || !formData.nama_jenjang.trim()}
-        >
-          {loading ? <CircularProgress size={24} /> : mode === 'add' ? 'Simpan' : 'Update'}
-        </Button>
-      </DialogActions>
-    </Dialog>
+            
+            <Typography variant="caption" color="textSecondary" sx={{ display: 'block', mt: 2 }}>
+              Tingkat digunakan untuk menentukan urutan jenjang dan reuse kompetensi.
+            </Typography>
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={onClose} disabled={loading}>
+            Batal
+          </Button>
+          <Button
+            onClick={handleSubmit}
+            variant="contained"
+            disabled={loading || !formData.nama_jenjang.trim()}
+          >
+            {loading ? <CircularProgress size={24} /> : mode === 'add' ? 'Simpan' : 'Update'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Snackbar untuk notifikasi sukses */}
+      <Snackbar
+        open={snackbarOpen}
+        autoHideDuration={3000}
+        onClose={handleSnackbarClose}
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+      >
+        <Alert onClose={handleSnackbarClose} severity="success" sx={{ width: '100%' }}>
+          {successMessage}
+        </Alert>
+      </Snackbar>
+    </>
   );
 };
 

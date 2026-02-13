@@ -15,10 +15,10 @@ import {
   CircularProgress,
   Alert,
   Grid,
-  Typography
+  Typography,
+  Snackbar
 } from '@mui/material';
 import { masterService } from '../services/masterService';
-
 
 const PeranModal = ({ open, onClose, onSuccess, mode, data, fungsiList }) => {
   const [formData, setFormData] = useState({
@@ -27,6 +27,8 @@ const PeranModal = ({ open, onClose, onSuccess, mode, data, fungsiList }) => {
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
+  const [snackbarOpen, setSnackbarOpen] = useState(false);
 
   useEffect(() => {
     if (open) {
@@ -42,12 +44,29 @@ const PeranModal = ({ open, onClose, onSuccess, mode, data, fungsiList }) => {
         });
       }
       setError('');
+      setSuccessMessage('');
     }
   }, [open, mode, data]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const showSuccess = (message) => {
+    setSuccessMessage(message);
+    setSnackbarOpen(true);
+  };
+
+  const showError = (message) => {
+    setError(message);
+  };
+
+  const handleSnackbarClose = (event, reason) => {
+    if (reason === 'clickaway') {
+      return;
+    }
+    setSnackbarOpen(false);
   };
 
   const handleSubmit = async () => {
@@ -71,7 +90,13 @@ const PeranModal = ({ open, onClose, onSuccess, mode, data, fungsiList }) => {
         await masterService.updatePeran(data.id, formData);
         showSuccess('Peran berhasil diupdate');
       }
-      onSuccess();
+      
+      // Beri waktu untuk menampilkan pesan sukses sebelum menutup modal
+      setTimeout(() => {
+        onSuccess();
+        onClose();
+      }, 1500);
+      
     } catch (error) {
       console.error('Error saving peran:', error);
       if (error.response?.data?.message) {
@@ -87,70 +112,99 @@ const PeranModal = ({ open, onClose, onSuccess, mode, data, fungsiList }) => {
   };
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
-      <DialogTitle>
-        {mode === 'add' ? 'Tambah Peran Baru' : 'Edit Peran'}
-      </DialogTitle>
-      <DialogContent dividers>
-        <Box sx={{ pt: 1 }}>
-          {error && (
-            <Alert severity="error" sx={{ mb: 3 }}>
-              {error}
-            </Alert>
-          )}
-          
-          <Grid container spacing={2}>
-            <Grid item xs={12}>
-              <FormControl fullWidth required>
-                <InputLabel>Fungsi</InputLabel>
-                <Select
-                  name="id_fungsi"
-                  value={formData.id_fungsi}
+    <>
+      <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
+        <DialogTitle>
+          {mode === 'add' ? 'Tambah Peran Baru' : 'Edit Peran'}
+        </DialogTitle>
+        <DialogContent dividers>
+          <Box sx={{ pt: 1 }}>
+            {error && (
+              <Alert 
+                severity="error" 
+                sx={{ mb: 3 }}
+                onClose={() => setError('')}
+              >
+                {error}
+              </Alert>
+            )}
+            
+            <Grid container spacing={2}>
+              <Grid item xs={12}>
+                <FormControl fullWidth required error={!!error && !formData.id_fungsi}>
+                  <InputLabel>Fungsi</InputLabel>
+                  <Select
+                    name="id_fungsi"
+                    value={formData.id_fungsi}
+                    onChange={handleChange}
+                    label="Fungsi"
+                    disabled={loading}
+                  >
+                    <MenuItem value="">-- Pilih Fungsi --</MenuItem>
+                    {fungsiList && fungsiList.length > 0 ? (
+                      fungsiList.map((f) => (
+                        <MenuItem key={f.id} value={f.id}>
+                          {f.nama_fungsi}
+                        </MenuItem>
+                      ))
+                    ) : (
+                      <MenuItem disabled>Tidak ada data fungsi</MenuItem>
+                    )}
+                  </Select>
+                  {error && !formData.id_fungsi && (
+                    <Typography variant="caption" color="error" sx={{ mt: 0.5, ml: 2 }}>
+                      Fungsi harus dipilih
+                    </Typography>
+                  )}
+                </FormControl>
+              </Grid>
+              <Grid item xs={12}>
+                <TextField
+                  fullWidth
+                  label="Nama Peran"
+                  name="nama_peran"
+                  value={formData.nama_peran}
                   onChange={handleChange}
-                  label="Fungsi"
+                  placeholder="Contoh: Penguji, Pemeriksa, Auditor Internal"
+                  required
                   disabled={loading}
-                >
-                  <MenuItem value="">-- Pilih Fungsi --</MenuItem>
-                  {fungsiList.map((f) => (
-                    <MenuItem key={f.id} value={f.id}>
-                      {f.nama_fungsi}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
+                  error={!!error && !formData.nama_peran.trim()}
+                  helperText={error && !formData.nama_peran.trim() ? 'Nama peran wajib diisi' : ''}
+                />
+              </Grid>
             </Grid>
-            <Grid item xs={12}>
-              <TextField
-                fullWidth
-                label="Nama Peran"
-                name="nama_peran"
-                value={formData.nama_peran}
-                onChange={handleChange}
-                placeholder="Contoh: Penguji, Pemeriksa, Auditor Internal"
-                required
-                disabled={loading}
-              />
-            </Grid>
-          </Grid>
-          
-          <Typography variant="caption" color="textSecondary" sx={{ display: 'block', mt: 2 }}>
-            Peran terikat dengan fungsi. Setiap fungsi dapat memiliki beberapa peran.
-          </Typography>
-        </Box>
-      </DialogContent>
-      <DialogActions>
-        <Button onClick={onClose} disabled={loading}>
-          Batal
-        </Button>
-        <Button
-          onClick={handleSubmit}
-          variant="contained"
-          disabled={loading || !formData.id_fungsi || !formData.nama_peran.trim()}
-        >
-          {loading ? <CircularProgress size={24} /> : mode === 'add' ? 'Simpan' : 'Update'}
-        </Button>
-      </DialogActions>
-    </Dialog>
+            
+            <Typography variant="caption" color="textSecondary" sx={{ display: 'block', mt: 2 }}>
+              Peran terikat dengan fungsi. Setiap fungsi dapat memiliki beberapa peran.
+            </Typography>
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={onClose} disabled={loading}>
+            Batal
+          </Button>
+          <Button
+            onClick={handleSubmit}
+            variant="contained"
+            disabled={loading || !formData.id_fungsi || !formData.nama_peran.trim()}
+          >
+            {loading ? <CircularProgress size={24} /> : mode === 'add' ? 'Simpan' : 'Update'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Snackbar untuk notifikasi sukses */}
+      <Snackbar
+        open={snackbarOpen}
+        autoHideDuration={3000}
+        onClose={handleSnackbarClose}
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+      >
+        <Alert onClose={handleSnackbarClose} severity="success" sx={{ width: '100%' }}>
+          {successMessage}
+        </Alert>
+      </Snackbar>
+    </>
   );
 };
 
