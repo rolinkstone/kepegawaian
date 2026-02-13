@@ -269,34 +269,86 @@ export const masterService = {
     }
   },
 
-  // ===== MAPPING =====
-  getMapping: async (kompetensiId) => {
+  // ===== MAPPING (sesuai dengan backend) =====
+  getAllMappingKompetensi: async () => {
     try {
-      const response = await api.get(`/master/mapping/${kompetensiId}`);
+      const response = await api.get('master/mapping/kompetensi');
       return response.data;
     } catch (error) {
-      console.error('Error getMapping:', error);
+      console.error('Error getAllMappingKompetensi:', error);
+      throw error;
+    }
+  },
+  
+
+  getMappingKompetensiSederhana: async () => {
+    try {
+      const response = await api.get('master/mapping/kompetensi/sederhana');
+      return response.data;
+    } catch (error) {
+      console.error('Error getMappingKompetensiSederhana:', error);
       throw error;
     }
   },
 
-  createMapping: async (data) => {
+  getMappingByKodeKompetensi: async (kode) => {
     try {
-      const response = await api.post('/master/mapping', data);
+      const response = await api.get(`master/mapping/kompetensi/${kode}`);
       return response.data;
     } catch (error) {
-      console.error('Error createMapping:', error);
+      console.error('Error getMappingByKodeKompetensi:', error);
       throw error;
     }
   },
 
-  deleteMapping: async (id) => {
+  getMappingJabatan: async () => {
     try {
-      const response = await api.delete(`/master/mapping/${id}`);
+      const response = await api.get('master/mapping/jabatan');
       return response.data;
     } catch (error) {
-      console.error('Error deleteMapping:', error);
+      console.error('Error getMappingJabatan:', error);
+      throw error;
+    }
+  },
+
+  getMappingFungsi: async () => {
+    try {
+      const response = await api.get('master/mapping/fungsi');
+      return response.data;
+    } catch (error) {
+      console.error('Error getMappingFungsi:', error);
+      throw error;
+    }
+  },
+
+  getMappingReuse: async () => {
+    try {
+      const response = await api.get('master/mapping/reuse');
+      return response.data;
+    } catch (error) {
+      console.error('Error getMappingReuse:', error);
+      throw error;
+    }
+  },
+
+  getMappingByJenjang: async (jenjang) => {
+    try {
+      const response = await api.get(`master/mapping/jenjang/${jenjang}`);
+      return response.data;
+    } catch (error) {
+      console.error('Error getMappingByJenjang:', error);
+      throw error;
+    }
+  },
+
+  exportMapping: async () => {
+    try {
+      const response = await api.get('master/mapping/export');
+      return response.data;
+    } catch (error) {
+      console.error('Error exportMapping:', error);
       throw error;
     }
   }
+
 };

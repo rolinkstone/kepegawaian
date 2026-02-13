@@ -1,5 +1,5 @@
-// components/master/FilterSection.js
-import React, { useState } from 'react';
+// components/standarkompetensi/FilterSection.js
+import React, { useState, useEffect } from 'react';
 import {
   Row,
   Col,
@@ -10,15 +10,19 @@ import {
   Tag,
   Badge,
   Tooltip,
-  Divider
+  Divider,
+  Typography,
+  Card
 } from 'antd';
 import {
   SearchOutlined,
   ReloadOutlined,
   FilterOutlined,
-  CloseCircleOutlined
+  CloseCircleOutlined,
+  DownOutlined
 } from '@ant-design/icons';
 
+const { Text } = Typography;
 const { Option } = Select;
 
 const FilterSection = ({
@@ -28,11 +32,18 @@ const FilterSection = ({
   uniqueJenjang = [],
   uniqueFungsi = [],
   uniquePeran = [],
+  uniqueTingkat = [],
   onReset,
   totalData,
   filteredCount
 }) => {
   const [searchText, setSearchText] = useState(filters.search || '');
+  const [expanded, setExpanded] = useState(false);
+
+  // Sync search text with filters
+  useEffect(() => {
+    setSearchText(filters.search || '');
+  }, [filters.search]);
 
   // Handle search
   const handleSearch = () => {
@@ -60,7 +71,7 @@ const FilterSection = ({
   const activeFilterCount = getActiveFilterCount();
 
   // Tingkat options
-  const tingkatOptions = [
+  const tingkatOptions = uniqueTingkat.length > 0 ? uniqueTingkat : [
     { value: 'all', label: 'Semua Tingkat' },
     { value: '1', label: 'Ahli Pertama (Level 1)' },
     { value: '2', label: 'Ahli Muda (Level 2)' },
@@ -68,18 +79,38 @@ const FilterSection = ({
     { value: '0', label: 'Universal (Level 0)' }
   ];
 
+  // Debug props
+  console.log('FilterSection Props:', {
+    uniqueJabatan,
+    uniqueJenjang,
+    uniqueFungsi,
+    uniquePeran,
+    filters
+  });
+
   return (
-    <div style={{ marginBottom: 24 }}>
+    <Card 
+      bordered={false}
+      style={{ 
+        marginBottom: 24,
+        borderRadius: 12,
+        boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
+        background: 'linear-gradient(145deg, #ffffff 0%, #fafafa 100%)'
+      }}
+      bodyStyle={{ padding: '20px 24px' }}
+    >
+      {/* Main Filter Row */}
       <Row gutter={[16, 16]} align="middle">
         {/* Search */}
         <Col xs={24} sm={12} md={8} lg={6}>
           <Input.Search
-            placeholder="Cari kode/nama kompetensi..."
+            placeholder="Cari kode/nama/deskripsi kompetensi..."
             allowClear
             enterButton={<SearchOutlined />}
             value={searchText}
             onChange={(e) => setSearchText(e.target.value)}
             onSearch={handleSearch}
+            style={{ width: '100%' }}
           />
         </Col>
 
@@ -93,6 +124,7 @@ const FilterSection = ({
             onChange={(value) => setFilters({ ...filters, jabatan: value })}
             showSearch
             optionFilterProp="children"
+            notFoundContent="Tidak ada data jabatan"
           >
             {uniqueJabatan.map(jabatan => (
               <Option key={jabatan} value={jabatan}>{jabatan}</Option>
@@ -110,6 +142,7 @@ const FilterSection = ({
             onChange={(value) => setFilters({ ...filters, jenjang: value })}
             showSearch
             optionFilterProp="children"
+            notFoundContent="Tidak ada data jenjang"
           >
             {uniqueJenjang.map(jenjang => (
               <Option key={jenjang} value={jenjang}>{jenjang}</Option>
@@ -140,6 +173,7 @@ const FilterSection = ({
               type="primary"
               icon={<SearchOutlined />}
               onClick={handleSearch}
+              style={{ borderRadius: 6 }}
             >
               Cari
             </Button>
@@ -148,10 +182,20 @@ const FilterSection = ({
               <Button
                 icon={<ReloadOutlined />}
                 onClick={handleReset}
+                style={{ borderRadius: 6 }}
               >
                 Reset
               </Button>
             </Tooltip>
+
+            <Button
+              type="text"
+              icon={<DownOutlined rotate={expanded ? 180 : 0} />}
+              onClick={() => setExpanded(!expanded)}
+              style={{ borderRadius: 6 }}
+            >
+              {expanded ? 'Sembunyikan' : 'Lanjutan'}
+            </Button>
 
             {activeFilterCount > 0 && (
               <Badge count={activeFilterCount}>
@@ -164,51 +208,86 @@ const FilterSection = ({
         </Col>
       </Row>
 
-      {/* Additional Filters Row */}
-      <Row gutter={[16, 16]} style={{ marginTop: 16 }}>
-        <Col xs={24} sm={12} md={8} lg={6}>
-          <Select
-            placeholder="Filter Fungsi"
-            allowClear
-            style={{ width: '100%' }}
-            value={filters.fungsi || undefined}
-            onChange={(value) => setFilters({ ...filters, fungsi: value })}
-            showSearch
-            optionFilterProp="children"
-          >
-            {uniqueFungsi.map(fungsi => (
-              <Option key={fungsi} value={fungsi}>{fungsi}</Option>
-            ))}
-          </Select>
-        </Col>
+      {/* Advanced Filters */}
+      {expanded && (
+        <>
+          <Divider style={{ margin: '16px 0' }} />
+          
+          <Row gutter={[16, 16]}>
+            {/* Filter Fungsi */}
+            <Col xs={24} sm={12} md={8} lg={6}>
+              <Select
+                placeholder="Filter Fungsi"
+                allowClear
+                style={{ width: '100%' }}
+                value={filters.fungsi || undefined}
+                onChange={(value) => setFilters({ ...filters, fungsi: value, peran: '' })}
+                showSearch
+                optionFilterProp="children"
+                notFoundContent="Tidak ada data fungsi"
+              >
+                {uniqueFungsi.map(fungsi => (
+                  <Option key={fungsi} value={fungsi}>{fungsi}</Option>
+                ))}
+              </Select>
+            </Col>
 
-        <Col xs={24} sm={12} md={8} lg={6}>
-          <Select
-            placeholder="Filter Peran"
-            allowClear
-            style={{ width: '100%' }}
-            value={filters.peran || undefined}
-            onChange={(value) => setFilters({ ...filters, peran: value })}
-            showSearch
-            optionFilterProp="children"
-            disabled={!filters.fungsi}
-          >
-            {uniquePeran
-              .filter(peran => !filters.fungsi || peran.includes(filters.fungsi))
-              .map(peran => (
-                <Option key={peran} value={peran}>{peran}</Option>
-              ))}
-          </Select>
-        </Col>
+            {/* Filter Peran */}
+            <Col xs={24} sm={12} md={8} lg={6}>
+              <Select
+                placeholder="Filter Peran"
+                allowClear
+                style={{ width: '100%' }}
+                value={filters.peran || undefined}
+                onChange={(value) => setFilters({ ...filters, peran: value })}
+                showSearch
+                optionFilterProp="children"
+                disabled={!filters.fungsi}
+                notFoundContent="Pilih fungsi terlebih dahulu"
+              >
+                {uniquePeran
+                  .filter(peran => !filters.fungsi || peran.includes(filters.fungsi))
+                  .map(peran => (
+                    <Option key={peran} value={peran}>{peran}</Option>
+                  ))}
+              </Select>
+            </Col>
 
-        <Col xs={24} sm={12} md={8} lg={6}>
-          <Space>
-            <span style={{ color: '#999' }}>
-              Menampilkan {filteredCount} dari {totalData} data
-            </span>
-          </Space>
-        </Col>
-      </Row>
+            {/* Info Total Data */}
+            <Col xs={24} sm={12} md={8} lg={6}>
+              <Space direction="vertical" size={0}>
+                <Text type="secondary" style={{ fontSize: 12 }}>
+                  Total Data
+                </Text>
+                <Space>
+                  <Badge 
+                    count={totalData} 
+                    style={{ backgroundColor: '#1890ff' }} 
+                    showZero 
+                  />
+                  <Text strong>data tersedia</Text>
+                </Space>
+              </Space>
+            </Col>
+
+            <Col xs={24} sm={12} md={8} lg={6}>
+              <Space direction="vertical" size={0}>
+                <Text type="secondary" style={{ fontSize: 12 }}>
+                  Hasil Filter
+                </Text>
+                <Space>
+                  <Badge 
+                    count={filteredCount} 
+                    style={{ backgroundColor: '#52c41a' }} 
+                    showZero 
+                  />
+                  <Text strong>data ditampilkan</Text>
+                </Space>
+              </Space>
+            </Col>
+          </Row>
+        </>
+      )}
 
       {/* Active Filters Tags */}
       {activeFilterCount > 0 && (
@@ -216,12 +295,13 @@ const FilterSection = ({
           <Divider orientation="left" style={{ margin: '12px 0' }}>
             <Space>
               <FilterOutlined />
-              Filter Aktif
+              <Text strong>Filter Aktif</Text>
               <Button 
                 type="link" 
                 icon={<CloseCircleOutlined />} 
                 onClick={handleReset}
                 size="small"
+                style={{ padding: '4px 8px' }}
               >
                 Hapus Semua
               </Button>
@@ -236,8 +316,15 @@ const FilterSection = ({
                   setFilters({ ...filters, search: '' });
                   setSearchText('');
                 }}
+                style={{ 
+                  borderRadius: 12, 
+                  padding: '4px 12px',
+                  backgroundColor: '#e6f7ff',
+                  borderColor: '#91d5ff',
+                  color: '#0050b3'
+                }}
               >
-                Pencarian: {filters.search}
+                <SearchOutlined /> Pencarian: {filters.search}
               </Tag>
             )}
             
@@ -246,6 +333,7 @@ const FilterSection = ({
                 closable 
                 color="orange"
                 onClose={() => setFilters({ ...filters, jabatan: '' })}
+                style={{ borderRadius: 12, padding: '4px 12px' }}
               >
                 Jabatan: {filters.jabatan}
               </Tag>
@@ -256,6 +344,7 @@ const FilterSection = ({
                 closable 
                 color="purple"
                 onClose={() => setFilters({ ...filters, jenjang: '' })}
+                style={{ borderRadius: 12, padding: '4px 12px' }}
               >
                 Jenjang: {filters.jenjang}
               </Tag>
@@ -266,6 +355,7 @@ const FilterSection = ({
                 closable 
                 color="blue"
                 onClose={() => setFilters({ ...filters, fungsi: '', peran: '' })}
+                style={{ borderRadius: 12, padding: '4px 12px' }}
               >
                 Fungsi: {filters.fungsi}
               </Tag>
@@ -276,6 +366,7 @@ const FilterSection = ({
                 closable 
                 color="green"
                 onClose={() => setFilters({ ...filters, peran: '' })}
+                style={{ borderRadius: 12, padding: '4px 12px' }}
               >
                 Peran: {filters.peran}
               </Tag>
@@ -290,6 +381,7 @@ const FilterSection = ({
                   filters.tingkat === '3' ? 'warning' : 'default'
                 }
                 onClose={() => setFilters({ ...filters, tingkat: 'all' })}
+                style={{ borderRadius: 12, padding: '4px 12px' }}
               >
                 Tingkat: {
                   filters.tingkat === '1' ? 'Ahli Pertama' :
@@ -301,7 +393,7 @@ const FilterSection = ({
           </Space>
         </div>
       )}
-    </div>
+    </Card>
   );
 };
 

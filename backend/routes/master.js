@@ -1227,10 +1227,7 @@ router.delete('/jabatan/:id', keycloakAuth, async (req, res) => {
 
 // ========== MASTER KOMPETENSI ==========
 
-/**
- * GET /api/master/kompetensi
- * Mendapatkan semua data kompetensi
- */
+
 router.get('/kompetensi', keycloakAuth, async (req, res) => {
     const username = getUsername(req.user);
     console.log(`📊 ${username} mengakses master kompetensi`);
@@ -1313,10 +1310,7 @@ router.get('/kompetensi', keycloakAuth, async (req, res) => {
     }
 });
 
-/**
- * GET /api/master/kompetensi/:id
- * Mendapatkan detail kompetensi berdasarkan ID
- */
+
 router.get('/kompetensi/:id', keycloakAuth, async (req, res) => {
     const username = getUsername(req.user);
     const { id } = req.params;
@@ -1386,10 +1380,7 @@ router.get('/kompetensi/:id', keycloakAuth, async (req, res) => {
     }
 });
 
-/**
- * POST /api/master/kompetensi
- * Menambahkan kompetensi baru
- */
+
 router.post('/kompetensi', keycloakAuth, async (req, res) => {
     const username = getUsername(req.user);
     console.log(`📝 ${username} menambahkan kompetensi baru`);
@@ -1437,9 +1428,9 @@ router.post('/kompetensi', keycloakAuth, async (req, res) => {
             for (const map of mapping) {
                 await connection.query(`
                     INSERT INTO kepegawaian.kompetensi_mapping 
-                    (id_kompetensi, id_jabatan, id_jenjang, is_mandatory)
-                    VALUES (?, ?, ?, ?)
-                `, [id_kompetensi, map.id_jabatan, map.id_jenjang, map.is_mandatory !== false]);
+                    (id_kompetensi, id_jabatan, id_jenjang, id_peran, is_mandatory)
+                    VALUES (?, ?, ?, ?, ?)
+                `, [id_kompetensi, map.id_jabatan, map.id_jenjang, map.id_peran, map.is_mandatory !== false]);
             }
         }
         
@@ -1480,10 +1471,7 @@ router.post('/kompetensi', keycloakAuth, async (req, res) => {
     }
 });
 
-/**
- * PUT /api/master/kompetensi/:id
- * Mengupdate kompetensi
- */
+
 router.put('/kompetensi/:id', keycloakAuth, async (req, res) => {
     const username = getUsername(req.user);
     const { id } = req.params;
@@ -1544,9 +1532,9 @@ router.put('/kompetensi/:id', keycloakAuth, async (req, res) => {
             for (const map of mapping) {
                 await connection.query(`
                     INSERT INTO kepegawaian.kompetensi_mapping 
-                    (id_kompetensi, id_jabatan, id_jenjang, is_mandatory)
-                    VALUES (?, ?, ?, ?)
-                `, [id, map.id_jabatan, map.id_jenjang, map.is_mandatory !== false]);
+                    (id_kompetensi, id_jabatan, id_jenjang, id_peran, is_mandatory)
+                    VALUES (?, ?, ?, ?, ?)
+                `, [id, map.id_jabatan, map.id_jenjang, map.id_peran, map.is_mandatory !== false]);
             }
         }
         
@@ -1587,10 +1575,7 @@ router.put('/kompetensi/:id', keycloakAuth, async (req, res) => {
     }
 });
 
-/**
- * DELETE /api/master/kompetensi/:id
- * Menghapus kompetensi (ON DELETE CASCADE akan hapus mapping juga)
- */
+
 router.delete('/kompetensi/:id', keycloakAuth, async (req, res) => {
     const username = getUsername(req.user);
     const { id } = req.params;
@@ -1808,5 +1793,365 @@ router.get('/dashboard/standar-kompetensi', keycloakAuth, async (req, res) => {
         });
     }
 });
+
+
+/**
+ * @swagger
+ * /api/mapping/kompetensi:
+ *   get:
+ *     summary: Get all kompetensi mapping with various formats
+ *     tags: [Mapping]
+ *     parameters:
+ *       - in: query
+ *         name: format
+ *         schema:
+ *           type: string
+ *           enum: [full, simple, detail, reuse, per-fungsi, compact]
+ *         description: Format output mapping (default: full)
+ *       - in: query
+ *         name: id_fungsi
+ *         schema:
+ *           type: integer
+ *         description: Filter by fungsi ID
+ *       - in: query
+ *         name: id_peran
+ *         schema:
+ *           type: integer
+ *         description: Filter by peran ID
+ *       - in: query
+ *         name: search
+ *         schema:
+ *           type: string
+ *         description: Search by kode or nama kompetensi
+ */
+router.get('/mapping/kompetensi', keycloakAuth, async (req, res) => {
+    const username = getUsername(req.user);
+    console.log(`📊 ${username} mengakses mapping kompetensi`);
+    
+    try {
+        const { format = 'full', id_fungsi, id_peran, search } = req.query;
+        
+        let baseQuery = `
+            FROM kepegawaian.master_kompetensi mk
+            JOIN kepegawaian.fungsi f ON mk.id_fungsi = f.id
+            JOIN kepegawaian.peran p ON mk.id_peran = p.id
+            LEFT JOIN kepegawaian.kompetensi_mapping km ON mk.id = km.id_kompetensi
+            LEFT JOIN kepegawaian.jabatan j ON km.id_jabatan = j.id
+            LEFT JOIN kepegawaian.jenjang jg ON km.id_jenjang = jg.id
+            WHERE 1=1
+        `;
+        
+        const params = [];
+        
+        if (id_fungsi) {
+            baseQuery += ` AND mk.id_fungsi = ?`;
+            params.push(id_fungsi);
+        }
+        
+        if (id_peran) {
+            baseQuery += ` AND mk.id_peran = ?`;
+            params.push(id_peran);
+        }
+        
+        if (search) {
+            baseQuery += ` AND (mk.kode_kompetensi LIKE ? OR mk.nama_kompetensi LIKE ?)`;
+            params.push(`%${search}%`, `%${search}%`);
+        }
+        
+        let query = '';
+        let groupBy = ' GROUP BY mk.id, mk.kode_kompetensi, mk.nama_kompetensi, f.nama_fungsi, p.nama_peran';
+        let orderBy = ' ORDER BY mk.kode_kompetensi ASC';
+        
+        // Pilih format berdasarkan parameter
+        switch(format) {
+            case 'full':
+                // Format 1: Lengkap dengan semua detail dalam satu kolom
+                query = `
+                    SELECT 
+                        mk.kode_kompetensi AS kode,
+                        mk.nama_kompetensi AS nama_kompetensi,
+                        mk.deskripsi,
+                        CONCAT(
+                            '[JABATAN: ', COALESCE(GROUP_CONCAT(DISTINCT j.nama_jabatan ORDER BY j.nama_jabatan SEPARATOR ', '), '-'), '] ',
+                            '[FUNGSI: ', f.nama_fungsi, '] ',
+                            '[PERAN: ', p.nama_peran, '] ',
+                            '[JENJANG: ', COALESCE(GROUP_CONCAT(DISTINCT jg.nama_jenjang ORDER BY jg.tingkat SEPARATOR ', '), '-'), ']'
+                        ) AS jabatan_fungsi,
+                        f.nama_fungsi AS fungsi,
+                        p.nama_peran AS peran,
+                        GROUP_CONCAT(DISTINCT j.nama_jabatan SEPARATOR ', ') AS daftar_jabatan,
+                        GROUP_CONCAT(DISTINCT jg.nama_jenjang ORDER BY jg.tingkat SEPARATOR ', ') AS daftar_jenjang,
+                        COUNT(DISTINCT km.id_jenjang) AS jumlah_jenjang,
+                        COUNT(DISTINCT km.id_jabatan) AS jumlah_jabatan
+                `;
+                break;
+                
+            case 'simple':
+                // Format 2: Sederhana - Nama Kompetensi | Jabatan & Fungsi (1 baris)
+                query = `
+                    SELECT 
+                        CONCAT(mk.kode_kompetensi, ' - ', mk.nama_kompetensi) AS nama_kompetensi,
+                        CONCAT(
+                            'Jabatan: ', COALESCE(GROUP_CONCAT(DISTINCT j.nama_jabatan SEPARATOR ', '), '-'),
+                            ' | Fungsi: ', f.nama_fungsi,
+                            ' (', p.nama_peran, ')',
+                            ' | Jenjang: ', COALESCE(GROUP_CONCAT(DISTINCT jg.nama_jenjang ORDER BY jg.tingkat SEPARATOR ', '), '-')
+                        ) AS jabatan_fungsi,
+                        f.nama_fungsi AS fungsi,
+                        p.nama_peran AS peran
+                `;
+                break;
+                
+            case 'detail':
+                // Format 3: Detail dengan kolom terpisah
+                query = `
+                    SELECT 
+                        mk.kode_kompetensi,
+                        mk.nama_kompetensi,
+                        mk.deskripsi,
+                        GROUP_CONCAT(DISTINCT j.nama_jabatan SEPARATOR ', ') AS daftar_jabatan,
+                        f.nama_fungsi AS fungsi,
+                        p.nama_peran AS peran,
+                        GROUP_CONCAT(DISTINCT jg.nama_jenjang ORDER BY jg.tingkat SEPARATOR ', ') AS daftar_jenjang,
+                        GROUP_CONCAT(DISTINCT 
+                            CONCAT(j.nama_jabatan, ' (', jg.nama_jenjang, ')') 
+                            ORDER BY jg.tingkat SEPARATOR ', '
+                        ) AS jabatan_dan_jenjang
+                `;
+                break;
+                
+            case 'compact':
+                // Format 4: Compact - hanya info penting
+                query = `
+                    SELECT 
+                        mk.kode_kompetensi,
+                        LEFT(mk.nama_kompetensi, 50) AS nama_kompetensi,
+                        CONCAT(
+                            '[J: ', COALESCE(GROUP_CONCAT(DISTINCT j.nama_jabatan SEPARATOR ','), '-'), '] ',
+                            '[F: ', f.nama_fungsi, '] ',
+                            '[P: ', p.nama_peran, '] ',
+                            '[Jg: ', COALESCE(GROUP_CONCAT(DISTINCT jg.nama_jenjang SEPARATOR ','), '-'), ']'
+                        ) AS info_singkat
+                `;
+                break;
+                
+            case 'reuse':
+                // Format 5: Kompetensi yang di-reuse di multiple jenjang
+                query = `
+                    SELECT 
+                        mk.kode_kompetensi,
+                        mk.nama_kompetensi,
+                        f.nama_fungsi,
+                        p.nama_peran,
+                        GROUP_CONCAT(DISTINCT j.nama_jabatan SEPARATOR ', ') AS daftar_jabatan,
+                        GROUP_CONCAT(DISTINCT jg.nama_jenjang ORDER BY jg.tingkat SEPARATOR ' → ') AS reuse_jenjang,
+                        COUNT(DISTINCT km.id_jenjang) AS jumlah_jenjang,
+                        COUNT(DISTINCT km.id_jabatan) AS jumlah_jabatan
+                `;
+                // Override HAVING clause for reuse
+                baseQuery += ` AND km.id_jenjang IS NOT NULL`; // Only include kompetensi with mapping
+                groupBy = ' GROUP BY mk.id, mk.kode_kompetensi, mk.nama_kompetensi, f.nama_fungsi, p.nama_peran HAVING COUNT(DISTINCT km.id_jenjang) > 1';
+                orderBy = ' ORDER BY jumlah_jenjang DESC, mk.kode_kompetensi';
+                break;
+                
+            case 'per-fungsi':
+                // Format 6: Group by fungsi
+                query = `
+                    SELECT 
+                        f.nama_fungsi,
+                        mk.kode_kompetensi,
+                        mk.nama_kompetensi,
+                        p.nama_peran,
+                        GROUP_CONCAT(DISTINCT 
+                            CONCAT(j.nama_jabatan, ' (', jg.nama_jenjang, ')') 
+                            ORDER BY j.nama_jabatan, jg.tingkat SEPARATOR ', '
+                        ) AS jabatan_dan_jenjang,
+                        COUNT(DISTINCT km.id_jenjang) AS total_jenjang,
+                        COUNT(DISTINCT km.id_jabatan) AS total_jabatan
+                `;
+                groupBy = ' GROUP BY f.id, f.nama_fungsi, mk.id, mk.kode_kompetensi, mk.nama_kompetensi, p.nama_peran';
+                orderBy = ' ORDER BY f.nama_fungsi, mk.kode_kompetensi';
+                break;
+                
+            case 'export':
+                // Format 7: Export all data for reporting
+                query = `
+                    SELECT 
+                        mk.kode_kompetensi,
+                        mk.nama_kompetensi,
+                        mk.deskripsi,
+                        f.nama_fungsi,
+                        p.nama_peran,
+                        GROUP_CONCAT(DISTINCT j.nama_jabatan SEPARATOR ', ') AS daftar_jabatan,
+                        GROUP_CONCAT(DISTINCT jg.nama_jenjang ORDER BY jg.tingkat SEPARATOR ', ') AS daftar_jenjang,
+                        GROUP_CONCAT(DISTINCT 
+                            CONCAT(j.nama_jabatan, ' (', 
+                                CASE 
+                                    WHEN jg.tingkat = 1 THEN 'Ahli Pertama'
+                                    WHEN jg.tingkat = 2 THEN 'Ahli Muda'
+                                    WHEN jg.tingkat = 3 THEN 'Ahli Madya'
+                                    WHEN jg.tingkat = 4 THEN 'Ahli Utama'
+                                    ELSE jg.nama_jenjang
+                                END
+                            , ')') 
+                            ORDER BY jg.tingkat SEPARATOR '; '
+                        ) AS mapping_detail,
+                        COUNT(DISTINCT CONCAT(km.id_jabatan, '-', km.id_jenjang)) AS total_mapping
+                `;
+                break;
+                
+            case 'sederhana':
+            default:
+                // Format default: sederhana - seperti endpoint /sederhana sebelumnya
+                query = `
+                    SELECT 
+                        CONCAT(mk.kode_kompetensi, ' - ', mk.nama_kompetensi) AS nama_kompetensi,
+                        CONCAT(
+                            'Jabatan: ', COALESCE(GROUP_CONCAT(DISTINCT j.nama_jabatan SEPARATOR ', '), '-'),
+                            ' | Fungsi: ', f.nama_fungsi,
+                            ' (', p.nama_peran, ')',
+                            ' | Jenjang: ', COALESCE(GROUP_CONCAT(DISTINCT jg.nama_jenjang ORDER BY jg.tingkat SEPARATOR ', '), '-')
+                        ) AS jabatan_fungsi
+                `;
+                break;
+        }
+        
+        // Gabungkan query
+        const fullQuery = query + baseQuery + groupBy + orderBy;
+        
+        // Execute query
+        const [results] = await db.query(fullQuery, params);
+        
+        // Response summary
+        let summary = {
+            total: results.length,
+            format: format,
+            timestamp: new Date().toISOString()
+        };
+        
+        // Tambahkan summary khusus untuk format tertentu
+        if (format === 'reuse') {
+            summary.total_reuse_kompetensi = results.length;
+            summary.total_reuse_jenjang = results.reduce((acc, curr) => acc + (parseInt(curr.jumlah_jenjang) || 0), 0);
+        } else if (format === 'per-fungsi') {
+            // Group by fungsi for summary
+            const fungsiCount = {};
+            results.forEach(r => {
+                fungsiCount[r.nama_fungsi] = (fungsiCount[r.nama_fungsi] || 0) + 1;
+            });
+            summary.per_fungsi = fungsiCount;
+        } else if (format === 'export') {
+            summary.total_mapping = results.reduce((acc, curr) => acc + (parseInt(curr.total_mapping) || 0), 0);
+            summary.kompetensi_dengan_mapping = results.filter(r => parseInt(r.total_mapping) > 0).length;
+            summary.kompetensi_tanpa_mapping = results.filter(r => parseInt(r.total_mapping) === 0).length;
+        }
+        
+        res.json({
+            success: true,
+            message: `Data mapping kompetensi berhasil diambil (format: ${format})`,
+            data: results,
+            summary: summary
+        });
+        
+    } catch (error) {
+        console.error('❌ Error getting mapping kompetensi:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Terjadi kesalahan server',
+            error: error.message
+        });
+    }
+});
+
+
+router.get('/mapping/kompetensi/:kode', keycloakAuth, async (req, res) => {
+    const username = getUsername(req.user);
+    console.log(`📊 ${username} mengakses detail mapping kompetensi: ${req.params.kode}`);
+    
+    try {
+        const { kode } = req.params;
+        
+        // Query tanpa JSON_ARRAYAGG dan JSON_OBJECT
+        const kompetensiQuery = `
+            SELECT 
+                mk.id,
+                mk.kode_kompetensi,
+                mk.nama_kompetensi,
+                mk.deskripsi,
+                f.nama_fungsi AS fungsi,
+                f.id AS id_fungsi,
+                p.nama_peran AS peran,
+                p.id AS id_peran,
+                GROUP_CONCAT(DISTINCT j.nama_jabatan ORDER BY j.nama_jabatan SEPARATOR ', ') AS daftar_jabatan,
+                GROUP_CONCAT(DISTINCT jg.nama_jenjang ORDER BY jg.tingkat SEPARATOR ', ') AS daftar_jenjang,
+                GROUP_CONCAT(DISTINCT 
+                    CONCAT(j.nama_jabatan, ' (', jg.nama_jenjang, ')') 
+                    ORDER BY j.nama_jabatan, jg.tingkat SEPARATOR ', '
+                ) AS jabatan_dan_jenjang,
+                COUNT(DISTINCT km.id_jabatan) AS jumlah_jabatan,
+                COUNT(DISTINCT km.id_jenjang) AS jumlah_jenjang
+            FROM kepegawaian.master_kompetensi mk
+            JOIN kepegawaian.fungsi f ON mk.id_fungsi = f.id
+            JOIN kepegawaian.peran p ON mk.id_peran = p.id
+            LEFT JOIN kepegawaian.kompetensi_mapping km ON mk.id = km.id_kompetensi
+            LEFT JOIN kepegawaian.jabatan j ON km.id_jabatan = j.id
+            LEFT JOIN kepegawaian.jenjang jg ON km.id_jenjang = jg.id
+            WHERE mk.kode_kompetensi = ?
+            GROUP BY mk.id, mk.kode_kompetensi, mk.nama_kompetensi, mk.deskripsi, 
+                     f.id, f.nama_fungsi, p.id, p.nama_peran
+        `;
+        
+        const [kompetensiResult] = await db.query(kompetensiQuery, [kode]);
+        
+        if (kompetensiResult.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: 'Kompetensi tidak ditemukan'
+            });
+        }
+        
+        const kompetensi = kompetensiResult[0];
+        
+        // Query terpisah untuk mendapatkan mapping detail
+        const mappingQuery = `
+            SELECT 
+                km.id,
+                km.id_jabatan,
+                j.nama_jabatan,
+                km.id_jenjang,
+                jg.nama_jenjang,
+                jg.tingkat,
+                km.is_mandatory,
+                km.created_at
+            FROM kepegawaian.kompetensi_mapping km
+            JOIN kepegawaian.jabatan j ON km.id_jabatan = j.id
+            JOIN kepegawaian.jenjang jg ON km.id_jenjang = jg.id
+            WHERE km.id_kompetensi = ?
+            ORDER BY jg.tingkat ASC, j.nama_jabatan ASC
+        `;
+        
+        const [mappingResult] = await db.query(mappingQuery, [kompetensi.id]);
+        
+        // Gabungkan data
+        kompetensi.mapping = mappingResult;
+        
+        res.json({
+            success: true,
+            message: 'Detail mapping kompetensi berhasil diambil',
+            data: kompetensi
+        });
+        
+    } catch (error) {
+        console.error('❌ Error getting mapping by kode:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Terjadi kesalahan server',
+            error: error.message
+        });
+    }
+});
+
+
+
 
 module.exports = router;
