@@ -4,8 +4,8 @@ import { useRouter } from 'next/router';
 import { useState, useEffect } from 'react';
 import { 
   FaHome, FaBox, FaUsers, FaShoppingCart, FaCog, FaSignOutAlt, 
-  FaTruck, FaListAlt, FaDatabase,  FaBookOpen, FaCreditCard, FaBell, FaClipboardList, FaSearch,
-  FaTimesCircle  
+  FaTruck, FaBalanceScale, FaDatabase,  FaBookOpen, FaCreditCard, FaBell, FaClipboardList, FaSearch,
+  FaTimesCircle, FaUserGraduate  
 } from 'react-icons/fa';
 
 import { useSession, signOut } from 'next-auth/react';
@@ -156,14 +156,7 @@ export default function DashboardLayout({ children }) {
     
   },
 
-   // Menu Standar Kompetensi
-  { 
-    href: '/pegawai', 
-    label: 'List Pegawai', 
-    icon: <FaBookOpen />
-    
-  },
-  
+   
   
   
   // Menu Cari hanya ditampilkan jika user memiliki role PPK
@@ -178,12 +171,33 @@ export default function DashboardLayout({ children }) {
 ]
 },
     {
-      title: 'Pengaturan',
+      title: 'Profil',
       items: [
-        { href: '/profile', label: 'Profile', icon: <FaCog /> },
-        { href: '/settings', label: 'Settings', icon: <FaCog /> }
+        
+         { 
+        href: '/pegawai', 
+        label: 'Profil Kompetensi', 
+        icon: <FaUserGraduate /> // atau <FaIdCard />
+        },
+
+
+      ]
+    },
+
+     {
+      title: 'Pemenuhan Kompetensi',
+      items: [
+        
+         { 
+        href: '/#', 
+        label: 'Riwayat Pelatihan', 
+        icon: <FaBalanceScale /> // atau <FaIdCard />
+        },
+
+
       ]
     }
+    
   ];
 
   // DEBUG: Tambahkan display untuk role di header
