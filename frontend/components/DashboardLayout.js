@@ -155,6 +155,16 @@ export default function DashboardLayout({ children }) {
     icon: <FaBookOpen />
     
   },
+
+   // Menu Standar Kompetensi
+  { 
+    href: '/pegawai', 
+    label: 'List Pegawai', 
+    icon: <FaBookOpen />
+    
+  },
+  
+  
   
   // Menu Cari hanya ditampilkan jika user memiliki role PPK
   ...(hasPPKRole() ? [

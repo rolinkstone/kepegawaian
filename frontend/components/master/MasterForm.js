@@ -75,7 +75,9 @@ import {
   ChevronLeft as ChevronLeftIcon,
   ChevronRight as ChevronRightIcon,
   FirstPage as FirstPageIcon,
-  LastPage as LastPageIcon
+  LastPage as LastPageIcon,
+  AdminPanelSettings as AdminIcon,
+  Person as PersonIcon
 } from '@mui/icons-material';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/router';
@@ -269,7 +271,7 @@ const FilterCard = ({ children, onClear }) => {
   );
 };
 
-const CustomTable = ({ children, title, actions }) => {
+const CustomTable = ({ children, title, actions, isAdmin }) => {
   const theme = useTheme();
   
   return (
@@ -295,9 +297,23 @@ const CustomTable = ({ children, title, actions }) => {
             bgcolor: alpha(theme.palette.background.paper, 0.6)
           }}
         >
-          <Typography variant="h6" sx={{ fontWeight: 600, fontSize: '1.1rem' }}>
-            {title}
-          </Typography>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            <Typography variant="h6" sx={{ fontWeight: 600, fontSize: '1.1rem' }}>
+              {title}
+            </Typography>
+            {!isAdmin && (
+              <Chip
+                icon={<PersonIcon />}
+                label="Mode Baca"
+                size="small"
+                sx={{
+                  bgcolor: alpha(theme.palette.info.main, 0.1),
+                  color: theme.palette.info.main,
+                  fontWeight: 500
+                }}
+              />
+            )}
+          </Box>
           {actions}
         </Box>
       )}
@@ -308,21 +324,29 @@ const CustomTable = ({ children, title, actions }) => {
   );
 };
 
-const ActionButton = ({ icon: Icon, label, onClick, color = 'primary', tooltip }) => (
-  <Tooltip title={tooltip || label} arrow>
-    <IconButton
-      onClick={onClick}
-      size="small"
-      sx={{
-        mr: 0.5,
-        color: theme => theme.palette[color].main,
-        '&:hover': {
-          bgcolor: theme => alpha(theme.palette[color].main, 0.1)
-        }
-      }}
-    >
-      <Icon fontSize="small" />
-    </IconButton>
+const ActionButton = ({ icon: Icon, label, onClick, color = 'primary', tooltip, disabled = false }) => (
+  <Tooltip title={disabled ? 'Hanya admin_tambun_raya yang dapat melakukan aksi ini' : (tooltip || label)} arrow>
+    <span>
+      <IconButton
+        onClick={onClick}
+        size="small"
+        disabled={disabled}
+        sx={{
+          mr: 0.5,
+          color: theme => disabled 
+            ? alpha(theme.palette.action.disabled, 0.5)
+            : theme.palette[color].main,
+          '&:hover': {
+            bgcolor: disabled 
+              ? 'transparent'
+              : theme => alpha(theme.palette[color].main, 0.1)
+          },
+          opacity: disabled ? 0.6 : 1
+        }}
+      >
+        <Icon fontSize="small" />
+      </IconButton>
+    </span>
   </Tooltip>
 );
 
@@ -364,6 +388,25 @@ const MasterForm = () => {
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [message, setMessage] = useState({ open: false, text: '', severity: 'success' });
+
+  // ========== CEK ROLE ADMIN TAMBUN RAYA ==========
+  const isAdminTambunRaya = useMemo(() => {
+    if (!session?.user) return false;
+    
+    // Cek dari roles di session
+    const roles = session.user.roles || [];
+    const isAdmin = roles.includes('admin_tambun_raya') || 
+                    session.user.isAdminTambunRaya ||
+                    session.user.email === 'admin_tambun_raya'; // Fallback check
+    
+    console.log('🔐 User role check:', {
+      email: session.user.email,
+      roles: roles,
+      isAdminTambunRaya: isAdmin
+    });
+    
+    return isAdmin;
+  }, [session]);
 
   // ========== STATE UNTUK DATA ==========
   const [jabatan, setJabatan] = useState([]);
@@ -495,6 +538,12 @@ const MasterForm = () => {
 
   // ========== HANDLE MODAL ==========
   const handleOpenModal = (type, mode, data = null) => {
+    // Cek apakah user adalah admin untuk operasi yang memerlukan hak akses
+    if (mode !== 'view' && !isAdminTambunRaya) {
+      showMessage('Anda tidak memiliki izin untuk melakukan operasi ini. Hanya admin_tambun_raya yang diizinkan.', 'error');
+      return;
+    }
+
     const modalState = {
       jabatan: setModalJabatan,
       jenjang: setModalJenjang,
@@ -527,6 +576,12 @@ const MasterForm = () => {
 
   // ========== HANDLE DELETE ==========
   const handleDelete = async (type, id, message) => {
+    // Cek apakah user adalah admin
+    if (!isAdminTambunRaya) {
+      showMessage('Anda tidak memiliki izin untuk menghapus data. Hanya admin_tambun_raya yang diizinkan.', 'error');
+      return;
+    }
+
     if (window.confirm(message)) {
       try {
         const serviceMethod = {
@@ -598,20 +653,40 @@ const MasterForm = () => {
   const renderJabatanTab = () => (
     <CustomTable
       title="Daftar Jabatan"
+      isAdmin={isAdminTambunRaya}
       actions={
-        <Button
-          variant="contained"
-          startIcon={<AddIcon />}
-          onClick={() => handleOpenModal('jabatan', 'add')}
-          sx={{
-            borderRadius: 2,
-            textTransform: 'none',
-            boxShadow: 'none',
-            '&:hover': { boxShadow: 'none' }
-          }}
-        >
-          Tambah Jabatan
-        </Button>
+        isAdminTambunRaya ? (
+          <Button
+            variant="contained"
+            startIcon={<AddIcon />}
+            onClick={() => handleOpenModal('jabatan', 'add')}
+            sx={{
+              borderRadius: 2,
+              textTransform: 'none',
+              boxShadow: 'none',
+              '&:hover': { boxShadow: 'none' }
+            }}
+          >
+            Tambah Jabatan
+          </Button>
+        ) : (
+          <Tooltip title="Hanya admin_tambun_raya yang dapat menambah data">
+            <span>
+              <Button
+                variant="contained"
+                startIcon={<AddIcon />}
+                disabled
+                sx={{
+                  borderRadius: 2,
+                  textTransform: 'none',
+                  opacity: 0.6
+                }}
+              >
+                Tambah Jabatan
+              </Button>
+            </span>
+          </Tooltip>
+        )
       }
     >
       <Table>
@@ -661,16 +736,20 @@ const MasterForm = () => {
                     Belum ada data jabatan
                   </Typography>
                   <Typography variant="body2" color="textSecondary" sx={{ mb: 3 }}>
-                    Klik tombol "Tambah Jabatan" untuk menambahkan data pertama
+                    {isAdminTambunRaya 
+                      ? 'Klik tombol "Tambah Jabatan" untuk menambahkan data pertama'
+                      : 'Hubungi admin_tambun_raya untuk menambahkan data'}
                   </Typography>
-                  <Button
-                    variant="contained"
-                    startIcon={<AddIcon />}
-                    onClick={() => handleOpenModal('jabatan', 'add')}
-                    sx={{ borderRadius: 2, textTransform: 'none' }}
-                  >
-                    Tambah Jabatan Pertama
-                  </Button>
+                  {isAdminTambunRaya && (
+                    <Button
+                      variant="contained"
+                      startIcon={<AddIcon />}
+                      onClick={() => handleOpenModal('jabatan', 'add')}
+                      sx={{ borderRadius: 2, textTransform: 'none' }}
+                    >
+                      Tambah Jabatan Pertama
+                    </Button>
+                  )}
                 </Box>
               </TableCell>
             </TableRow>
@@ -699,6 +778,7 @@ const MasterForm = () => {
                       icon={EditIcon}
                       label="Edit"
                       onClick={() => handleOpenModal('jabatan', 'edit', item)}
+                      disabled={!isAdminTambunRaya}
                       tooltip="Edit Jabatan"
                     />
                     <ActionButton
@@ -706,6 +786,7 @@ const MasterForm = () => {
                       label="Hapus"
                       color="error"
                       onClick={() => handleDelete('jabatan', item.id, 'Apakah Anda yakin ingin menghapus data jabatan ini?')}
+                      disabled={!isAdminTambunRaya}
                       tooltip="Hapus Jabatan"
                     />
                   </Box>
@@ -722,20 +803,40 @@ const MasterForm = () => {
   const renderJenjangTab = () => (
     <CustomTable
       title="Daftar Jenjang"
+      isAdmin={isAdminTambunRaya}
       actions={
-        <Button
-          variant="contained"
-          startIcon={<AddIcon />}
-          onClick={() => handleOpenModal('jenjang', 'add')}
-          sx={{
-            borderRadius: 2,
-            textTransform: 'none',
-            boxShadow: 'none',
-            '&:hover': { boxShadow: 'none' }
-          }}
-        >
-          Tambah Jenjang
-        </Button>
+        isAdminTambunRaya ? (
+          <Button
+            variant="contained"
+            startIcon={<AddIcon />}
+            onClick={() => handleOpenModal('jenjang', 'add')}
+            sx={{
+              borderRadius: 2,
+              textTransform: 'none',
+              boxShadow: 'none',
+              '&:hover': { boxShadow: 'none' }
+            }}
+          >
+            Tambah Jenjang
+          </Button>
+        ) : (
+          <Tooltip title="Hanya admin_tambun_raya yang dapat menambah data">
+            <span>
+              <Button
+                variant="contained"
+                startIcon={<AddIcon />}
+                disabled
+                sx={{
+                  borderRadius: 2,
+                  textTransform: 'none',
+                  opacity: 0.6
+                }}
+              >
+                Tambah Jenjang
+              </Button>
+            </span>
+          </Tooltip>
+        )
       }
     >
       <Table>
@@ -788,16 +889,20 @@ const MasterForm = () => {
                     Belum ada data jenjang
                   </Typography>
                   <Typography variant="body2" color="textSecondary" sx={{ mb: 3 }}>
-                    Klik tombol "Tambah Jenjang" untuk menambahkan data pertama
+                    {isAdminTambunRaya 
+                      ? 'Klik tombol "Tambah Jenjang" untuk menambahkan data pertama'
+                      : 'Hubungi admin_tambun_raya untuk menambahkan data'}
                   </Typography>
-                  <Button
-                    variant="contained"
-                    startIcon={<AddIcon />}
-                    onClick={() => handleOpenModal('jenjang', 'add')}
-                    sx={{ borderRadius: 2, textTransform: 'none' }}
-                  >
-                    Tambah Jenjang Pertama
-                  </Button>
+                  {isAdminTambunRaya && (
+                    <Button
+                      variant="contained"
+                      startIcon={<AddIcon />}
+                      onClick={() => handleOpenModal('jenjang', 'add')}
+                      sx={{ borderRadius: 2, textTransform: 'none' }}
+                    >
+                      Tambah Jenjang Pertama
+                    </Button>
+                  )}
                 </Box>
               </TableCell>
             </TableRow>
@@ -841,6 +946,7 @@ const MasterForm = () => {
                         icon={EditIcon}
                         label="Edit"
                         onClick={() => handleOpenModal('jenjang', 'edit', item)}
+                        disabled={!isAdminTambunRaya}
                         tooltip="Edit Jenjang"
                       />
                       <ActionButton
@@ -848,6 +954,7 @@ const MasterForm = () => {
                         label="Hapus"
                         color="error"
                         onClick={() => handleDelete('jenjang', item.id, 'Apakah Anda yakin ingin menghapus data jenjang ini?')}
+                        disabled={!isAdminTambunRaya}
                         tooltip="Hapus Jenjang"
                       />
                     </Box>
@@ -865,20 +972,40 @@ const MasterForm = () => {
   const renderFungsiTab = () => (
     <CustomTable
       title="Daftar Fungsi"
+      isAdmin={isAdminTambunRaya}
       actions={
-        <Button
-          variant="contained"
-          startIcon={<AddIcon />}
-          onClick={() => handleOpenModal('fungsi', 'add')}
-          sx={{
-            borderRadius: 2,
-            textTransform: 'none',
-            boxShadow: 'none',
-            '&:hover': { boxShadow: 'none' }
-          }}
-        >
-          Tambah Fungsi
-        </Button>
+        isAdminTambunRaya ? (
+          <Button
+            variant="contained"
+            startIcon={<AddIcon />}
+            onClick={() => handleOpenModal('fungsi', 'add')}
+            sx={{
+              borderRadius: 2,
+              textTransform: 'none',
+              boxShadow: 'none',
+              '&:hover': { boxShadow: 'none' }
+            }}
+          >
+            Tambah Fungsi
+          </Button>
+        ) : (
+          <Tooltip title="Hanya admin_tambun_raya yang dapat menambah data">
+            <span>
+              <Button
+                variant="contained"
+                startIcon={<AddIcon />}
+                disabled
+                sx={{
+                  borderRadius: 2,
+                  textTransform: 'none',
+                  opacity: 0.6
+                }}
+              >
+                Tambah Fungsi
+              </Button>
+            </span>
+          </Tooltip>
+        )
       }
     >
       <Table>
@@ -928,16 +1055,20 @@ const MasterForm = () => {
                     Belum ada data fungsi
                   </Typography>
                   <Typography variant="body2" color="textSecondary" sx={{ mb: 3 }}>
-                    Klik tombol "Tambah Fungsi" untuk menambahkan data pertama
+                    {isAdminTambunRaya 
+                      ? 'Klik tombol "Tambah Fungsi" untuk menambahkan data pertama'
+                      : 'Hubungi admin_tambun_raya untuk menambahkan data'}
                   </Typography>
-                  <Button
-                    variant="contained"
-                    startIcon={<AddIcon />}
-                    onClick={() => handleOpenModal('fungsi', 'add')}
-                    sx={{ borderRadius: 2, textTransform: 'none' }}
-                  >
-                    Tambah Fungsi Pertama
-                  </Button>
+                  {isAdminTambunRaya && (
+                    <Button
+                      variant="contained"
+                      startIcon={<AddIcon />}
+                      onClick={() => handleOpenModal('fungsi', 'add')}
+                      sx={{ borderRadius: 2, textTransform: 'none' }}
+                    >
+                      Tambah Fungsi Pertama
+                    </Button>
+                  )}
                 </Box>
               </TableCell>
             </TableRow>
@@ -966,6 +1097,7 @@ const MasterForm = () => {
                       icon={EditIcon}
                       label="Edit"
                       onClick={() => handleOpenModal('fungsi', 'edit', item)}
+                      disabled={!isAdminTambunRaya}
                       tooltip="Edit Fungsi"
                     />
                     <ActionButton
@@ -973,6 +1105,7 @@ const MasterForm = () => {
                       label="Hapus"
                       color="error"
                       onClick={() => handleDelete('fungsi', item.id, 'Apakah Anda yakin ingin menghapus data fungsi ini?')}
+                      disabled={!isAdminTambunRaya}
                       tooltip="Hapus Fungsi"
                     />
                   </Box>
@@ -1036,20 +1169,40 @@ const MasterForm = () => {
 
         <CustomTable
           title="Daftar Peran"
+          isAdmin={isAdminTambunRaya}
           actions={
-            <Button
-              variant="contained"
-              startIcon={<AddIcon />}
-              onClick={() => handleOpenModal('peran', 'add')}
-              sx={{
-                borderRadius: 2,
-                textTransform: 'none',
-                boxShadow: 'none',
-                '&:hover': { boxShadow: 'none' }
-              }}
-            >
-              Tambah Peran
-            </Button>
+            isAdminTambunRaya ? (
+              <Button
+                variant="contained"
+                startIcon={<AddIcon />}
+                onClick={() => handleOpenModal('peran', 'add')}
+                sx={{
+                  borderRadius: 2,
+                  textTransform: 'none',
+                  boxShadow: 'none',
+                  '&:hover': { boxShadow: 'none' }
+                }}
+              >
+                Tambah Peran
+              </Button>
+            ) : (
+              <Tooltip title="Hanya admin_tambun_raya yang dapat menambah data">
+                <span>
+                  <Button
+                    variant="contained"
+                    startIcon={<AddIcon />}
+                    disabled
+                    sx={{
+                      borderRadius: 2,
+                      textTransform: 'none',
+                      opacity: 0.6
+                    }}
+                  >
+                    Tambah Peran
+                  </Button>
+                </span>
+              </Tooltip>
+            )
           }
         >
           <Table>
@@ -1103,10 +1256,12 @@ const MasterForm = () => {
                       </Typography>
                       <Typography variant="body2" color="textSecondary" sx={{ mb: 3 }}>
                         {filterFungsi 
-                          ? 'Pilih fungsi lain atau tambah peran baru'
-                          : 'Klik tombol "Tambah Peran" untuk menambahkan data pertama'}
+                          ? 'Pilih fungsi lain'
+                          : isAdminTambunRaya 
+                            ? 'Klik tombol "Tambah Peran" untuk menambahkan data pertama'
+                            : 'Hubungi admin_tambun_raya untuk menambahkan data'}
                       </Typography>
-                      {!filterFungsi && (
+                      {!filterFungsi && isAdminTambunRaya && (
                         <Button
                           variant="contained"
                           startIcon={<AddIcon />}
@@ -1152,6 +1307,7 @@ const MasterForm = () => {
                           icon={EditIcon}
                           label="Edit"
                           onClick={() => handleOpenModal('peran', 'edit', item)}
+                          disabled={!isAdminTambunRaya}
                           tooltip="Edit Peran"
                         />
                         <ActionButton
@@ -1159,6 +1315,7 @@ const MasterForm = () => {
                           label="Hapus"
                           color="error"
                           onClick={() => handleDelete('peran', item.id, 'Apakah Anda yakin ingin menghapus data peran ini?')}
+                          disabled={!isAdminTambunRaya}
                           tooltip="Hapus Peran"
                         />
                       </Box>
@@ -1226,21 +1383,40 @@ const MasterForm = () => {
             >
               {isMobile ? '' : 'Refresh'}
             </Button>
-            <Button
-              variant="contained"
-              startIcon={<AddIcon />}
-              onClick={() => handleOpenModal('kompetensi', 'add')}
-              sx={{ 
-                borderRadius: 2, 
-                textTransform: 'none',
-                bgcolor: theme.palette.warning.main,
-                '&:hover': { bgcolor: theme.palette.warning.dark },
-                boxShadow: `0 4px 12px ${alpha(theme.palette.warning.main, 0.2)}`,
-                '&:hover': { boxShadow: `0 6px 16px ${alpha(theme.palette.warning.main, 0.3)}` }
-              }}
-            >
-              {isMobile ? 'Tambah' : 'Tambah Kompetensi'}
-            </Button>
+            {isAdminTambunRaya ? (
+              <Button
+                variant="contained"
+                startIcon={<AddIcon />}
+                onClick={() => handleOpenModal('kompetensi', 'add')}
+                sx={{ 
+                  borderRadius: 2, 
+                  textTransform: 'none',
+                  bgcolor: theme.palette.warning.main,
+                  '&:hover': { bgcolor: theme.palette.warning.dark },
+                  boxShadow: `0 4px 12px ${alpha(theme.palette.warning.main, 0.2)}`,
+                  '&:hover': { boxShadow: `0 6px 16px ${alpha(theme.palette.warning.main, 0.3)}` }
+                }}
+              >
+                {isMobile ? 'Tambah' : 'Tambah Kompetensi'}
+              </Button>
+            ) : (
+              <Tooltip title="Hanya admin_tambun_raya yang dapat menambah data">
+                <span>
+                  <Button
+                    variant="contained"
+                    startIcon={<AddIcon />}
+                    disabled
+                    sx={{ 
+                      borderRadius: 2, 
+                      textTransform: 'none',
+                      opacity: 0.6
+                    }}
+                  >
+                    {isMobile ? 'Tambah' : 'Tambah Kompetensi'}
+                  </Button>
+                </span>
+              </Tooltip>
+            )}
           </Box>
         </Box>
 
@@ -1510,7 +1686,9 @@ const MasterForm = () => {
                           <Typography variant="body2" color="textSecondary" sx={{ mb: 3, maxWidth: 400, mx: 'auto' }}>
                             {searchKompetensi || filterFungsi || filterPeran
                               ? `Tidak ditemukan kompetensi dengan kriteria yang Anda masukkan.`
-                              : 'Klik tombol "Tambah Kompetensi" untuk menambahkan data pertama.'}
+                              : isAdminTambunRaya 
+                                ? 'Klik tombol "Tambah Kompetensi" untuk menambahkan data pertama.'
+                                : 'Hubungi admin_tambun_raya untuk menambahkan data.'}
                           </Typography>
                           {(searchKompetensi || filterFungsi || filterPeran) && (
                             <Button
@@ -1659,6 +1837,7 @@ const MasterForm = () => {
                               size="small"
                               variant="text"
                               onClick={() => handleOpenModal('mapping', 'add', item)}
+                              disabled={!isAdminTambunRaya}
                               sx={{ 
                                 mt: 1, 
                                 p: 0,
@@ -1666,7 +1845,10 @@ const MasterForm = () => {
                                 fontWeight: 600,
                                 textTransform: 'none',
                                 color: theme.palette.warning.main,
-                                '&:hover': { bgcolor: 'transparent', textDecoration: 'underline' }
+                                '&:hover': { bgcolor: 'transparent', textDecoration: 'underline' },
+                                '&.Mui-disabled': {
+                                  color: alpha(theme.palette.warning.main, 0.4)
+                                }
                               }}
                             >
                               Atur Mapping
@@ -1680,6 +1862,7 @@ const MasterForm = () => {
                               label="Lihat"
                               color="info"
                               onClick={() => handleOpenModal('mapping', 'view', item)}
+                              disabled={!isAdminTambunRaya}
                               tooltip="Lihat Detail Mapping"
                             />
                             <ActionButton
@@ -1687,6 +1870,7 @@ const MasterForm = () => {
                               label="Edit"
                               color="warning"
                               onClick={() => handleOpenModal('kompetensi', 'edit', item)}
+                              disabled={!isAdminTambunRaya}
                               tooltip="Edit Kompetensi"
                             />
                             <ActionButton
@@ -1694,6 +1878,7 @@ const MasterForm = () => {
                               label="Hapus"
                               color="error"
                               onClick={() => handleDelete('kompetensi', item.id, 'Apakah Anda yakin ingin menghapus data kompetensi ini?\nSemua mapping kompetensi juga akan ikut terhapus.')}
+                              disabled={!isAdminTambunRaya}
                               tooltip="Hapus Kompetensi"
                             />
                           </Box>
@@ -1927,9 +2112,18 @@ const MasterForm = () => {
           >
             Master Data Kepegawaian
           </Typography>
-          <Typography variant="body1" color="textSecondary">
-            Kelola data jabatan, jenjang, fungsi, peran, dan kompetensi
-          </Typography>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            <Typography variant="body1" color="textSecondary">
+              Kelola data jabatan, jenjang, fungsi, peran, dan kompetensi
+            </Typography>
+            <Chip
+              icon={isAdminTambunRaya ? <AdminIcon /> : <PersonIcon />}
+              label={isAdminTambunRaya ? 'Admin Tambun Raya' : 'User Biasa'}
+              color={isAdminTambunRaya ? 'warning' : 'default'}
+              size="small"
+              sx={{ fontWeight: 500 }}
+            />
+          </Box>
         </Box>
         <Tooltip title="Refresh Data" arrow>
           <IconButton 
