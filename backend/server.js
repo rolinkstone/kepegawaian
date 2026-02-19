@@ -113,18 +113,16 @@ const enhancedAuth = async (req, res, next) => {
 app.use(enhancedAuth);
 
 // ========== IMPORT ROUTES ==========
-const kegiatanRoutes = require('./routes/kegiatan');
 const standarkompetensiRoutes = require('./routes/standarkompetensi');
 const masterRoutes = require('./routes/master');
-const searchRoutes = require('./routes/search');
+const pegawaiRoutes = require('./routes/pegawai');
 const keycloakRoutes = require('./routes/keycloak'); // <-- tambahkan ini
 
 
 // ========== MOUNT ROUTES ==========
-app.use('/api/kegiatan', kegiatanRoutes);
 app.use('/api/standarkompetensi', standarkompetensiRoutes);
 app.use('/api/master', masterRoutes);
-app.use('/api/search', searchRoutes);
+app.use('/api/pegawai', pegawaiRoutes);
 app.use('/api/keycloak', keycloakRoutes); // <-- tambahkan ini
 
 
