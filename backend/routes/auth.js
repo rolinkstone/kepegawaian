@@ -29,7 +29,7 @@ router.get('/keycloak/callback',
         console.log('👤 User authenticated:', req.user ? req.user.username : 'No user');
         
         // Redirect ke frontend dengan token atau session
-        res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:3000'}/dashboard`);
+        res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:3002'}/dashboard`);
     }
 );
 

@@ -8,10 +8,9 @@ require('dotenv').config({ path: '.env.local' });
 // Import routes
 const authRoutes = require('./routes/auth');
 const keycloakRoutes = require('./routes/keycloak');
-const kegiatanRoutes = require('./routes/kegiatan');
 const standarkompetensiRoutes = require('./routes/standarkompetensi');
 const masterRoutes = require('./routes/master');
-const searchRoutes = require('./routes/search');
+const pegawaiRoutes = require('./routes/pegawai');
 const indexRoutes = require('./routes/index');
 
 const app = express();
@@ -95,6 +94,7 @@ app.use('/api/keycloak', keycloakRoutes);
 app.use('/api/kegiatan', kegiatanRoutes);
 app.use('/api/standarkompetensi', standarkompetensiRoutes);
 app.use('/api/master', masterRoutes);
+app.use('/api/pegawai', pegawaiRoutes);
 app.use('/api/search', searchRoutes);
 
 

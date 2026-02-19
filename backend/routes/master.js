@@ -12,36 +12,22 @@ const { keycloakAuth, getUserId, getUsername } = require('../middleware/keycloak
  */
 function buildUserWhereClause(user) {
     const userId = getUserId(user);
+    const isAdminTambunRaya = checkAdminTambunRaya(user);
     
     console.log(`🔧 Building WHERE clause for user:`, {
         user: getUsername(user),
         roles: user.extractedRoles || user.role,
         userId: userId,
-        isAdmin: user.isAdmin,
-        isPPK: user.isPPK,
-        isKabalai: user.isKabalai,
-        isRegularUser: user.isRegularUser
+        isAdminTambunRaya: isAdminTambunRaya
     });
     
-    // 1. Admin: bisa melihat semua data
-    if (user.isAdmin) {
-        console.log('👑 Admin: can view all data');
+    // Admin Tambun Raya: bisa melihat semua data
+    if (isAdminTambunRaya) {
+        console.log('👑 Admin Tambun Raya: can view all data');
         return { where: '', params: [] };
     }
     
-    // 2. PPK: di konteks kepegawaian, PPK bisa lihat semua user di unitnya
-    if (user.isPPK) {
-        console.log('📋 PPK: can view all users');
-        return { where: '', params: [] };
-    }
-    
-    // 3. Kabalai: bisa melihat semua data
-    if (user.isKabalai) {
-        console.log('👔 Kabalai: can view all data');
-        return { where: '', params: [] };
-    }
-    
-    // 4. Regular User: hanya bisa melihat data mereka sendiri
+    // Regular User: hanya bisa melihat data mereka sendiri
     console.log('👤 Regular User: can only view own data');
     return { 
         where: 'WHERE u.id = ?', 
@@ -55,32 +41,51 @@ function buildUserWhereClause(user) {
 function buildSingleItemWhereClause(user, itemId, tableAlias = '', idColumn = 'id') {
     const userId = getUserId(user);
     const alias = tableAlias ? `${tableAlias}.` : '';
+    const isAdminTambunRaya = checkAdminTambunRaya(user);
     
     console.log(`🔧 Building single item WHERE clause for user:`, {
         user: getUsername(user),
         roles: user.extractedRoles || user.role,
         userId: userId,
-        isAdmin: user.isAdmin,
-        isPPK: user.isPPK,
-        isKabalai: user.isKabalai,
+        isAdminTambunRaya: isAdminTambunRaya,
         itemId: itemId
     });
     
-    // 1. Admin/PPK/Kabalai: bisa mengakses semua data
-    if (user.isAdmin || user.isPPK || user.isKabalai) {
-        console.log('👑 Admin/PPK/Kabalai: can access all data');
+    // Admin Tambun Raya: bisa mengakses semua data
+    if (isAdminTambunRaya) {
+        console.log('👑 Admin Tambun Raya: can access all data');
         return { 
             where: `WHERE ${alias}${idColumn} = ?`, 
             params: [itemId]
         };
     }
     
-    // 2. Regular User: hanya bisa mengakses data mereka sendiri
+    // Regular User: hanya bisa mengakses data mereka sendiri
     console.log('👤 Regular User: can only access own data');
     return { 
         where: `WHERE ${alias}${idColumn} = ? AND ${alias}user_id = ?`, 
         params: [itemId, userId] 
     };
+}
+
+/**
+ * Helper function untuk mengecek apakah user adalah admin_tambun_raya
+ */
+function checkAdminTambunRaya(user) {
+    if (!user) return false;
+    
+    // Cek dari extractedRoles atau role property
+    const roles = user.extractedRoles || user.role || [];
+    const isAdmin = roles.includes('admin_tambun_raya') || 
+                    user.isAdminTambunRaya || 
+                    user.preferred_username === 'admin_tambun_raya'; // Fallback check
+    
+    console.log(`🔐 Checking admin_tambun_raya access for ${getUsername(user)}:`, {
+        roles: roles,
+        isAdminTambunRaya: isAdmin
+    });
+    
+    return isAdmin;
 }
 
 // Helper function untuk menjalankan query
@@ -191,11 +196,12 @@ router.post('/fungsi', keycloakAuth, async (req, res) => {
     const username = getUsername(req.user);
     console.log(`📝 ${username} menambahkan fungsi baru`);
     
-    // Hanya admin yang bisa menambah master data
-    if (!req.user.isAdmin) {
+    // Hanya admin_tambun_raya yang bisa menambah master data
+    if (!checkAdminTambunRaya(req.user)) {
+        console.log(`❌ ${username} tidak memiliki izin admin_tambun_raya`);
         return res.status(403).json({
             success: false,
-            message: 'Anda tidak memiliki izin untuk menambah data fungsi'
+            message: 'Anda tidak memiliki izin untuk menambah data fungsi. Hanya admin_tambun_raya yang diizinkan.'
         });
     }
     
@@ -254,11 +260,11 @@ router.put('/fungsi/:id', keycloakAuth, async (req, res) => {
     const { id } = req.params;
     console.log(`📝 ${username} mengupdate fungsi ID: ${id}`);
     
-    // Hanya admin yang bisa update master data
-    if (!req.user.isAdmin) {
+    // Hanya admin_tambun_raya yang bisa update master data
+    if (!checkAdminTambunRaya(req.user)) {
         return res.status(403).json({
             success: false,
-            message: 'Anda tidak memiliki izin untuk mengupdate data fungsi'
+            message: 'Anda tidak memiliki izin untuk mengupdate data fungsi. Hanya admin_tambun_raya yang diizinkan.'
         });
     }
     
@@ -324,11 +330,11 @@ router.delete('/fungsi/:id', keycloakAuth, async (req, res) => {
     const { id } = req.params;
     console.log(`🗑️ ${username} menghapus fungsi ID: ${id}`);
     
-    // Hanya admin yang bisa hapus master data
-    if (!req.user.isAdmin) {
+    // Hanya admin_tambun_raya yang bisa hapus master data
+    if (!checkAdminTambunRaya(req.user)) {
         return res.status(403).json({
             success: false,
-            message: 'Anda tidak memiliki izin untuk menghapus data fungsi'
+            message: 'Anda tidak memiliki izin untuk menghapus data fungsi. Hanya admin_tambun_raya yang diizinkan.'
         });
     }
     
@@ -481,11 +487,11 @@ router.post('/peran', keycloakAuth, async (req, res) => {
     const username = getUsername(req.user);
     console.log(`📝 ${username} menambahkan peran baru`);
     
-    // Hanya admin yang bisa menambah master data
-    if (!req.user.isAdmin) {
+    // Hanya admin_tambun_raya yang bisa menambah master data
+    if (!checkAdminTambunRaya(req.user)) {
         return res.status(403).json({
             success: false,
-            message: 'Anda tidak memiliki izin untuk menambah data peran'
+            message: 'Anda tidak memiliki izin untuk menambah data peran. Hanya admin_tambun_raya yang diizinkan.'
         });
     }
     
@@ -554,11 +560,11 @@ router.put('/peran/:id', keycloakAuth, async (req, res) => {
     const { id } = req.params;
     console.log(`📝 ${username} mengupdate peran ID: ${id}`);
     
-    // Hanya admin yang bisa update master data
-    if (!req.user.isAdmin) {
+    // Hanya admin_tambun_raya yang bisa update master data
+    if (!checkAdminTambunRaya(req.user)) {
         return res.status(403).json({
             success: false,
-            message: 'Anda tidak memiliki izin untuk mengupdate data peran'
+            message: 'Anda tidak memiliki izin untuk mengupdate data peran. Hanya admin_tambun_raya yang diizinkan.'
         });
     }
     
@@ -625,11 +631,11 @@ router.delete('/peran/:id', keycloakAuth, async (req, res) => {
     const { id } = req.params;
     console.log(`🗑️ ${username} menghapus peran ID: ${id}`);
     
-    // Hanya admin yang bisa hapus master data
-    if (!req.user.isAdmin) {
+    // Hanya admin_tambun_raya yang bisa hapus master data
+    if (!checkAdminTambunRaya(req.user)) {
         return res.status(403).json({
             success: false,
-            message: 'Anda tidak memiliki izin untuk menghapus data peran'
+            message: 'Anda tidak memiliki izin untuk menghapus data peran. Hanya admin_tambun_raya yang diizinkan.'
         });
     }
     
@@ -767,11 +773,11 @@ router.post('/jenjang', keycloakAuth, async (req, res) => {
     const username = getUsername(req.user);
     console.log(`📝 ${username} menambahkan jenjang baru`);
     
-    // Hanya admin yang bisa menambah master data
-    if (!req.user.isAdmin) {
+    // Hanya admin_tambun_raya yang bisa menambah master data
+    if (!checkAdminTambunRaya(req.user)) {
         return res.status(403).json({
             success: false,
-            message: 'Anda tidak memiliki izin untuk menambah data jenjang'
+            message: 'Anda tidak memiliki izin untuk menambah data jenjang. Hanya admin_tambun_raya yang diizinkan.'
         });
     }
     
@@ -830,11 +836,11 @@ router.put('/jenjang/:id', keycloakAuth, async (req, res) => {
     const { id } = req.params;
     console.log(`📝 ${username} mengupdate jenjang ID: ${id}`);
     
-    // Hanya admin yang bisa update master data
-    if (!req.user.isAdmin) {
+    // Hanya admin_tambun_raya yang bisa update master data
+    if (!checkAdminTambunRaya(req.user)) {
         return res.status(403).json({
             success: false,
-            message: 'Anda tidak memiliki izin untuk mengupdate data jenjang'
+            message: 'Anda tidak memiliki izin untuk mengupdate data jenjang. Hanya admin_tambun_raya yang diizinkan.'
         });
     }
     
@@ -901,11 +907,11 @@ router.delete('/jenjang/:id', keycloakAuth, async (req, res) => {
     const { id } = req.params;
     console.log(`🗑️ ${username} menghapus jenjang ID: ${id}`);
     
-    // Hanya admin yang bisa hapus master data
-    if (!req.user.isAdmin) {
+    // Hanya admin_tambun_raya yang bisa hapus master data
+    if (!checkAdminTambunRaya(req.user)) {
         return res.status(403).json({
             success: false,
-            message: 'Anda tidak memiliki izin untuk menghapus data jenjang'
+            message: 'Anda tidak memiliki izin untuk menghapus data jenjang. Hanya admin_tambun_raya yang diizinkan.'
         });
     }
     
@@ -1040,14 +1046,13 @@ router.get('/jabatan/:id', keycloakAuth, async (req, res) => {
 router.post('/jabatan', keycloakAuth, async (req, res) => {
     const username = getUsername(req.user);
     console.log(`📝 ${username} menambahkan jabatan baru`);
-    console.log('🔑 Token valid, user:', req.user.email || req.user.preferred_username);
     
-    // Hanya admin yang bisa menambah master data
-    if (!req.user.isAdmin) {
-        console.log(`❌ ${username} tidak memiliki izin admin`);
+    // Hanya admin_tambun_raya yang bisa menambah master data
+    if (!checkAdminTambunRaya(req.user)) {
+        console.log(`❌ ${username} tidak memiliki izin admin_tambun_raya`);
         return res.status(403).json({
             success: false,
-            message: 'Anda tidak memiliki izin untuk menambah data jabatan'
+            message: 'Anda tidak memiliki izin untuk menambah data jabatan. Hanya admin_tambun_raya yang diizinkan.'
         });
     }
     
@@ -1107,11 +1112,11 @@ router.put('/jabatan/:id', keycloakAuth, async (req, res) => {
     const { id } = req.params;
     console.log(`📝 ${username} mengupdate jabatan ID: ${id}`);
     
-    // Hanya admin yang bisa update master data
-    if (!req.user.isAdmin) {
+    // Hanya admin_tambun_raya yang bisa update master data
+    if (!checkAdminTambunRaya(req.user)) {
         return res.status(403).json({
             success: false,
-            message: 'Anda tidak memiliki izin untuk mengupdate data jabatan'
+            message: 'Anda tidak memiliki izin untuk mengupdate data jabatan. Hanya admin_tambun_raya yang diizinkan.'
         });
     }
     
@@ -1177,11 +1182,11 @@ router.delete('/jabatan/:id', keycloakAuth, async (req, res) => {
     const { id } = req.params;
     console.log(`🗑️ ${username} menghapus jabatan ID: ${id}`);
     
-    // Hanya admin yang bisa hapus master data
-    if (!req.user.isAdmin) {
+    // Hanya admin_tambun_raya yang bisa hapus master data
+    if (!checkAdminTambunRaya(req.user)) {
         return res.status(403).json({
             success: false,
-            message: 'Anda tidak memiliki izin untuk menghapus data jabatan'
+            message: 'Anda tidak memiliki izin untuk menghapus data jabatan. Hanya admin_tambun_raya yang diizinkan.'
         });
     }
     
@@ -1227,7 +1232,10 @@ router.delete('/jabatan/:id', keycloakAuth, async (req, res) => {
 
 // ========== MASTER KOMPETENSI ==========
 
-
+/**
+ * GET /api/master/kompetensi
+ * Mendapatkan semua data kompetensi
+ */
 router.get('/kompetensi', keycloakAuth, async (req, res) => {
     const username = getUsername(req.user);
     console.log(`📊 ${username} mengakses master kompetensi`);
@@ -1310,7 +1318,10 @@ router.get('/kompetensi', keycloakAuth, async (req, res) => {
     }
 });
 
-
+/**
+ * GET /api/master/kompetensi/:id
+ * Mendapatkan detail kompetensi berdasarkan ID
+ */
 router.get('/kompetensi/:id', keycloakAuth, async (req, res) => {
     const username = getUsername(req.user);
     const { id } = req.params;
@@ -1380,16 +1391,19 @@ router.get('/kompetensi/:id', keycloakAuth, async (req, res) => {
     }
 });
 
-
+/**
+ * POST /api/master/kompetensi
+ * Menambahkan kompetensi baru
+ */
 router.post('/kompetensi', keycloakAuth, async (req, res) => {
     const username = getUsername(req.user);
     console.log(`📝 ${username} menambahkan kompetensi baru`);
     
-    // Hanya admin yang bisa menambah master data
-    if (!req.user.isAdmin) {
+    // Hanya admin_tambun_raya yang bisa menambah master data
+    if (!checkAdminTambunRaya(req.user)) {
         return res.status(403).json({
             success: false,
-            message: 'Anda tidak memiliki izin untuk menambah data kompetensi'
+            message: 'Anda tidak memiliki izin untuk menambah data kompetensi. Hanya admin_tambun_raya yang diizinkan.'
         });
     }
     
@@ -1471,17 +1485,20 @@ router.post('/kompetensi', keycloakAuth, async (req, res) => {
     }
 });
 
-
+/**
+ * PUT /api/master/kompetensi/:id
+ * Mengupdate kompetensi
+ */
 router.put('/kompetensi/:id', keycloakAuth, async (req, res) => {
     const username = getUsername(req.user);
     const { id } = req.params;
     console.log(`📝 ${username} mengupdate kompetensi ID: ${id}`);
     
-    // Hanya admin yang bisa update master data
-    if (!req.user.isAdmin) {
+    // Hanya admin_tambun_raya yang bisa update master data
+    if (!checkAdminTambunRaya(req.user)) {
         return res.status(403).json({
             success: false,
-            message: 'Anda tidak memiliki izin untuk mengupdate data kompetensi'
+            message: 'Anda tidak memiliki izin untuk mengupdate data kompetensi. Hanya admin_tambun_raya yang diizinkan.'
         });
     }
     
@@ -1575,17 +1592,20 @@ router.put('/kompetensi/:id', keycloakAuth, async (req, res) => {
     }
 });
 
-
+/**
+ * DELETE /api/master/kompetensi/:id
+ * Menghapus kompetensi
+ */
 router.delete('/kompetensi/:id', keycloakAuth, async (req, res) => {
     const username = getUsername(req.user);
     const { id } = req.params;
     console.log(`🗑️ ${username} menghapus kompetensi ID: ${id}`);
     
-    // Hanya admin yang bisa hapus master data
-    if (!req.user.isAdmin) {
+    // Hanya admin_tambun_raya yang bisa hapus master data
+    if (!checkAdminTambunRaya(req.user)) {
         return res.status(403).json({
             success: false,
-            message: 'Anda tidak memiliki izin untuk menghapus data kompetensi'
+            message: 'Anda tidak memiliki izin untuk menghapus data kompetensi. Hanya admin_tambun_raya yang diizinkan.'
         });
     }
     
@@ -1638,6 +1658,7 @@ router.delete('/kompetensi/:id', keycloakAuth, async (req, res) => {
 router.get('/dashboard/gap/:userId', keycloakAuth, async (req, res) => {
     const username = getUsername(req.user);
     const { userId } = req.params;
+    const isAdminTambunRaya = checkAdminTambunRaya(req.user);
     
     console.log(`📊 ${username} mengakses gap analysis untuk user ID: ${userId}`);
     
@@ -1655,6 +1676,14 @@ router.get('/dashboard/gap/:userId', keycloakAuth, async (req, res) => {
             return res.status(404).json({
                 success: false,
                 message: 'User tidak ditemukan'
+            });
+        }
+        
+        // Regular user hanya bisa lihat gap analysis mereka sendiri
+        if (!isAdminTambunRaya && getUserId(req.user) != userId) {
+            return res.status(403).json({
+                success: false,
+                message: 'Anda tidak memiliki izin untuk melihat gap analysis user lain'
             });
         }
         
@@ -1865,7 +1894,6 @@ router.get('/mapping/kompetensi', keycloakAuth, async (req, res) => {
         // Pilih format berdasarkan parameter
         switch(format) {
             case 'full':
-                // Format 1: Lengkap dengan semua detail dalam satu kolom
                 query = `
                     SELECT 
                         mk.kode_kompetensi AS kode,
@@ -1887,7 +1915,6 @@ router.get('/mapping/kompetensi', keycloakAuth, async (req, res) => {
                 break;
                 
             case 'simple':
-                // Format 2: Sederhana - Nama Kompetensi | Jabatan & Fungsi (1 baris)
                 query = `
                     SELECT 
                         CONCAT(mk.kode_kompetensi, ' - ', mk.nama_kompetensi) AS nama_kompetensi,
@@ -1903,7 +1930,6 @@ router.get('/mapping/kompetensi', keycloakAuth, async (req, res) => {
                 break;
                 
             case 'detail':
-                // Format 3: Detail dengan kolom terpisah
                 query = `
                     SELECT 
                         mk.kode_kompetensi,
@@ -1921,7 +1947,6 @@ router.get('/mapping/kompetensi', keycloakAuth, async (req, res) => {
                 break;
                 
             case 'compact':
-                // Format 4: Compact - hanya info penting
                 query = `
                     SELECT 
                         mk.kode_kompetensi,
@@ -1936,7 +1961,6 @@ router.get('/mapping/kompetensi', keycloakAuth, async (req, res) => {
                 break;
                 
             case 'reuse':
-                // Format 5: Kompetensi yang di-reuse di multiple jenjang
                 query = `
                     SELECT 
                         mk.kode_kompetensi,
@@ -1948,14 +1972,12 @@ router.get('/mapping/kompetensi', keycloakAuth, async (req, res) => {
                         COUNT(DISTINCT km.id_jenjang) AS jumlah_jenjang,
                         COUNT(DISTINCT km.id_jabatan) AS jumlah_jabatan
                 `;
-                // Override HAVING clause for reuse
-                baseQuery += ` AND km.id_jenjang IS NOT NULL`; // Only include kompetensi with mapping
+                baseQuery += ` AND km.id_jenjang IS NOT NULL`;
                 groupBy = ' GROUP BY mk.id, mk.kode_kompetensi, mk.nama_kompetensi, f.nama_fungsi, p.nama_peran HAVING COUNT(DISTINCT km.id_jenjang) > 1';
                 orderBy = ' ORDER BY jumlah_jenjang DESC, mk.kode_kompetensi';
                 break;
                 
             case 'per-fungsi':
-                // Format 6: Group by fungsi
                 query = `
                     SELECT 
                         f.nama_fungsi,
@@ -1974,7 +1996,6 @@ router.get('/mapping/kompetensi', keycloakAuth, async (req, res) => {
                 break;
                 
             case 'export':
-                // Format 7: Export all data for reporting
                 query = `
                     SELECT 
                         mk.kode_kompetensi,
@@ -2002,7 +2023,6 @@ router.get('/mapping/kompetensi', keycloakAuth, async (req, res) => {
                 
             case 'sederhana':
             default:
-                // Format default: sederhana - seperti endpoint /sederhana sebelumnya
                 query = `
                     SELECT 
                         CONCAT(mk.kode_kompetensi, ' - ', mk.nama_kompetensi) AS nama_kompetensi,
@@ -2029,12 +2049,10 @@ router.get('/mapping/kompetensi', keycloakAuth, async (req, res) => {
             timestamp: new Date().toISOString()
         };
         
-        // Tambahkan summary khusus untuk format tertentu
         if (format === 'reuse') {
             summary.total_reuse_kompetensi = results.length;
             summary.total_reuse_jenjang = results.reduce((acc, curr) => acc + (parseInt(curr.jumlah_jenjang) || 0), 0);
         } else if (format === 'per-fungsi') {
-            // Group by fungsi for summary
             const fungsiCount = {};
             results.forEach(r => {
                 fungsiCount[r.nama_fungsi] = (fungsiCount[r.nama_fungsi] || 0) + 1;
@@ -2063,7 +2081,10 @@ router.get('/mapping/kompetensi', keycloakAuth, async (req, res) => {
     }
 });
 
-
+/**
+ * GET /api/master/mapping/kompetensi/:kode
+ * Mendapatkan detail mapping kompetensi berdasarkan kode
+ */
 router.get('/mapping/kompetensi/:kode', keycloakAuth, async (req, res) => {
     const username = getUsername(req.user);
     console.log(`📊 ${username} mengakses detail mapping kompetensi: ${req.params.kode}`);
@@ -2071,7 +2092,6 @@ router.get('/mapping/kompetensi/:kode', keycloakAuth, async (req, res) => {
     try {
         const { kode } = req.params;
         
-        // Query tanpa JSON_ARRAYAGG dan JSON_OBJECT
         const kompetensiQuery = `
             SELECT 
                 mk.id,
@@ -2112,7 +2132,6 @@ router.get('/mapping/kompetensi/:kode', keycloakAuth, async (req, res) => {
         
         const kompetensi = kompetensiResult[0];
         
-        // Query terpisah untuk mendapatkan mapping detail
         const mappingQuery = `
             SELECT 
                 km.id,
@@ -2132,7 +2151,6 @@ router.get('/mapping/kompetensi/:kode', keycloakAuth, async (req, res) => {
         
         const [mappingResult] = await db.query(mappingQuery, [kompetensi.id]);
         
-        // Gabungkan data
         kompetensi.mapping = mappingResult;
         
         res.json({
@@ -2150,8 +2168,5 @@ router.get('/mapping/kompetensi/:kode', keycloakAuth, async (req, res) => {
         });
     }
 });
-
-
-
 
 module.exports = router;
