@@ -137,7 +137,7 @@ export default function DashboardLayout({ children }) {
       ]
     },
    {
-  title: 'Master',
+  title: 'Peta Kompetensi',
   items: [
    
   // Menu Master - diganti iconnya
@@ -188,6 +188,11 @@ export default function DashboardLayout({ children }) {
       title: 'Pemenuhan Kompetensi',
       items: [
         
+         { 
+        href: '/#', 
+        label: 'Jadwal Pelatihan', 
+        icon: <FaBalanceScale /> // atau <FaIdCard />
+        },
          { 
         href: '/#', 
         label: 'Riwayat Pelatihan', 

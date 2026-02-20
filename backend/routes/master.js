@@ -77,7 +77,7 @@ function checkAdminTambunRaya(user) {
     // Cek dari extractedRoles atau role property
     const roles = user.extractedRoles || user.role || [];
     const isAdmin = roles.includes('admin_tambun_raya') || 
-                    user.isAdminTambunRaya || 
+                    user.isAdminTambunRaya ||
                     user.preferred_username === 'admin_tambun_raya'; // Fallback check
     
     console.log(`🔐 Checking admin_tambun_raya access for ${getUsername(user)}:`, {
@@ -87,6 +87,8 @@ function checkAdminTambunRaya(user) {
     
     return isAdmin;
 }
+
+
 
 // Helper function untuk menjalankan query
 function runQuery(query, params) {

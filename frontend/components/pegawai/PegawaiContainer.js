@@ -38,7 +38,8 @@ import {
   PrinterOutlined,
   LockOutlined,
   CrownOutlined,
-  SecurityScanOutlined
+  SecurityScanOutlined,
+  EyeInvisibleOutlined
 } from '@ant-design/icons';
 import FilterSection from './FilterSection';
 import PegawaiForm from './PegawaiForm';
@@ -112,14 +113,18 @@ const StatCard = ({ title, value, icon, color, subtitle, loading }) => {
 
 // ========== MAIN COMPONENT ==========
 const PegawaiContainer = ({ session }) => {
-  // ========== CEK ROLE ADMIN TAMBUN RAYA ==========
-  const isAdminTambunRaya = useMemo(() => {
+  // ========== CEK ROLE ADMIN TAMBUN RAYA DAN KATIM ==========
+  const userRoles = useMemo(() => {
     if (!session) {
       console.log('🔐 Session tidak ada');
-      return false;
+      return { isAdmin: false, isKatim: false, roles: [] };
     }
 
     console.log('🔐 Session object:', JSON.stringify(session, null, 2));
+    
+    let roles = [];
+    let isAdmin = false;
+    let isKatim = false;
 
     // Cek dari access token (biasanya di token ada roles)
     if (session.accessToken) {
@@ -132,25 +137,27 @@ const PegawaiContainer = ({ session }) => {
           
           // Cek realm_access roles
           if (payload.realm_access?.roles) {
-            const isAdmin = payload.realm_access.roles.includes('admin_tambun_raya');
-            console.log('🔐 Is admin from realm_access:', isAdmin);
-            if (isAdmin) return true;
+            roles = [...roles, ...payload.realm_access.roles];
+            isAdmin = isAdmin || payload.realm_access.roles.includes('admin_tambun_raya');
+            isKatim = isKatim || payload.realm_access.roles.includes('katim');
           }
           
           // Cek resource_access
           if (payload.resource_access) {
             for (const client in payload.resource_access) {
-              if (payload.resource_access[client].roles?.includes('admin_tambun_raya')) {
-                console.log('🔐 Is admin from resource_access:', true);
-                return true;
+              if (payload.resource_access[client].roles) {
+                roles = [...roles, ...payload.resource_access[client].roles];
+                isAdmin = isAdmin || payload.resource_access[client].roles.includes('admin_tambun_raya');
+                isKatim = isKatim || payload.resource_access[client].roles.includes('katim');
               }
             }
           }
           
           // Cek di root roles
-          if (payload.roles?.includes('admin_tambun_raya')) {
-            console.log('🔐 Is admin from root roles:', true);
-            return true;
+          if (payload.roles) {
+            roles = [...roles, ...payload.roles];
+            isAdmin = isAdmin || payload.roles.includes('admin_tambun_raya');
+            isKatim = isKatim || payload.roles.includes('katim');
           }
         }
       } catch (e) {
@@ -164,32 +171,51 @@ const PegawaiContainer = ({ session }) => {
       
       // Cek roles array
       if (user.roles && Array.isArray(user.roles)) {
-        const isAdmin = user.roles.includes('admin_tambun_raya');
-        console.log('🔐 Is admin from user.roles:', isAdmin);
-        if (isAdmin) return true;
+        roles = [...roles, ...user.roles];
+        isAdmin = isAdmin || user.roles.includes('admin_tambun_raya');
+        isKatim = isKatim || user.roles.includes('katim');
       }
       
       // Cek dari email/username
       if (user.email === 'admin_tambun_raya' || user.preferred_username === 'admin_tambun_raya') {
-        console.log('🔐 Is admin from email/username:', true);
-        return true;
+        isAdmin = true;
+      }
+      if (user.email === 'katim' || user.preferred_username === 'katim') {
+        isKatim = true;
       }
       
       // Cek dari custom field
       if (user.isAdminTambunRaya === true) {
-        console.log('🔐 Is admin from custom field:', true);
-        return true;
+        isAdmin = true;
+      }
+      if (user.isKatim === true) {
+        isKatim = true;
       }
     }
 
-    console.log('🔐 Not admin_tambun_raya');
-    return false;
+    // Hapus duplikasi roles
+    roles = [...new Set(roles)];
+
+    console.log('🔐 User roles:', roles);
+    console.log('🔐 isAdmin:', isAdmin);
+    console.log('🔐 isKatim:', isKatim);
+
+    return { isAdmin, isKatim, roles };
   }, [session]);
+
+  const isAdminTambunRaya = userRoles.isAdmin;
+  const isKatim = userRoles.isKatim;
+  
+  // Tentukan apakah user bisa melakukan operasi tulis (edit/delete)
+  const canWrite = isAdminTambunRaya; // Hanya admin yang bisa write
+  const canView = true; // Semua user bisa view
 
   // Log role untuk debugging
   useEffect(() => {
     console.log('👑 isAdminTambunRaya:', isAdminTambunRaya);
-  }, [isAdminTambunRaya]);
+    console.log('👥 isKatim:', isKatim);
+    console.log('📝 canWrite:', canWrite);
+  }, [isAdminTambunRaya, isKatim, canWrite]);
 
   // ========== STATE MANAGEMENT ==========
   const [loading, setLoading] = useState(false);
@@ -276,7 +302,15 @@ const PegawaiContainer = ({ session }) => {
 
       console.log('Fetching from:', API_URL);
 
-      const response = await fetch(API_URL, {
+      // TAMBAHKAN PARAMETER UNTUK MEMINTA SEMUA DATA
+      // Tambahkan query parameter untuk memastikan API mengembalikan semua data
+      const url = new URL(API_URL, window.location.origin);
+      url.searchParams.append('all', 'true'); // Minta semua data
+      url.searchParams.append('role', 'katim'); // Kirim role untuk logging di server
+      
+      console.log('Fetching URL with params:', url.toString());
+
+      const response = await fetch(url.toString(), {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -294,17 +328,25 @@ const PegawaiContainer = ({ session }) => {
       console.log('API Response:', result);
 
       if (result.success) {
-        setDataPegawai(result.data || []);
-        setFilteredData(result.data || []);
+        const data = result.data || [];
+        console.log(`📊 Data diterima: ${data.length} pegawai`);
+        
+        // Debug: tampilkan sample data
+        if (data.length > 0) {
+          console.log('Sample data pertama:', data[0]);
+        }
+        
+        setDataPegawai(data);
+        setFilteredData(data);
         setPagination(prev => ({
           ...prev,
-          total: result.data?.length || 0
+          total: data.length
         }));
 
-        calculateStats(result.data || []);
+        calculateStats(data);
 
         if (showMessage) {
-          message.success(`Data pegawai berhasil dimuat (${result.data?.length || 0} pegawai)`);
+          message.success(`Data pegawai berhasil dimuat (${data.length} pegawai)`);
         }
       } else {
         throw new Error(result.message || 'Gagal memuat data pegawai');
@@ -332,7 +374,11 @@ const PegawaiContainer = ({ session }) => {
         return;
       }
 
-      const response = await fetch(`${API_URL}/options/all`, {
+      // TAMBAHKAN PARAMETER UNTUK MEMINTA SEMUA DATA
+      const url = new URL(`${API_URL}/options/all`, window.location.origin);
+      url.searchParams.append('all', 'true');
+      
+      const response = await fetch(url.toString(), {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -470,6 +516,8 @@ const PegawaiContainer = ({ session }) => {
       return;
     }
 
+    console.log('Applying filters, total data:', dataPegawai.length);
+    
     let filtered = [...dataPegawai];
 
     if (filters.search) {
@@ -528,6 +576,7 @@ const PegawaiContainer = ({ session }) => {
       });
     }
 
+    console.log('Filtered data:', filtered.length);
     setFilteredData(filtered);
     setPagination(prev => ({
       ...prev,
@@ -588,7 +637,7 @@ const PegawaiContainer = ({ session }) => {
 
   // ========== HANDLE EDIT ==========
   const handleEdit = (record) => {
-    if (!isAdminTambunRaya) {
+    if (!canWrite) {
       message.error('Anda tidak memiliki izin untuk mengedit data pegawai. Hanya admin_tambun_raya yang diizinkan.');
       return;
     }
@@ -643,7 +692,7 @@ const PegawaiContainer = ({ session }) => {
 
   // ========== HANDLE HAPUS ==========
   const handleHapus = (record) => {
-    if (!isAdminTambunRaya) {
+    if (!canWrite) {
       message.error('Anda tidak memiliki izin untuk menonaktifkan pegawai. Hanya admin_tambun_raya yang diizinkan.');
       return;
     }
@@ -704,7 +753,7 @@ const PegawaiContainer = ({ session }) => {
   };
 
   const handleTambah = () => {
-    if (!isAdminTambunRaya) {
+    if (!canWrite) {
       message.error('Anda tidak memiliki izin untuk menambah pegawai. Hanya admin_tambun_raya yang diizinkan.');
       return;
     }
@@ -861,7 +910,7 @@ const PegawaiContainer = ({ session }) => {
               onClick={() => handleDetail(record)}
             />
           </Tooltip>
-          <Tooltip title={!isAdminTambunRaya ? "Hanya admin_tambun_raya yang dapat mengedit" : "Edit"}>
+          <Tooltip title={!canWrite ? "Hanya admin_tambun_raya yang dapat mengedit" : "Edit"}>
             <Button
               icon={<EditOutlined />}
               size="small"
@@ -869,7 +918,7 @@ const PegawaiContainer = ({ session }) => {
               type="primary"
               ghost
               onClick={() => handleEdit(record)}
-              disabled={!isAdminTambunRaya}
+              disabled={!canWrite}
             />
           </Tooltip>
           <Tooltip title="Analisis Kenaikan">
@@ -880,14 +929,14 @@ const PegawaiContainer = ({ session }) => {
               onClick={() => handleAnalisis(record)}
             />
           </Tooltip>
-          <Tooltip title={!isAdminTambunRaya ? "Hanya admin_tambun_raya yang dapat menonaktifkan" : "Nonaktifkan"}>
+          <Tooltip title={!canWrite ? "Hanya admin_tambun_raya yang dapat menonaktifkan" : "Nonaktifkan"}>
             <Button
               icon={<DeleteOutlined />}
               size="small"
               shape="circle"
               danger
               onClick={() => handleHapus(record)}
-              disabled={!record.is_active || !isAdminTambunRaya}
+              disabled={!record.is_active || !canWrite}
             />
           </Tooltip>
         </Space>
@@ -1077,6 +1126,25 @@ const PegawaiContainer = ({ session }) => {
     </div>
   );
 
+  // ========== DEBUG BUTTON ==========
+  const handleDebug = () => {
+    console.log('🔍 DEBUG INFO ==========');
+    console.log('Session:', session);
+    console.log('User Roles:', userRoles);
+    console.log('isAdminTambunRaya:', isAdminTambunRaya);
+    console.log('isKatim:', isKatim);
+    console.log('canWrite:', canWrite);
+    console.log('Data Pegawai:', dataPegawai);
+    console.log('Data Length:', dataPegawai.length);
+    console.log('Filtered Data:', filteredData);
+    console.log('Filtered Length:', filteredData.length);
+    console.log('Stats:', stats);
+    console.log('Options:', options);
+    console.log('========================');
+    
+    message.info('Data debug telah dicetak ke console (F12)');
+  };
+
   // ========== RENDER ==========
   if (initialLoading) {
     return (
@@ -1166,18 +1234,48 @@ const PegawaiContainer = ({ session }) => {
                         Kelola data pegawai dan analisis kompetensi
                       </Text>
                     </div>
-                    <Tag
-                      icon={isAdminTambunRaya ? <CrownOutlined /> : <UserOutlined />}
-                      color={isAdminTambunRaya ? 'gold' : 'default'}
-                      style={{ 
-                        borderRadius: 20, 
-                        padding: '4px 12px',
-                        fontWeight: 500,
-                        fontSize: 12
-                      }}
-                    >
-                      {isAdminTambunRaya ? 'Admin Tambun Raya' : 'User Biasa'}
-                    </Tag>
+                    {isAdminTambunRaya && (
+                      <Tag
+                        icon={<CrownOutlined />}
+                        color="gold"
+                        style={{ 
+                          borderRadius: 20, 
+                          padding: '4px 12px',
+                          fontWeight: 500,
+                          fontSize: 12
+                        }}
+                      >
+                        Admin Tambun Raya
+                      </Tag>
+                    )}
+                    {isKatim && !isAdminTambunRaya && (
+                      <Tag
+                        icon={<EyeOutlined />}
+                        color="blue"
+                        style={{ 
+                          borderRadius: 20, 
+                          padding: '4px 12px',
+                          fontWeight: 500,
+                          fontSize: 12
+                        }}
+                      >
+                        Ketua Tim (View Only)
+                      </Tag>
+                    )}
+                    {!isAdminTambunRaya && !isKatim && (
+                      <Tag
+                        icon={<UserOutlined />}
+                        color="default"
+                        style={{ 
+                          borderRadius: 20, 
+                          padding: '4px 12px',
+                          fontWeight: 500,
+                          fontSize: 12
+                        }}
+                      >
+                        User Biasa
+                      </Tag>
+                    )}
                   </Space>
                 </div>
               </Space>
@@ -1206,12 +1304,19 @@ const PegawaiContainer = ({ session }) => {
                     style={{ borderRadius: 8 }}
                   />
                 </Tooltip>
-                <Tooltip title={!isAdminTambunRaya ? "Hanya admin_tambun_raya yang dapat menambah pegawai" : "Tambah Pegawai"}>
+                <Tooltip title="Debug Info">
+                  <Button
+                    icon={<SecurityScanOutlined />}
+                    onClick={handleDebug}
+                    style={{ borderRadius: 8 }}
+                  />
+                </Tooltip>
+                <Tooltip title={!canWrite ? "Hanya admin_tambun_raya yang dapat menambah pegawai" : "Tambah Pegawai"}>
                   <Button
                     type="primary"
                     icon={<PlusOutlined />}
                     onClick={handleTambah}
-                    disabled={!isAdminTambunRaya}
+                    disabled={!canWrite}
                     style={{ borderRadius: 8 }}
                   >
                     Tambah Pegawai
@@ -1328,12 +1433,23 @@ const PegawaiContainer = ({ session }) => {
                         {selectedRowKeys.length} data dipilih
                       </Tag>
                     )}
+                    
+                    {/* Info jumlah data */}
+                    <Tag color="geekblue" style={{ borderRadius: 12 }}>
+                      Total Data: {dataPegawai.length} pegawai
+                    </Tag>
                   </Space>
                 </Col>
-                {!isAdminTambunRaya && (
+                {!canWrite && (
                   <Col>
-                    <Tag icon={<LockOutlined />} color="warning" style={{ borderRadius: 20 }}>
-                      Mode Baca - Hanya admin_tambun_raya yang dapat mengubah data
+                    <Tag 
+                      icon={isKatim ? <EyeOutlined /> : <LockOutlined />} 
+                      color={isKatim ? 'blue' : 'warning'} 
+                      style={{ borderRadius: 20 }}
+                    >
+                      {isKatim 
+                        ? 'Mode Baca - Ketua Tim (View Only)' 
+                        : 'Mode Baca - Hanya admin_tambun_raya yang dapat mengubah data'}
                     </Tag>
                   </Col>
                 )}
