@@ -77,7 +77,8 @@ import {
   FirstPage as FirstPageIcon,
   LastPage as LastPageIcon,
   AdminPanelSettings as AdminIcon,
-  Person as PersonIcon
+  Person as PersonIcon,
+  Security as SecurityIcon
 } from '@mui/icons-material';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/router';
@@ -384,29 +385,145 @@ const MasterForm = () => {
   const theme = useTheme();
   const router = useRouter();
   const { data: session, status } = useSession();
+  
+  // ========== HOOKS DI LEVEL ATAS ==========
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  
   const [tabValue, setTabValue] = useState(0);
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [message, setMessage] = useState({ open: false, text: '', severity: 'success' });
+  const [userRole, setUserRole] = useState(null);
+  const [checkingRole, setCheckingRole] = useState(true);
+
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 
   // ========== CEK ROLE ADMIN TAMBUN RAYA ==========
   const isAdminTambunRaya = useMemo(() => {
-    if (!session?.user) return false;
+    if (!session?.user) {
+      console.log('❌ Session tidak ada di MasterForm');
+      return false;
+    }
+
+    console.log('🔐 Session di MasterForm:', JSON.stringify(session, null, 2));
+
+    // ===== CEK DARI ACCESS TOKEN =====
+    if (session?.accessToken) {
+      try {
+        // Decode token JWT
+        const tokenParts = session.accessToken.split('.');
+        if (tokenParts.length === 3) {
+          const payload = JSON.parse(atob(tokenParts[1]));
+          console.log('🔐 Token payload di MasterForm:', payload);
+          
+          // Cek realm_access (Keycloak)
+          if (payload.realm_access?.roles) {
+            const isAdmin = payload.realm_access.roles.includes('admin_tambun_raya');
+            console.log('🔐 From realm_access di MasterForm:', isAdmin);
+            if (isAdmin) return true;
+          }
+          
+          // Cek resource_access (Keycloak)
+          if (payload.resource_access) {
+            for (const client in payload.resource_access) {
+              if (payload.resource_access[client].roles?.includes('admin_tambun_raya')) {
+                console.log('🔐 From resource_access di MasterForm:', true);
+                return true;
+              }
+            }
+          }
+          
+          // Cek di root roles
+          if (payload.roles?.includes('admin_tambun_raya')) {
+            console.log('🔐 From root roles di MasterForm:', true);
+            return true;
+          }
+        }
+      } catch (e) {
+        console.error('Error decoding token di MasterForm:', e);
+      }
+    }
+
+    // ===== CEK DARI SESSION.USER =====
+    if (session.user) {
+      const user = session.user;
+      
+      // Cek roles array
+      if (user.roles && Array.isArray(user.roles)) {
+        const isAdmin = user.roles.includes('admin_tambun_raya');
+        console.log('🔐 From user.roles di MasterForm:', isAdmin);
+        if (isAdmin) return true;
+      }
+      
+      // Cek role tunggal
+      if (user.role === 'admin_tambun_raya') {
+        console.log('🔐 From user.role di MasterForm:', true);
+        return true;
+      }
+      
+      // Cek dari email/username
+      if (user.email === 'admin_tambun_raya' || user.username === 'admin_tambun_raya') {
+        console.log('🔐 From email/username di MasterForm:', true);
+        return true;
+      }
+      
+      // Cek dari custom field
+      if (user.isAdminTambunRaya === true) {
+        console.log('🔐 From custom field di MasterForm:', true);
+        return true;
+      }
+    }
+
+    // ===== CEK DARI USER ROLE STATE (DARI API) =====
+    if (userRole === 'admin_tambun_raya') {
+      console.log('🔐 From API userRole di MasterForm:', true);
+      return true;
+    }
+
+    console.log('❌ Bukan admin_tambun_raya di MasterForm');
+    return false;
+  }, [session, userRole]);
+
+  // ===== FUNGSI UNTUK CEK ROLE VIA API =====
+  const checkUserRoleViaAPI = useCallback(async () => {
+    try {
+      const token = getToken();
+      if (!token) {
+        setCheckingRole(false);
+        return;
+      }
+
+      const response = await fetch(`${API_URL}/auth/me`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setUserRole(data.role || data.user?.role);
+        console.log('📋 Role dari API di MasterForm:', data);
+      }
+    } catch (error) {
+      console.error('Error checking role via API di MasterForm:', error);
+    } finally {
+      setCheckingRole(false);
+    }
+  }, [API_URL]);
+
+  // ===== DEBUG SESSION =====
+  useEffect(() => {
+    console.log('📦 Session di MasterForm useEffect:', session);
+    console.log('👤 User di MasterForm useEffect:', session?.user);
+    console.log('🔑 AccessToken di MasterForm useEffect:', session?.accessToken ? 'Ada' : 'Tidak ada');
     
-    // Cek dari roles di session
-    const roles = session.user.roles || [];
-    const isAdmin = roles.includes('admin_tambun_raya') || 
-                    session.user.isAdminTambunRaya ||
-                    session.user.email === 'admin_tambun_raya'; // Fallback check
-    
-    console.log('🔐 User role check:', {
-      email: session.user.email,
-      roles: roles,
-      isAdminTambunRaya: isAdmin
-    });
-    
-    return isAdmin;
-  }, [session]);
+    if (session?.user) {
+      checkUserRoleViaAPI();
+    } else {
+      setCheckingRole(false);
+    }
+  }, [session, checkUserRoleViaAPI]);
 
   // ========== STATE UNTUK DATA ==========
   const [jabatan, setJabatan] = useState([]);
@@ -444,12 +561,27 @@ const MasterForm = () => {
 
   // ========== GET TOKEN DARI SESSION ==========
   const getToken = useCallback(() => {
+    // Cek dari session.accessToken
     if (session?.accessToken) {
       return session.accessToken;
     }
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('token');
+    
+    // Cek dari session.user.accessToken
+    if (session?.user?.accessToken) {
+      return session.user.accessToken;
     }
+    
+    // Cek dari localStorage
+    if (typeof window !== 'undefined') {
+      const token = localStorage.getItem('token');
+      if (token) return token;
+      
+      // Cek juga dari sessionStorage
+      const sessionToken = sessionStorage.getItem('token');
+      if (sessionToken) return sessionToken;
+    }
+    
+    console.log('⚠️ Token tidak ditemukan di MasterForm');
     return null;
   }, [session]);
 
@@ -503,10 +635,10 @@ const MasterForm = () => {
   }, [getToken, router]);
 
   useEffect(() => {
-    if (status !== 'loading') {
+    if (status !== 'loading' && !checkingRole) {
       fetchAllData();
     }
-  }, [status, fetchAllData]);
+  }, [status, checkingRole, fetchAllData]);
 
   // ========== HANDLE REFRESH ==========
   const handleRefresh = async () => {
@@ -1332,7 +1464,7 @@ const MasterForm = () => {
 
   // ========== RENDER KOMPETENSI TAB DENGAN PAGINATION ==========
   const renderKompetensiTab = () => {
-    const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+    // useMediaQuery sudah dipanggil di level atas, tidak perlu dipanggil lagi di sini
     const totalItems = getFilteredKompetensi.length;
     const emptyRows = page > 0 ? Math.max(0, (1 + page) * rowsPerPage - totalItems) : 0;
 
@@ -2083,12 +2215,12 @@ const MasterForm = () => {
   };
 
   // ========== MAIN RENDER ==========
-  if (status === 'loading') {
+  if (status === 'loading' || checkingRole) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '70vh', flexDirection: 'column' }}>
         <CircularProgress size={60} thickness={4} sx={{ color: theme.palette.primary.main }} />
         <Typography variant="h6" sx={{ mt: 3, color: 'text.secondary', fontWeight: 400 }}>
-          Memeriksa autentikasi...
+          {status === 'loading' ? 'Memeriksa autentikasi...' : 'Memeriksa hak akses...'}
         </Typography>
       </Box>
     );

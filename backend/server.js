@@ -116,6 +116,7 @@ app.use(enhancedAuth);
 const standarkompetensiRoutes = require('./routes/standarkompetensi');
 const masterRoutes = require('./routes/master');
 const pegawaiRoutes = require('./routes/pegawai');
+const jadwalRoutes = require('./routes/jadwal');
 const keycloakRoutes = require('./routes/keycloak'); // <-- tambahkan ini
 
 
@@ -123,6 +124,7 @@ const keycloakRoutes = require('./routes/keycloak'); // <-- tambahkan ini
 app.use('/api/standarkompetensi', standarkompetensiRoutes);
 app.use('/api/master', masterRoutes);
 app.use('/api/pegawai', pegawaiRoutes);
+app.use('/api/jadwal', jadwalRoutes);
 app.use('/api/keycloak', keycloakRoutes); // <-- tambahkan ini
 
 

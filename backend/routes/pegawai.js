@@ -45,27 +45,66 @@ function isAdminTambunRaya(user) {
 }
 
 /**
- * Build WHERE clause berdasarkan role user
- * Untuk modul pegawai - user management
- * 
- * @returns {Object} - { whereClause: string, params: array }
- * whereClause: string kondisi SQL tanpa kata 'WHERE' (misal: "u.nip = ?")
+ * Helper function untuk mengecek apakah user adalah katim
  */
-function buildUserWhereClause(user) {
+function isKatim(user) {
+    if (!user) return false;
+    
+    const roles = user.extractedRoles || user.role || [];
+    const isKatim = roles.includes('katim');
+    
+    console.log(`🔐 Checking katim access for ${getUsername(user)}:`, {
+        roles: roles,
+        isKatim: isKatim
+    });
+    
+    return isKatim;
+}
+
+/**
+ * Build WHERE clause berdasarkan role user untuk GET / (mendapatkan semua data)
+ * 
+ * @param {Object} user - User object dari token
+ * @param {boolean} requestAllData - Apakah user meminta semua data (parameter all=true)
+ * @returns {Object} - { whereClause: string, params: array }
+ */
+function buildUserWhereClause(user, requestAllData = false) {
     const userNip = getUserNipFromToken(user);
     const isAdmin = isAdminTambunRaya(user);
+    const isKatimRole = isKatim(user);
     
     console.log(`🔧 Building WHERE clause for user:`, {
         user: getUsername(user),
         roles: user.extractedRoles || user.role,
         userNip: userNip,
-        isAdminTambunRaya: isAdmin
+        isAdminTambunRaya: isAdmin,
+        isKatim: isKatimRole,
+        requestAllData: requestAllData
     });
     
     // Admin Tambun Raya: bisa melihat semua data
     if (isAdmin) {
         console.log('👑 Admin Tambun Raya: can view all data');
         return { whereClause: '', params: [] };
+    }
+    
+    // Katim: bisa melihat semua data jika requestAllData = true
+    if (isKatimRole && requestAllData) {
+        console.log('👥 Katim requesting all data - can view all data');
+        return { whereClause: '', params: [] };
+    }
+    
+    // Katim tanpa parameter all=true: tetap hanya melihat data sendiri
+    if (isKatimRole && !requestAllData) {
+        console.log('👥 Katim without all parameter - can only view own data');
+        if (!userNip) {
+            console.log('⚠️ User NIP not found in token, returning no results');
+            return { whereClause: '1=0', params: [] };
+        }
+        return { 
+            whereClause: 'u.nip = ?', 
+            params: [userNip] 
+        };
     }
     
     // Regular User: hanya bisa melihat data mereka sendiri berdasarkan NIP dari token
@@ -87,24 +126,39 @@ function buildUserWhereClause(user) {
 /**
  * Build WHERE clause untuk query single item berdasarkan role user
  * 
+ * @param {Object} user - User object dari token
+ * @param {number|string} itemId - ID item yang diakses
+ * @param {string} tableAlias - Alias tabel (optional)
+ * @param {string} idColumn - Nama kolom ID (default: 'id')
  * @returns {Object} - { whereClause: string, params: array }
  */
 function buildSingleItemWhereClause(user, itemId, tableAlias = '', idColumn = 'id') {
     const userNip = getUserNipFromToken(user);
     const alias = tableAlias ? `${tableAlias}.` : '';
     const isAdmin = isAdminTambunRaya(user);
+    const isKatimRole = isKatim(user);
     
     console.log(`🔧 Building single item WHERE clause for user:`, {
         user: getUsername(user),
         roles: user.extractedRoles || user.role,
         userNip: userNip,
         isAdminTambunRaya: isAdmin,
+        isKatim: isKatimRole,
         itemId: itemId
     });
     
     // Admin Tambun Raya: bisa mengakses semua data
     if (isAdmin) {
         console.log('👑 Admin Tambun Raya: can access all data');
+        return { 
+            whereClause: `${alias}${idColumn} = ?`, 
+            params: [itemId]
+        };
+    }
+    
+    // Katim: bisa mengakses semua data (view only)
+    if (isKatimRole) {
+        console.log('👥 Katim: can access all data (view only)');
         return { 
             whereClause: `${alias}${idColumn} = ?`, 
             params: [itemId]
@@ -131,11 +185,21 @@ function buildSingleItemWhereClause(user, itemId, tableAlias = '', idColumn = 'i
     };
 }
 
+/**
+ * Mendapatkan semua roles user untuk logging
+ */
+function getUserRoles(user) {
+    return user.extractedRoles || user.role || [];
+}
+
 // ========== USER (PEGAWAI) MANAGEMENT ==========
 
 /**
  * GET /api/pegawai
  * Mendapatkan semua data pegawai
+ * - Admin Tambun Raya: melihat semua data
+ * - Katim: melihat semua data (dengan parameter all=true)
+ * - User biasa: hanya melihat data sendiri
  */
 router.get('/', keycloakAuth, async (req, res) => {
     const username = getUsername(req.user);
@@ -149,7 +213,18 @@ router.get('/', keycloakAuth, async (req, res) => {
     });
     
     try {
-        const { is_active, id_fungsi, id_jabatan, id_jenjang, search } = req.query;
+        const { is_active, id_fungsi, id_jabatan, id_jenjang, search, all } = req.query;
+        
+        // CEK APAKAH USER MEMINTA SEMUA DATA (UNTUK ROLE KATIM)
+        const requestAllData = all === 'true' || all === '1';
+        
+        // Dapatkan role user
+        const userRoles = getUserRoles(req.user);
+        const isAdmin = isAdminTambunRaya(req.user);
+        const isKatimRole = isKatim(req.user);
+        
+        console.log(`🔐 User roles:`, userRoles);
+        console.log(`🔐 isAdmin: ${isAdmin}, isKatim: ${isKatimRole}, requestAllData: ${requestAllData}`);
         
         // Base query
         let query = `
@@ -185,13 +260,16 @@ router.get('/', keycloakAuth, async (req, res) => {
         const params = [];
         const conditions = [];
         
-        // Filter berdasarkan role (menggunakan NIP dari token)
-        const roleFilter = buildUserWhereClause(req.user);
+        // FILTER BERDASARKAN ROLE - Gunakan fungsi buildUserWhereClause dengan parameter requestAllData
+        const roleFilter = buildUserWhereClause(req.user, requestAllData);
         if (roleFilter.whereClause) {
             conditions.push(roleFilter.whereClause);
             if (roleFilter.params && roleFilter.params.length > 0) {
                 params.push(...roleFilter.params);
             }
+            console.log(`🔒 Applying role filter:`, roleFilter.whereClause);
+        } else {
+            console.log(`🔓 No role filter applied - user can view all data`);
         }
         
         // Filter tambahan dari query params
@@ -233,14 +311,21 @@ router.get('/', keycloakAuth, async (req, res) => {
         
         const [rows] = await db.query(query, params);
         
-        console.log(`Found ${rows.length} records for user ${username} (NIP from token: ${userNip})`);
+        console.log(`✅ Found ${rows.length} records for user ${username} (Role: ${isAdmin ? 'Admin' : isKatimRole ? 'Katim' : 'User'})`);
+        console.log(`📊 Request all data: ${requestAllData ? 'Yes' : 'No'}`);
         
         res.status(200).json({
             success: true,
             message: 'Data pegawai berhasil diambil',
             data: rows,
             count: rows.length,
-            timestamp: new Date().toISOString()
+            timestamp: new Date().toISOString(),
+            debug: {
+                userRole: isAdmin ? 'admin' : isKatimRole ? 'katim' : 'user',
+                requestAllData,
+                filteredByRole: roleFilter.whereClause ? true : false,
+                userNip: userNip
+            }
         });
     } catch (error) {
         console.error('❌ Error fetching pegawai:', error);
@@ -265,7 +350,7 @@ router.get('/:id', keycloakAuth, async (req, res) => {
     console.log(`📊 ${username} (NIP from token: ${userNip}) mengakses detail pegawai ID: ${id}`);
     
     try {
-        // Cek akses user
+        // Cek akses user - gunakan buildSingleItemWhereClause
         const accessCheck = buildSingleItemWhereClause(req.user, id, 'u');
         
         const query = `
@@ -740,6 +825,13 @@ router.patch('/:id/activate', keycloakAuth, async (req, res) => {
  * GET /api/pegawai/:id/analisis-kenaikan
  * Analisis kenaikan jenjang untuk pegawai - HANYA ADMIN TAMBUN RAYA
  */
+/**
+ * GET /api/pegawai/:id/analisis-kenaikan
+ * Analisis kenaikan jenjang untuk pegawai
+ * - Admin Tambun Raya: full access
+ * - Katim: view only
+ * - User biasa: tidak bisa akses (hanya data sendiri)
+ */
 router.get('/:id/analisis-kenaikan', keycloakAuth, async (req, res) => {
     const username = getUsername(req.user);
     const { id } = req.params;
@@ -747,9 +839,51 @@ router.get('/:id/analisis-kenaikan', keycloakAuth, async (req, res) => {
     
     console.log(`📊 ${username} menganalisis kenaikan jenjang pegawai ID: ${id} ke jenjang: ${target_jenjang_id}, fungsi: ${fungsi_id}`);
     
+    // Dapatkan role user
+    const isAdmin = isAdminTambunRaya(req.user);
+    const isKatimRole = isKatim(req.user);
+    const userNip = getUserNipFromToken(req.user);
+    
+    console.log(`🔐 User role check - isAdmin: ${isAdmin}, isKatim: ${isKatimRole}`);
+    
+    // CEK AKSES:
+    // 1. Admin: boleh akses semua
+    // 2. Katim: boleh akses semua (view only)
+    // 3. User biasa: hanya boleh akses data mereka sendiri
+    let hasAccess = false;
+    let accessMessage = '';
+    
+    if (isAdmin) {
+        hasAccess = true;
+        console.log('👑 Admin Tambun Raya: can access analysis');
+    } else if (isKatimRole) {
+        hasAccess = true;
+        console.log('👥 Katim: can access analysis (view only)');
+    } else {
+        // Untuk user biasa, cek apakah mereka mengakses data mereka sendiri
+        // Ambil data pegawai untuk cek NIP
+        const [userData] = await db.query(
+            'SELECT nip FROM kepegawaian.user WHERE id = ?',
+            [id]
+        );
+        
+        if (userData.length > 0 && userData[0].nip === userNip) {
+            hasAccess = true;
+            console.log('👤 Regular User: accessing own data');
+        } else {
+            hasAccess = false;
+            accessMessage = 'Anda tidak memiliki izin untuk melihat analisis pegawai lain.';
+        }
+    }
+    
+    if (!hasAccess) {
+        return res.status(403).json({
+            success: false,
+            message: accessMessage || 'Anda tidak memiliki izin untuk mengakses analisis ini.'
+        });
+    }
+    
     try {
-        
-        
         // Validasi target_jenjang_id
         if (!target_jenjang_id) {
             return res.status(400).json({
@@ -920,6 +1054,12 @@ router.get('/:id/analisis-kenaikan', keycloakAuth, async (req, res) => {
                         daftar_peran: [],
                         mode_analisis: modeAnalisis,
                         is_lintas_fungsi: !isSameFungsi
+                    },
+                    // Tambahkan info role untuk frontend
+                    role_info: {
+                        isAdmin,
+                        isKatim: isKatimRole,
+                        access_level: isAdmin ? 'admin' : isKatimRole ? 'katim' : 'user'
                     }
                 },
                 timestamp: new Date().toISOString()
@@ -1202,6 +1342,7 @@ router.get('/:id/analisis-kenaikan', keycloakAuth, async (req, res) => {
             dimiliki: userPeranSet.has(peran)
         }));
         
+        // Response dengan informasi role
         res.status(200).json({
             success: true,
             message: 'Analisis kenaikan jenjang berhasil',
@@ -1253,6 +1394,14 @@ router.get('/:id/analisis-kenaikan', keycloakAuth, async (req, res) => {
                     message: !isSameFungsi 
                         ? `Analisis lintas fungsi: Menampilkan semua kompetensi untuk fungsi ${fungsi.nama_fungsi} + kompetensi universal dari semua peran Anda (termasuk jenjang universal)`
                         : `Analisis sesuai peran: Menampilkan kompetensi untuk semua peran Anda di fungsi ${fungsi.nama_fungsi} + kompetensi universal (termasuk jenjang universal)`
+                },
+                // Tambahkan info role untuk frontend
+                role_info: {
+                    isAdmin,
+                    isKatim: isKatimRole,
+                    access_level: isAdmin ? 'admin' : isKatimRole ? 'katim' : 'user',
+                    can_edit: isAdmin, // Hanya admin yang bisa edit
+                    can_view: true // Semua bisa view
                 }
             },
             timestamp: new Date().toISOString()
@@ -1279,15 +1428,15 @@ router.get('/:id/analisis-peran-baru', keycloakAuth, async (req, res) => {
     
     console.log(`📊 ${username} menganalisis penambahan peran untuk pegawai ID: ${id}`);
     
+    // Hanya admin_tambun_raya yang bisa analisis
+    if (!isAdminTambunRaya(req.user)) {
+        return res.status(403).json({
+            success: false,
+            message: 'Anda tidak memiliki izin untuk analisis ini. Hanya admin_tambun_raya yang diizinkan.'
+        });
+    }
+    
     try {
-        // Validasi akses - Hanya admin_tambun_raya yang bisa analisis
-        if (!isAdminTambunRaya(req.user)) {
-            return res.status(403).json({
-                success: false,
-                message: 'Anda tidak memiliki izin untuk analisis ini. Hanya admin_tambun_raya yang diizinkan.'
-            });
-        }
-        
         if (!peran_ids) {
             return res.status(400).json({
                 success: false,
