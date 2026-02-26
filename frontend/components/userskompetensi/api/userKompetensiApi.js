@@ -8,36 +8,36 @@ const getToken = (session) => {
 };
 
 /**
- * Helper untuk handle response - TANPA ERROR DI CONSOLE
+ * Helper untuk handle response
  */
 const handleResponse = async (response) => {
     const clonedResponse = response.clone();
     
     try {
         const text = await clonedResponse.text();
+        console.log('📥 Response text:', text.substring(0, 200) + '...');
         
         let result;
         try {
             result = JSON.parse(text);
         } catch (e) {
-            // Return object error, jangan throw
+            console.error('❌ Gagal parse JSON:', text.substring(0, 500));
+            throw new Error('Response bukan format JSON yang valid');
+        }
+        
+        if (!response.ok) {
+            console.error('❌ Response error:', result);
             return {
                 success: false,
-                message: 'Response bukan format JSON yang valid',
-                _parseError: true
+                message: result.message || result.error || `HTTP Error ${response.status}`,
+                data: []
             };
         }
         
-        // Untuk semua response, kita return result apa adanya
-        // Tidak perlu throw error
         return result;
     } catch (error) {
-        // Return object error, jangan throw
-        return {
-            success: false,
-            message: error.message || 'Terjadi kesalahan',
-            _networkError: true
-        };
+        console.error('❌ Error handleResponse:', error);
+        throw error;
     }
 };
 
@@ -177,21 +177,33 @@ export const deleteUserKompetensi = async (session, id) => {
 /**
  * GET /userskompetensi
  */
+// components/userskompetensi/api/userKompetensiApi.js
+
+/**
+ * GET /userskompetensi
+ */
+/**
+ * GET /userskompetensi
+ */
 export const fetchUserKompetensi = async (session, params = {}) => {
     const token = getToken(session);
     
     if (!token) {
+        console.error('Token tidak ditemukan');
         return {
             success: false,
-            message: 'Token tidak ditemukan. Silakan login kembali.'
+            message: 'Token tidak ditemukan',
+            data: []
         };
     }
     
     const queryParams = new URLSearchParams();
     queryParams.append('all', 'true');
     
-    const baseUrl = process.env.NEXT_PUBLIC_API_URL;
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
     const url = `${baseUrl}/userskompetensi?${queryParams.toString()}`;
+    
+    console.log('📡 Fetching from URL:', url);
     
     try {
         const response = await fetch(url, {
@@ -202,21 +214,12 @@ export const fetchUserKompetensi = async (session, params = {}) => {
             }
         });
         
-        const result = await handleResponse(response);
-        
-        if (!response.ok && result.success === undefined) {
-            return {
-                success: false,
-                message: result.message || 'Gagal memuat data',
-                data: []
-            };
-        }
-        
-        return result;
+        return await handleResponse(response);
     } catch (error) {
+        console.error('❌ fetchUserKompetensi error:', error);
         return {
             success: false,
-            message: error.message || 'Terjadi kesalahan koneksi',
+            message: error.message,
             data: []
         };
     }

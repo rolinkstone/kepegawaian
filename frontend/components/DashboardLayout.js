@@ -189,7 +189,7 @@ export default function DashboardLayout({ children }) {
       items: [
         
          { 
-        href: '/#', 
+        href: '/pelatihan', 
         label: 'Jadwal Pelatihan', 
         icon: <FaBalanceScale /> // atau <FaIdCard />
         },
@@ -199,9 +199,13 @@ export default function DashboardLayout({ children }) {
         icon: <FaBalanceScale /> // atau <FaIdCard />
         },
 
+        
+
 
       ]
     }
+
+    
     
   ];
 

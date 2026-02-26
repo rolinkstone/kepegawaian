@@ -174,71 +174,177 @@ const UserskompetensiContainer = () => {
     });
 
     // ========== FETCH OPTIONS ==========
-    const fetchOptionsData = useCallback(async () => {
-        try {
-            console.log('📌 Fetching options...');
-            const result = await fetchOptions(session);
-            if (result.success) {
-                setOptions(result.data);
-                console.log('📌 Options loaded:', result.data);
+   // components/userskompetensi/UserskompetensiContainer.js
+
+// components/userskompetensi/UserskompetensiContainer.js
+
+// Fungsi helper untuk mendapatkan NIP dari session
+const getUserNip = useCallback(() => {
+    if (!session?.user) return null;
+    
+    // Coba dari berbagai sumber
+    const possibleNip = 
+        session.user.preferred_username ||
+        session.user.username ||
+        session.user.nip ||
+        session.user.email?.split('@')[0] || // Ambil sebelum @ jika email
+        null;
+    
+    console.log('🔍 Mencari NIP dari session:', {
+        preferred_username: session.user.preferred_username,
+        username: session.user.username,
+        nip: session.user.nip,
+        email: session.user.email,
+        result: possibleNip
+    });
+    
+    return possibleNip;
+}, [session]);
+
+// ========== FETCH OPTIONS ==========
+const fetchOptionsData = useCallback(async () => {
+    try {
+        console.log('📌 Fetching options...');
+        const result = await fetchOptions(session);
+        if (result.success) {
+            // Filter options users berdasarkan role
+            let usersData = result.data.users || [];
+            
+            // Jika bukan admin, hanya tampilkan dirinya sendiri di dropdown
+            if (!userRoles.isAdmin && !userRoles.isKatim) {
+                const userNip = getUserNip();
+                if (userNip) {
+                    usersData = usersData.filter(user => user.nip === userNip);
+                    console.log('📌 Filtered users for non-admin:', usersData);
+                } else {
+                    console.warn('⚠️ userNip tidak ditemukan, tidak bisa memfilter users');
+                }
             }
-        } catch (error) {
-            console.error('Error fetching options:', error);
-            Swal.fire({
-                icon: 'error',
-                title: 'Error',
-                text: 'Gagal mengambil data options: ' + error.message
+            
+            setOptions({
+                ...result.data,
+                users: usersData
             });
+            console.log('📌 Options loaded:', result.data);
         }
-    }, [session]);
+    } catch (error) {
+        console.error('Error fetching options:', error);
+        Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: 'Gagal mengambil data options: ' + error.message
+        });
+    }
+}, [session, userRoles.isAdmin, userRoles.isKatim, getUserNip]);
 
-    // ========== FETCH DATA ==========
-    const fetchData = useCallback(async (showMessage = true) => {
-        setLoading(true);
-        try {
-            console.log('📌 Fetching data with params:', filters);
-            
-            const params = {
-                all: true
-            };
-            
-            const result = await fetchUserKompetensi(session, params);
+// ========== FETCH DATA ==========
+const fetchData = useCallback(async (showMessage = true) => {
+    setLoading(true);
+    try {
+        console.log('📌 Fetching data with params:', filters);
+        
+        const params = {
+            all: true
+        };
+        
+        const result = await fetchUserKompetensi(session, params);
 
-            if (result.success) {
-                console.log('📌 Fetched data:', result.data?.length || 0, 'items');
-                setData(result.data || []);
-                setFilteredData(result.data || []);
-                setPagination(prev => ({
-                    ...prev,
-                    total: result.data?.length || 0
-                }));
+        if (result.success) {
+            console.log('📌 Fetched data:', result.data?.length || 0, 'items');
+            
+            // Filter data berdasarkan role
+            let fetchedData = result.data || [];
+            
+            // Dapatkan NIP user dari session
+            const userNip = getUserNip();
+            console.log('🔍 Current user NIP:', userNip);
+            
+            // Log sample data untuk debugging
+            if (fetchedData.length > 0) {
+                console.log('📌 Sample data:', {
+                    firstItem: fetchedData[0],
+                    allNips: fetchedData.map(d => d.user_nip)
+                });
+            }
+            
+            // FILTER BERDASARKAN ROLE
+            if (userRoles.isAdmin) {
+                // Admin: lihat semua data
+                console.log('👑 Admin: melihat semua data');
+                // Tidak perlu filter
+            } else if (userRoles.isKatim) {
+                // Katim: lihat data di fungsi mereka (implementasi sesuai kebutuhan)
+                console.log('👥 Katim: melihat data di fungsi mereka');
+                // Filter berdasarkan fungsi (sesuaikan dengan kebutuhan)
+                // fetchedData = fetchedData.filter(item => item.user_fungsi_id === fungsiKatim);
+            } else {
+                // User biasa: hanya lihat data sendiri
+                console.log('👤 User biasa: hanya melihat data sendiri');
                 
-                calculateStats(result.data || []);
+                if (!userNip) {
+                    console.error('❌ userNip tidak ditemukan di session');
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: 'NIP tidak ditemukan di session. Silakan login ulang.'
+                    });
+                    setData([]);
+                    setFilteredData([]);
+                    setLoading(false);
+                    return;
+                }
                 
-                if (showMessage) {
+                const beforeCount = fetchedData.length;
+                fetchedData = fetchedData.filter(item => {
+                    // Pastikan item.user_nip ada dan bandingkan dengan NIP session
+                    return item.user_nip === userNip;
+                });
+                console.log(`📌 Filtered from ${beforeCount} to ${fetchedData.length} items for user ${userNip}`);
+            }
+            
+            setData(fetchedData);
+            setFilteredData(fetchedData);
+            setPagination(prev => ({
+                ...prev,
+                total: fetchedData.length
+            }));
+            
+            calculateStats(fetchedData);
+            
+            if (showMessage) {
+                if (fetchedData.length === 0) {
+                    Swal.fire({
+                        icon: 'info',
+                        title: 'Info',
+                        text: userRoles.isAdmin ? 'Belum ada data kompetensi' : 'Belum ada data kompetensi untuk Anda',
+                        timer: 2000,
+                        showConfirmButton: false
+                    });
+                } else {
                     Swal.fire({
                         icon: 'success',
                         title: 'Berhasil',
-                        text: `Data berhasil dimuat (${result.data?.length || 0} kompetensi)`,
+                        text: `Data berhasil dimuat (${fetchedData.length} kompetensi)`,
                         timer: 1500,
                         showConfirmButton: false
                     });
                 }
-            } else {
-                throw new Error(result.message || 'Gagal memuat data');
             }
-        } catch (error) {
-            console.error('Error fetching data:', error);
-            Swal.fire({
-                icon: 'error',
-                title: 'Error',
-                text: `Gagal memuat data: ${error.message}`
-            });
-        } finally {
-            setLoading(false);
-            setInitialLoading(false);
+        } else {
+            throw new Error(result.message || 'Gagal memuat data');
         }
-    }, [session]);
+    } catch (error) {
+        console.error('Error fetching data:', error);
+        Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: `Gagal memuat data: ${error.message}`
+        });
+    } finally {
+        setLoading(false);
+        setInitialLoading(false);
+    }
+}, [session, userRoles.isAdmin, userRoles.isKatim, getUserNip, filters]);
 
     // ========== CALCULATE STATS ==========
     const calculateStats = (data) => {
@@ -700,6 +806,7 @@ useEffect(() => {
                             </span>
                         )}
                     </div>
+              
                     
                     {/* Stats Cards */}
                     <div className="flex gap-4 mt-4">
