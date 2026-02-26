@@ -3,7 +3,7 @@ const express = require('express');
 const router = express.Router();
 const db = require('../db');
 const { keycloakAuth, getUserId, getUsername } = require('../middleware/keycloakAuth');
-const multer = require('multer'); // Pastikan ini ada
+const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 
@@ -22,7 +22,6 @@ const storage = multer.diskStorage({
         cb(null, uploadDir);
     },
     filename: function (req, file, cb) {
-        // Buat nama file unik: timestamp + random + ekstensi
         const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
         const ext = path.extname(file.originalname);
         cb(null, 'sertifikat-' + uniqueSuffix + ext);
@@ -43,44 +42,29 @@ const fileFilter = (req, file, cb) => {
 // Konfigurasi upload
 const upload = multer({ 
     storage: storage,
-    limits: { 
-        fileSize: 2 * 1024 * 1024 // 2MB
-    },
+    limits: { fileSize: 2 * 1024 * 1024 },
     fileFilter: fileFilter
 });
 
-// ========== HELPER FUNCTIONS UNTUK QUERY FILTER BERDASARKAN ROLE ==========
+// ========== HELPER FUNCTIONS ==========
 
-/**
- * Mendapatkan NIP dari token (preferred_username)
- */
 function getUserNipFromToken(user) {
     if (!user) return null;
-    const nip = user.preferred_username || user.username;
-    return nip;
+    return user.preferred_username || user.username;
 }
 
-/**
- * Cek apakah user adalah admin_tambun_raya
- */
 function isAdminTambunRaya(user) {
     if (!user) return false;
     const roles = user.extractedRoles || user.role || [];
     return roles.includes('admin_tambun_raya');
 }
 
-/**
- * Cek apakah user adalah katim
- */
 function isKatim(user) {
     if (!user) return false;
     const roles = user.extractedRoles || user.role || [];
     return roles.includes('katim');
 }
 
-/**
- * Mendapatkan fungsi user berdasarkan NIP
- */
 async function getUserFungsiByNip(nip) {
     if (!nip) return null;
     const [rows] = await db.query(
@@ -96,24 +80,23 @@ async function getUserFungsiByNip(nip) {
  * GET /api/userskompetensi
  * Mendapatkan semua data user kompetensi
  */
-// backend/routes/userskompetensi.js
-
-/**
- * GET /api/userskompetensi
- * Mendapatkan semua data user kompetensi
- */
 router.get('/', keycloakAuth, async (req, res) => {
     const username = getUsername(req.user);
-    console.log(`📊 ${username} mengakses data user kompetensi`);
+    const userNip = getUserNipFromToken(req.user);
+    const isAdmin = isAdminTambunRaya(req.user);
+    const isKatimRole = isKatim(req.user);
+    
+    console.log(`📊 ${username} (${isAdmin ? 'Admin' : isKatimRole ? 'Katim' : 'User'}) mengakses data user kompetensi`);
 
     try {
-        const query = `
+        let query = `
             SELECT 
                 uk.id,
                 uk.id_user,
                 u.nip as user_nip,
                 u.nama as user_nama,
                 f.nama_fungsi as user_fungsi,
+                f.id as user_fungsi_id,
                 uk.id_kompetensi,
                 mk.kode_kompetensi,
                 mk.nama_kompetensi,
@@ -132,20 +115,26 @@ router.get('/', keycloakAuth, async (req, res) => {
             JOIN kepegawaian.master_kompetensi mk ON uk.id_kompetensi = mk.id
             LEFT JOIN kepegawaian.fungsi f ON u.id_fungsi = f.id
             LEFT JOIN kepegawaian.user v ON uk.verified_by = v.id
-            ORDER BY uk.created_at DESC
         `;
-
-        const [rows] = await db.query(query);
         
-        console.log(`📊 Data berhasil diambil, ${rows.length} records`);
-        if (rows.length > 0) {
-            console.log('📤 Sample data:', {
-                id: rows[0].id,
-                hasil_verif: rows[0].hasil_verif,
-                keterangan: rows[0].keterangan
-            });
+        const params = [];
+        
+        // Filter berdasarkan role
+        if (!isAdmin && !isKatimRole) {
+            // User biasa: hanya melihat data sendiri
+            query += ` WHERE u.nip = ?`;
+            params.push(userNip);
         }
-
+        
+        query += ` ORDER BY uk.created_at DESC`;
+        
+        console.log('📝 Query:', query);
+        console.log('📝 Params:', params);
+        
+        const [rows] = await db.query(query, params);
+        
+        console.log(`✅ Data berhasil diambil, ${rows.length} records untuk user ${username}`);
+        
         res.status(200).json({
             success: true,
             message: 'Data user kompetensi berhasil diambil',

@@ -208,108 +208,25 @@ const standarkompetensiRoutes = require('./routes/standarkompetensi');
 const masterRoutes = require('./routes/master');
 const pegawaiRoutes = require('./routes/pegawai');
 const userskompetensiRoutes = require('./routes/userskompetensi');
+const pelatihanRoutes = require('./routes/pelatihan');
 const keycloakRoutes = require('./routes/keycloak');
+const dashboardRoutes = require('./routes/dashboard');
 
 // ========== MOUNT ROUTES ==========
 app.use('/api/standarkompetensi', standarkompetensiRoutes);
 app.use('/api/master', masterRoutes);
 app.use('/api/pegawai', pegawaiRoutes);
 app.use('/api/userskompetensi', userskompetensiRoutes);
+app.use('/api/pelatihan', pelatihanRoutes);
 app.use('/api/keycloak', keycloakRoutes);
+app.use('/api/dashboard', dashboardRoutes);
 
-// ========== AUTH ENDPOINTS ==========
-app.post('/api/login', async (req, res) => {
-    // ... kode login (sama seperti sebelumnya) ...
-});
-
-app.post('/api/refresh', async (req, res) => {
-    // ... kode refresh (sama seperti sebelumnya) ...
-});
-
-app.get('/api/userinfo', (req, res) => {
-    if (!req.user) {
-        return res.status(401).json({
-            success: false,
-            message: 'Not authenticated'
-        });
-    }
-
-    res.json({
-        success: true,
-        user: req.user
-    });
-});
-
-// ========== PUBLIC ENDPOINTS ==========
-app.get('/api/health', (req, res) => {
-    db.query('SELECT 1 as status', (err) => {
-        const dbStatus = err ? 'DISCONNECTED' : 'CONNECTED';
-
-        res.json({
-            status: 'OK',
-            service: 'Keuangan Backend API',
-            database: dbStatus,
-            uploads_folder: UPLOADS_DIR,
-            uploads_url: `http://localhost:${PORT}/api/uploads/`,
-            uploads_files: fs.existsSync(UPLOADS_DIR) ? fs.readdirSync(UPLOADS_DIR) : [],
-            timestamp: new Date().toISOString()
-        });
-    });
-});
-
-// ========== DEBUG ENDPOINT ==========
-app.get('/api/debug', (req, res) => {
-    res.json({
-        success: true,
-        message: 'Debug endpoint',
-        headers: req.headers,
-        user: req.user,
-        uploads_dir: UPLOADS_DIR,
-        uploads_exists: fs.existsSync(UPLOADS_DIR),
-        uploads_files: fs.existsSync(UPLOADS_DIR) ? fs.readdirSync(UPLOADS_DIR) : [],
-        timestamp: new Date().toISOString()
-    });
-});
-
-// ========== ERROR HANDLING ==========
-app.use((err, req, res, next) => {
-    console.error('❌ Server error:', err);
-    res.status(err.status || 500).json({
-        success: false,
-        error: 'Internal Server Error',
-        message: err.message || 'Something went wrong'
-    });
-});
-
-// 404 handler
-app.use((req, res) => {
-    res.status(404).json({
-        success: false,
-        error: 'Not Found',
-        message: `Route ${req.method} ${req.path} not found`
-    });
-});
 
 // ========== START SERVER ==========
 app.listen(PORT, () => {
     console.log(`
     ============================================
     🚀 SERVER READY: http://localhost:${PORT}
-    ============================================
-    
-    🔐 AUTHENTICATION REQUIRED:
-       - /api/uploads/:filename (harus pakai token)
-       - Semua route /api/* (kecuali public routes)
-    
-    ✅ PUBLIC ROUTES (tanpa token):
-       - POST /api/login
-       - GET /api/health
-       - GET /api/debug
-       - POST /api/refresh
-       - GET /uploads-list (testing)
-    
-    📁 Uploads Folder: ${UPLOADS_DIR}
-    
     ============================================
     `);
 });

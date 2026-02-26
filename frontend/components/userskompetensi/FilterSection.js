@@ -1,3 +1,4 @@
+// components/userskompetensi/FilterSection.js
 import React from 'react';
 
 const FilterSection = ({ filters, onFilterChange, onReset, options, userRoles }) => {
@@ -28,7 +29,7 @@ const FilterSection = ({ filters, onFilterChange, onReset, options, userRoles })
                     />
                 </div>
 
-                {/* Filter Status */}
+                {/* Filter Status - untuk semua user */}
                 <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                         Status
@@ -45,26 +46,28 @@ const FilterSection = ({ filters, onFilterChange, onReset, options, userRoles })
                     </select>
                 </div>
 
-                {/* Filter Pegawai */}
-                <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Pegawai
-                    </label>
-                    <select
-                        value={filters.id_user}
-                        onChange={(e) => onFilterChange('id_user', e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    >
-                        <option value="">Semua Pegawai</option>
-                        {options.users?.map(user => (
-                            <option key={user.id} value={user.id}>
-                                {user.nama} - {user.nip}
-                            </option>
-                        ))}
-                    </select>
-                </div>
+                {/* Filter Pegawai - HANYA UNTUK ADMIN */}
+                {userRoles.isAdmin && (
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Pegawai
+                        </label>
+                        <select
+                            value={filters.id_user}
+                            onChange={(e) => onFilterChange('id_user', e.target.value)}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        >
+                            <option value="">Semua Pegawai</option>
+                            {options.users?.map(user => (
+                                <option key={user.id} value={user.id}>
+                                    {user.nama} - {user.nip}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+                )}
 
-                {/* Filter Kompetensi */}
+                {/* Filter Kompetensi - untuk semua user */}
                 <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                         Kompetensi
@@ -84,22 +87,16 @@ const FilterSection = ({ filters, onFilterChange, onReset, options, userRoles })
                 </div>
             </div>
 
-            {/* Filter khusus untuk Admin/Katim */}
-            {(userRoles.isAdmin || userRoles.isKatim) && (
-                <div className="mt-4 flex items-center">
-                    <label className="flex items-center space-x-2">
-                        <input
-                            type="checkbox"
-                            checked={filters.all}
-                            onChange={(e) => onFilterChange('all', e.target.checked)}
-                            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                        />
-                        <span className="text-sm text-gray-700">
-                            Tampilkan semua data (termasuk lintas fungsi)
-                        </span>
-                    </label>
-                </div>
-            )}
+            {/* Info jumlah data berdasarkan role */}
+            <div className="mt-4 text-sm text-gray-600">
+                {userRoles.isAdmin ? (
+                    <span>🔓 Admin: Melihat semua data pegawai</span>
+                ) : userRoles.isKatim ? (
+                    <span>👥 Katim: Melihat data pegawai di fungsi Anda</span>
+                ) : (
+                    <span>👤 User: Hanya melihat data Anda sendiri</span>
+                )}
+            </div>
         </div>
     );
 };
