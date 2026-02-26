@@ -1,3 +1,4 @@
+// components/modals/ModalAnalisisKenaikan.js
 import React, { useState, useEffect } from 'react';
 import { Modal, Spin, Alert, Progress, Table, Tag, Card, Statistic, Row, Col, Select, message, Descriptions, Tooltip } from 'antd';
 import { 
@@ -94,7 +95,7 @@ const ModalAnalisisKenaikan = ({ visible, onCancel, selectedPegawai, options, se
     }
   };
 
-  // Kolom dengan ukuran yang lebih kecil
+  // Kolom dengan ukuran yang lebih kecil - HAPUS kolom Hasil Verifikasi, Keterangan, Verifikator
   const columns = [
     {
       title: 'No',
@@ -176,7 +177,13 @@ const ModalAnalisisKenaikan = ({ visible, onCancel, selectedPegawai, options, se
       width: 180,
       align: 'center',
       render: (text, record) => {
-        const isTerpenuhi = record.status === 'TERPENUHI';
+        // Hanya dianggap memenuhi jika:
+        // 1. Ada di tabel user_kompetensi
+        // 2. Status = 'Lulus'
+        // 3. verified_by tidak null
+        // 4. hasil_verif = 'Valid'
+        const isTerpenuhi = record.is_valid_verified === true;
+        
         return (
           <div style={{ 
             display: 'flex', 

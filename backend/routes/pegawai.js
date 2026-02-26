@@ -769,10 +769,7 @@ router.delete('/:id', keycloakAuth, async (req, res) => {
     }
 });
 
-/**
- * PATCH /api/pegawai/:id/activate
- * Mengaktifkan kembali pegawai - HANYA ADMIN TAMBUN RAYA
- */
+
 router.patch('/:id/activate', keycloakAuth, async (req, res) => {
     const username = getUsername(req.user);
     const { id } = req.params;
@@ -819,18 +816,11 @@ router.patch('/:id/activate', keycloakAuth, async (req, res) => {
     }
 });
 
-// ========== ANALISIS KOMPETENSI ==========
+// backend/routes/pegawai.js
 
 /**
  * GET /api/pegawai/:id/analisis-kenaikan
- * Analisis kenaikan jenjang untuk pegawai - HANYA ADMIN TAMBUN RAYA
- */
-/**
- * GET /api/pegawai/:id/analisis-kenaikan
  * Analisis kenaikan jenjang untuk pegawai
- * - Admin Tambun Raya: full access
- * - Katim: view only
- * - User biasa: tidak bisa akses (hanya data sendiri)
  */
 router.get('/:id/analisis-kenaikan', keycloakAuth, async (req, res) => {
     const username = getUsername(req.user);
@@ -1055,7 +1045,6 @@ router.get('/:id/analisis-kenaikan', keycloakAuth, async (req, res) => {
                         mode_analisis: modeAnalisis,
                         is_lintas_fungsi: !isSameFungsi
                     },
-                    // Tambahkan info role untuk frontend
                     role_info: {
                         isAdmin,
                         isKatim: isKatimRole,
@@ -1073,8 +1062,7 @@ router.get('/:id/analisis-kenaikan', keycloakAuth, async (req, res) => {
             // MODE 1: Fungsi sendiri → filter berdasarkan peran user
             console.log('🔍 Mode: Sesuai Peran User');
             
-            // Query untuk kompetensi sesuai fungsi dan peran user
-            // UNTUK PERAN BIASA (seperti Penguji)
+            // Query untuk kompetensi sesuai fungsi dan peran user DENGAN INFORMASI VERIFIED_BY DAN HASIL_VERIF
             const queryPeranBiasa = `
                 SELECT 
                     mk.id,
@@ -1087,17 +1075,23 @@ router.get('/:id/analisis-kenaikan', keycloakAuth, async (req, res) => {
                     p.id as id_peran,
                     km.is_mandatory,
                     CASE 
-                        WHEN uk.id_kompetensi IS NOT NULL AND uk.status = 'Lulus' THEN 'TERPENUHI'
+                        WHEN uk.id_kompetensi IS NOT NULL AND uk.status = 'Lulus' AND uk.verified_by IS NOT NULL AND uk.hasil_verif = 'Valid' THEN 'TERPENUHI'
                         ELSE 'BELUM TERPENUHI'
                     END as status,
                     uk.tanggal_dipenuhi,
-                    uk.nilai
+                    uk.nilai,
+                    uk.verified_by,
+                    uk.verified_at,
+                    uk.hasil_verif,
+                    uk.keterangan,
+                    v.nama as verified_by_nama
                 FROM kepegawaian.kompetensi_mapping km
                 JOIN kepegawaian.master_kompetensi mk ON km.id_kompetensi = mk.id
                 JOIN kepegawaian.fungsi f ON mk.id_fungsi = f.id
                 JOIN kepegawaian.peran p ON km.id_peran = p.id
                 LEFT JOIN kepegawaian.user_kompetensi uk ON uk.id_kompetensi = mk.id 
-                    AND uk.id_user = ? AND uk.status = 'Lulus'
+                    AND uk.id_user = ?
+                LEFT JOIN kepegawaian.user v ON uk.verified_by = v.id
                 WHERE km.id_jabatan = ? 
                     AND km.id_jenjang = ?
                     AND mk.id_fungsi = ?
@@ -1109,7 +1103,7 @@ router.get('/:id/analisis-kenaikan', keycloakAuth, async (req, res) => {
             const [kompetensiPeranBiasa] = await db.query(queryPeranBiasa, paramsPeranBiasa);
             kompetensi = kompetensiPeranBiasa;
             
-            // TAMBAHKAN KOMPETISI UNTUK PERAN UNIVERSAL (seperti Auditor Internal)
+            // TAMBAHKAN KOMPETISI UNTUK PERAN UNIVERSAL DENGAN INFORMASI VERIFIED_BY DAN HASIL_VERIF
             if (universalFungsiId && universalJabatanId && universalJenjangId) {
                 console.log('🔍 Menambahkan kompetensi universal untuk peran user');
                 
@@ -1126,11 +1120,7 @@ router.get('/:id/analisis-kenaikan', keycloakAuth, async (req, res) => {
                 if (universalPeran.length > 0) {
                     const universalPeranIds = universalPeran.map(p => p.id);
                     
-                    // Query untuk kompetensi universal
-                    // - Fungsi: Universal
-                    // - Peran: Universal (Auditor Internal)
-                    // - Jabatan: PFM ATAU Universal
-                    // - Jenjang: Target ATAU Universal
+                    // Query untuk kompetensi universal dengan informasi verified_by dan hasil_verif
                     const queryUniversal = `
                         SELECT 
                             mk.id,
@@ -1143,17 +1133,23 @@ router.get('/:id/analisis-kenaikan', keycloakAuth, async (req, res) => {
                             p.id as id_peran,
                             km.is_mandatory,
                             CASE 
-                                WHEN uk.id_kompetensi IS NOT NULL AND uk.status = 'Lulus' THEN 'TERPENUHI'
+                                WHEN uk.id_kompetensi IS NOT NULL AND uk.status = 'Lulus' AND uk.verified_by IS NOT NULL AND uk.hasil_verif = 'Valid' THEN 'TERPENUHI'
                                 ELSE 'BELUM TERPENUHI'
                             END as status,
                             uk.tanggal_dipenuhi,
-                            uk.nilai
+                            uk.nilai,
+                            uk.verified_by,
+                            uk.verified_at,
+                            uk.hasil_verif,
+                            uk.keterangan,
+                            v.nama as verified_by_nama
                         FROM kepegawaian.kompetensi_mapping km
                         JOIN kepegawaian.master_kompetensi mk ON km.id_kompetensi = mk.id
                         JOIN kepegawaian.fungsi f ON mk.id_fungsi = f.id
                         JOIN kepegawaian.peran p ON km.id_peran = p.id
                         LEFT JOIN kepegawaian.user_kompetensi uk ON uk.id_kompetensi = mk.id 
-                            AND uk.id_user = ? AND uk.status = 'Lulus'
+                            AND uk.id_user = ?
+                        LEFT JOIN kepegawaian.user v ON uk.verified_by = v.id
                         WHERE mk.id_fungsi = ?
                             AND km.id_peran IN (${universalPeranIds.map(() => '?').join(',')})
                             AND (km.id_jabatan = ? OR km.id_jabatan = ?)
@@ -1186,7 +1182,7 @@ router.get('/:id/analisis-kenaikan', keycloakAuth, async (req, res) => {
             // MODE 2: Fungsi lain → tampilkan semua peran (tanpa filter)
             console.log('🔍 Mode: Semua Peran (Lintas Fungsi)');
             
-            // Query untuk kompetensi dari fungsi yang dipilih (tanpa filter peran)
+            // Query untuk kompetensi dari fungsi yang dipilih (tanpa filter peran) DENGAN INFORMASI VERIFIED_BY DAN HASIL_VERIF
             const queryLain = `
                 SELECT 
                     mk.id,
@@ -1199,17 +1195,23 @@ router.get('/:id/analisis-kenaikan', keycloakAuth, async (req, res) => {
                     p.id as id_peran,
                     km.is_mandatory,
                     CASE 
-                        WHEN uk.id_kompetensi IS NOT NULL AND uk.status = 'Lulus' THEN 'TERPENUHI'
+                        WHEN uk.id_kompetensi IS NOT NULL AND uk.status = 'Lulus' AND uk.verified_by IS NOT NULL AND uk.hasil_verif = 'Valid' THEN 'TERPENUHI'
                         ELSE 'BELUM TERPENUHI'
                     END as status,
                     uk.tanggal_dipenuhi,
-                    uk.nilai
+                    uk.nilai,
+                    uk.verified_by,
+                    uk.verified_at,
+                    uk.hasil_verif,
+                    uk.keterangan,
+                    v.nama as verified_by_nama
                 FROM kepegawaian.kompetensi_mapping km
                 JOIN kepegawaian.master_kompetensi mk ON km.id_kompetensi = mk.id
                 JOIN kepegawaian.fungsi f ON mk.id_fungsi = f.id
                 JOIN kepegawaian.peran p ON km.id_peran = p.id
                 LEFT JOIN kepegawaian.user_kompetensi uk ON uk.id_kompetensi = mk.id 
-                    AND uk.id_user = ? AND uk.status = 'Lulus'
+                    AND uk.id_user = ?
+                LEFT JOIN kepegawaian.user v ON uk.verified_by = v.id
                 WHERE km.id_jabatan = ? 
                     AND km.id_jenjang = ?
                     AND mk.id_fungsi = ?
@@ -1220,7 +1222,7 @@ router.get('/:id/analisis-kenaikan', keycloakAuth, async (req, res) => {
             const [kompetensiLain] = await db.query(queryLain, paramsLain);
             kompetensi = kompetensiLain;
             
-            // Tambahkan juga kompetensi universal untuk semua peran user
+            // Tambahkan juga kompetensi universal untuk semua peran user dengan informasi verified_by dan hasil_verif
             if (universalFungsiId && universalJabatanId && universalJenjangId) {
                 console.log('🔍 Menambahkan kompetensi universal untuk lintas fungsi');
                 
@@ -1247,17 +1249,23 @@ router.get('/:id/analisis-kenaikan', keycloakAuth, async (req, res) => {
                             p.id as id_peran,
                             km.is_mandatory,
                             CASE 
-                                WHEN uk.id_kompetensi IS NOT NULL AND uk.status = 'Lulus' THEN 'TERPENUHI'
+                                WHEN uk.id_kompetensi IS NOT NULL AND uk.status = 'Lulus' AND uk.verified_by IS NOT NULL AND uk.hasil_verif = 'Valid' THEN 'TERPENUHI'
                                 ELSE 'BELUM TERPENUHI'
                             END as status,
                             uk.tanggal_dipenuhi,
-                            uk.nilai
+                            uk.nilai,
+                            uk.verified_by,
+                            uk.verified_at,
+                            uk.hasil_verif,
+                            uk.keterangan,
+                            v.nama as verified_by_nama
                         FROM kepegawaian.kompetensi_mapping km
                         JOIN kepegawaian.master_kompetensi mk ON km.id_kompetensi = mk.id
                         JOIN kepegawaian.fungsi f ON mk.id_fungsi = f.id
                         JOIN kepegawaian.peran p ON km.id_peran = p.id
                         LEFT JOIN kepegawaian.user_kompetensi uk ON uk.id_kompetensi = mk.id 
-                            AND uk.id_user = ? AND uk.status = 'Lulus'
+                            AND uk.id_user = ?
+                        LEFT JOIN kepegawaian.user v ON uk.verified_by = v.id
                         WHERE mk.id_fungsi = ?
                             AND km.id_peran IN (${universalPeranIds.map(() => '?').join(',')})
                             AND (km.id_jabatan = ? OR km.id_jabatan = ?)
@@ -1288,33 +1296,89 @@ router.get('/:id/analisis-kenaikan', keycloakAuth, async (req, res) => {
         
         console.log(`✅ Total ditemukan ${kompetensi.length} kompetensi`);
         
-        // Ambil kompetensi yang sudah dimiliki user
+        // Ambil kompetensi yang sudah dimiliki user dengan informasi verified_by dan hasil_verif
         const [kompetensiDimiliki] = await db.query(`
             SELECT 
                 uk.id_kompetensi,
                 uk.tanggal_dipenuhi,
                 uk.nilai,
                 uk.status,
+                uk.verified_by,
+                uk.verified_at,
+                uk.hasil_verif,
+                uk.keterangan,
+                v.nama as verified_by_nama,
                 mk.kode_kompetensi,
                 mk.nama_kompetensi
             FROM kepegawaian.user_kompetensi uk
             JOIN kepegawaian.master_kompetensi mk ON uk.id_kompetensi = mk.id
-            WHERE uk.id_user = ? AND uk.status = 'Lulus'
+            LEFT JOIN kepegawaian.user v ON uk.verified_by = v.id
+            WHERE uk.id_user = ?
         `, [id]);
         
-        console.log(`User memiliki ${kompetensiDimiliki.length} kompetensi yang sudah lulus`);
+        console.log(`User memiliki ${kompetensiDimiliki.length} kompetensi`);
         
-        const dimilikiSet = new Set(kompetensiDimiliki.map(k => k.id_kompetensi));
+        // Buat Map untuk menyimpan informasi kompetensi yang dimiliki
+        const dimilikiMap = new Map();
+        kompetensiDimiliki.forEach(k => {
+            dimilikiMap.set(k.id_kompetensi, {
+                tanggal_dipenuhi: k.tanggal_dipenuhi,
+                nilai: k.nilai,
+                status: k.status,
+                verified_by: k.verified_by,
+                verified_at: k.verified_at,
+                hasil_verif: k.hasil_verif,
+                keterangan: k.keterangan,
+                verified_by_nama: k.verified_by_nama
+            });
+        });
         
-        // Hitung statistik
+        // Hitung statistik dengan mempertimbangkan verified_by DAN hasil_verif = 'Valid'
         const total = kompetensi.length;
-        const terpenuhi = kompetensi.filter(k => dimilikiSet.has(k.id)).length;
+        const terpenuhi = kompetensi.filter(k => {
+            const dimiliki = dimilikiMap.get(k.id);
+            // Hanya dianggap TERPENUHI jika:
+            // 1. Ada di tabel user_kompetensi
+            // 2. Status = 'Lulus'
+            // 3. verified_by tidak null (sudah diverifikasi)
+            // 4. hasil_verif = 'Valid'
+            return dimiliki && 
+                   dimiliki.status === 'Lulus' && 
+                   dimiliki.verified_by !== null && 
+                   dimiliki.hasil_verif === 'Valid';
+        }).length;
+        
         const belumTerpenuhi = total - terpenuhi;
         const persentase = total > 0 ? Math.round((terpenuhi / total) * 100) : 0;
         
+        // Tambahkan informasi verifikasi ke setiap item kompetensi
+        const kompetensiWithVerifikasi = kompetensi.map(k => {
+            const dimiliki = dimilikiMap.get(k.id);
+            if (dimiliki) {
+                return {
+                    ...k,
+                    tanggal_dipenuhi: dimiliki.tanggal_dipenuhi,
+                    nilai: dimiliki.nilai,
+                    verified_by: dimiliki.verified_by,
+                    verified_at: dimiliki.verified_at,
+                    hasil_verif: dimiliki.hasil_verif,
+                    keterangan: dimiliki.keterangan,
+                    verified_by_nama: dimiliki.verified_by_nama,
+                    // Tandai apakah benar-benar memenuhi syarat
+                    is_valid_verified: dimiliki.status === 'Lulus' && 
+                                      dimiliki.verified_by !== null && 
+                                      dimiliki.hasil_verif === 'Valid'
+                };
+            }
+            return {
+                ...k,
+                is_valid_verified: false
+            };
+        });
+        
         // Kelompokkan berdasarkan peran
         const byPeran = {};
-        kompetensi.forEach(k => {
+        kompetensiWithVerifikasi.forEach(k => {
             if (!byPeran[k.nama_peran]) {
                 byPeran[k.nama_peran] = {
                     total: 0,
@@ -1323,7 +1387,11 @@ router.get('/:id/analisis-kenaikan', keycloakAuth, async (req, res) => {
                 };
             }
             byPeran[k.nama_peran].total++;
-            if (dimilikiSet.has(k.id)) byPeran[k.nama_peran].terpenuhi++;
+            
+            if (k.is_valid_verified) {
+                byPeran[k.nama_peran].terpenuhi++;
+            }
+            
             byPeran[k.nama_peran].kompetensi.push(k);
         });
         
@@ -1372,7 +1440,7 @@ router.get('/:id/analisis-kenaikan', keycloakAuth, async (req, res) => {
                     belumTerpenuhi,
                     persentase,
                     by_peran: byPeran,
-                    detail: kompetensi
+                    detail: kompetensiWithVerifikasi
                 },
                 peran_info: {
                     semua_peran: uniquePeran,
@@ -1395,13 +1463,12 @@ router.get('/:id/analisis-kenaikan', keycloakAuth, async (req, res) => {
                         ? `Analisis lintas fungsi: Menampilkan semua kompetensi untuk fungsi ${fungsi.nama_fungsi} + kompetensi universal dari semua peran Anda (termasuk jenjang universal)`
                         : `Analisis sesuai peran: Menampilkan kompetensi untuk semua peran Anda di fungsi ${fungsi.nama_fungsi} + kompetensi universal (termasuk jenjang universal)`
                 },
-                // Tambahkan info role untuk frontend
                 role_info: {
                     isAdmin,
                     isKatim: isKatimRole,
                     access_level: isAdmin ? 'admin' : isKatimRole ? 'katim' : 'user',
-                    can_edit: isAdmin, // Hanya admin yang bisa edit
-                    can_view: true // Semua bisa view
+                    can_edit: isAdmin,
+                    can_view: true
                 }
             },
             timestamp: new Date().toISOString()
@@ -1416,149 +1483,6 @@ router.get('/:id/analisis-kenaikan', keycloakAuth, async (req, res) => {
         });
     }
 });
-
-/**
- * GET /api/pegawai/:id/analisis-peran-baru
- * Analisis jika menambah peran baru untuk pegawai - HANYA ADMIN TAMBUN RAYA
- */
-router.get('/:id/analisis-peran-baru', keycloakAuth, async (req, res) => {
-    const username = getUsername(req.user);
-    const { id } = req.params;
-    const { peran_ids } = req.query;
-    
-    console.log(`📊 ${username} menganalisis penambahan peran untuk pegawai ID: ${id}`);
-    
-    // Hanya admin_tambun_raya yang bisa analisis
-    if (!isAdminTambunRaya(req.user)) {
-        return res.status(403).json({
-            success: false,
-            message: 'Anda tidak memiliki izin untuk analisis ini. Hanya admin_tambun_raya yang diizinkan.'
-        });
-    }
-    
-    try {
-        if (!peran_ids) {
-            return res.status(400).json({
-                success: false,
-                message: 'Parameter peran_ids diperlukan'
-            });
-        }
-        
-        // Parse peran_ids
-        const peranArray = peran_ids.split(',').map(id => parseInt(id.trim()));
-        
-        // Ambil data user
-        const [userData] = await db.query(`
-            SELECT 
-                u.*,
-                j.nama_jabatan,
-                jg.nama_jenjang,
-                f.nama_fungsi
-            FROM kepegawaian.user u
-            JOIN kepegawaian.jabatan j ON u.id_jabatan = j.id
-            JOIN kepegawaian.jenjang jg ON u.id_jenjang = jg.id
-            JOIN kepegawaian.fungsi f ON u.id_fungsi = f.id
-            WHERE u.id = ?
-        `, [id]);
-        
-        if (userData.length === 0) {
-            return res.status(404).json({
-                success: false,
-                message: 'Pegawai tidak ditemukan'
-            });
-        }
-        
-        const user = userData[0];
-        
-        // Ambil informasi peran yang akan ditambahkan
-        const [peranInfo] = await db.query(
-            'SELECT * FROM kepegawaian.peran WHERE id IN (?)',
-            [peranArray]
-        );
-        
-        // Ambil semua kompetensi yang diperlukan untuk peran-peran baru
-        const [kompetensiRequired] = await db.query(`
-            SELECT 
-                mk.id,
-                mk.kode_kompetensi,
-                mk.nama_kompetensi,
-                mk.deskripsi,
-                f.nama_fungsi,
-                p.nama_peran,
-                p.id as id_peran
-            FROM kepegawaian.kompetensi_mapping km
-            JOIN kepegawaian.master_kompetensi mk ON km.id_kompetensi = mk.id
-            JOIN kepegawaian.fungsi f ON mk.id_fungsi = f.id
-            JOIN kepegawaian.peran p ON km.id_peran = p.id
-            WHERE km.id_jabatan = ? AND km.id_jenjang = ? 
-                AND km.id_peran IN (?)
-            ORDER BY p.nama_peran, mk.kode_kompetensi
-        `, [user.id_jabatan, user.id_jenjang, peranArray]);
-        
-        // Ambil kompetensi yang sudah dimiliki user
-        const [kompetensiDimiliki] = await db.query(`
-            SELECT 
-                uk.id_kompetensi,
-                uk.tanggal_dipenuhi,
-                uk.nilai,
-                uk.status
-            FROM kepegawaian.user_kompetensi uk
-            WHERE uk.id_user = ? AND uk.status = 'Lulus'
-        `, [id]);
-        
-        const dimilikiSet = new Set(kompetensiDimiliki.map(k => k.id_kompetensi));
-        
-        // Analisis gap per peran
-        const byPeran = {};
-        peranInfo.forEach(peran => {
-            byPeran[peran.nama_peran] = {
-                id: peran.id,
-                total: 0,
-                terpenuhi: 0,
-                kompetensi: []
-            };
-        });
-        
-        kompetensiRequired.forEach(k => {
-            const terpenuhi = dimilikiSet.has(k.id);
-            if (byPeran[k.nama_peran]) {
-                byPeran[k.nama_peran].total++;
-                if (terpenuhi) byPeran[k.nama_peran].terpenuhi++;
-                byPeran[k.nama_peran].kompetensi.push({
-                    ...k,
-                    status: terpenuhi ? 'TERPENUHI' : 'BELUM TERPENUHI'
-                });
-            }
-        });
-        
-        res.status(200).json({
-            success: true,
-            message: 'Analisis penambahan peran berhasil',
-            data: {
-                user: {
-                    id: user.id,
-                    nip: user.nip,
-                    nama: user.nama,
-                    jabatan: user.nama_jabatan,
-                    jenjang: user.nama_jenjang,
-                    fungsi: user.nama_fungsi
-                },
-                peran_ditambahkan: peranInfo,
-                analisis: byPeran
-            },
-            timestamp: new Date().toISOString()
-        });
-        
-    } catch (error) {
-        console.error('❌ Error analyzing penambahan peran:', error);
-        res.status(500).json({ 
-            success: false,
-            message: 'Terjadi kesalahan server', 
-            error: error.message 
-        });
-    }
-});
-
 /**
  * GET /api/pegawai/options/all
  * Mendapatkan data untuk dropdown (jabatan, jenjang, fungsi, peran)

@@ -194,7 +194,7 @@ export default function DashboardLayout({ children }) {
         icon: <FaBalanceScale /> // atau <FaIdCard />
         },
          { 
-        href: '/#', 
+        href: '/users_kompetensi', 
         label: 'Riwayat Pelatihan', 
         icon: <FaBalanceScale /> // atau <FaIdCard />
         },
