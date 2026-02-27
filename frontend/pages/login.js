@@ -459,9 +459,13 @@ const LoginPage = () => {
                           <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-gradient-to-r from-blue-600 to-cyan-500 group-hover:w-full transition-all duration-300"></span>
                         </button>
                         <div className="h-6 w-px bg-gradient-to-b from-transparent via-gray-300 to-transparent"></div>
-                        <a href="#" className="text-sm text-slate-600 hover:text-slate-800 transition-colors font-medium hover:underline">
-                          Bantuan & Panduan
-                        </a>
+                        <a 
+                            href="/docs/panduan.pdf" 
+                            download="Panduan-Aplikasi-SIPEG.pdf"
+                            className="text-sm text-slate-600 hover:text-slate-800 transition-colors font-medium hover:underline"
+                          >
+                            📥 Download Panduan
+                          </a>
                       </div>
                     </div>
                   </div>
