@@ -822,6 +822,8 @@ router.patch('/:id/activate', keycloakAuth, async (req, res) => {
  * GET /api/pegawai/:id/analisis-kenaikan
  * Analisis kenaikan jenjang untuk pegawai
  */
+// backend/routes/pegawai.js
+
 router.get('/:id/analisis-kenaikan', keycloakAuth, async (req, res) => {
     const username = getUsername(req.user);
     const { id } = req.params;
@@ -984,25 +986,25 @@ router.get('/:id/analisis-kenaikan', keycloakAuth, async (req, res) => {
         console.log('User Peran:', userPeran.map(p => p.nama_peran));
         console.log('Mode Analisis:', modeAnalisis);
         
-        // Cari tahu ID untuk Universal
-        const [universalFungsi] = await db.query(
-            `SELECT id FROM kepegawaian.fungsi WHERE LOWER(nama_fungsi) = 'universal' LIMIT 1`
+        // Cari tahu ID untuk Umum
+        const [umumFungsi] = await db.query(
+            `SELECT id FROM kepegawaian.fungsi WHERE LOWER(nama_fungsi) = 'umum' LIMIT 1`
         );
-        const universalFungsiId = universalFungsi.length > 0 ? universalFungsi[0].id : null;
+        const umumFungsiId = umumFungsi.length > 0 ? umumFungsi[0].id : null;
         
-        const [universalJabatan] = await db.query(
-            `SELECT id FROM kepegawaian.jabatan WHERE LOWER(nama_jabatan) = 'universal' LIMIT 1`
+        const [umumJabatan] = await db.query(
+            `SELECT id FROM kepegawaian.jabatan WHERE LOWER(nama_jabatan) = 'umum' LIMIT 1`
         );
-        const universalJabatanId = universalJabatan.length > 0 ? universalJabatan[0].id : null;
+        const umumJabatanId = umumJabatan.length > 0 ? umumJabatan[0].id : null;
         
-        const [universalJenjang] = await db.query(
-            `SELECT id FROM kepegawaian.jenjang WHERE LOWER(nama_jenjang) = 'universal' OR tingkat = 0 LIMIT 1`
+        const [umumJenjang] = await db.query(
+            `SELECT id FROM kepegawaian.jenjang WHERE LOWER(nama_jenjang) = 'umum' OR tingkat = 0 LIMIT 1`
         );
-        const universalJenjangId = universalJenjang.length > 0 ? universalJenjang[0].id : null;
+        const umumJenjangId = umumJenjang.length > 0 ? umumJenjang[0].id : null;
         
-        console.log('Universal Fungsi ID:', universalFungsiId);
-        console.log('Universal Jabatan ID:', universalJabatanId);
-        console.log('Universal Jenjang ID:', universalJenjangId);
+        console.log('Umum Fungsi ID:', umumFungsiId);
+        console.log('Umum Jabatan ID:', umumJabatanId);
+        console.log('Umum Jenjang ID:', umumJenjangId);
         
         // Jika tidak ada peran, kembalikan data kosong
         if (userPeranIds.length === 0) {
@@ -1103,25 +1105,25 @@ router.get('/:id/analisis-kenaikan', keycloakAuth, async (req, res) => {
             const [kompetensiPeranBiasa] = await db.query(queryPeranBiasa, paramsPeranBiasa);
             kompetensi = kompetensiPeranBiasa;
             
-            // TAMBAHKAN KOMPETISI UNTUK PERAN UNIVERSAL DENGAN INFORMASI VERIFIED_BY DAN HASIL_VERIF
-            if (universalFungsiId && universalJabatanId && universalJenjangId) {
-                console.log('🔍 Menambahkan kompetensi universal untuk peran user');
+            // TAMBAHKAN KOMPETENSI UNTUK PERAN UMUM DENGAN INFORMASI VERIFIED_BY DAN HASIL_VERIF
+            if (umumFungsiId && umumJabatanId && umumJenjangId) {
+                console.log('🔍 Menambahkan kompetensi umum untuk peran user');
                 
-                // Cari peran yang termasuk dalam kategori universal (berdasarkan id_fungsi)
-                const [universalPeran] = await db.query(`
+                // Cari peran yang termasuk dalam kategori umum (berdasarkan id_fungsi)
+                const [umumPeran] = await db.query(`
                     SELECT id, nama_peran 
                     FROM kepegawaian.peran 
                     WHERE id_fungsi = ? 
                         AND id IN (${userPeranIds.map(() => '?').join(',')})
-                `, [universalFungsiId, ...userPeranIds]);
+                `, [umumFungsiId, ...userPeranIds]);
                 
-                console.log('Universal Peran:', universalPeran);
+                console.log('Umum Peran:', umumPeran);
                 
-                if (universalPeran.length > 0) {
-                    const universalPeranIds = universalPeran.map(p => p.id);
+                if (umumPeran.length > 0) {
+                    const umumPeranIds = umumPeran.map(p => p.id);
                     
-                    // Query untuk kompetensi universal dengan informasi verified_by dan hasil_verif
-                    const queryUniversal = `
+                    // Query untuk kompetensi umum dengan informasi verified_by dan hasil_verif
+                    const queryUmum = `
                         SELECT 
                             mk.id,
                             mk.kode_kompetensi,
@@ -1151,30 +1153,30 @@ router.get('/:id/analisis-kenaikan', keycloakAuth, async (req, res) => {
                             AND uk.id_user = ?
                         LEFT JOIN kepegawaian.user v ON uk.verified_by = v.id
                         WHERE mk.id_fungsi = ?
-                            AND km.id_peran IN (${universalPeranIds.map(() => '?').join(',')})
+                            AND km.id_peran IN (${umumPeranIds.map(() => '?').join(',')})
                             AND (km.id_jabatan = ? OR km.id_jabatan = ?)
                             AND (km.id_jenjang = ? OR km.id_jenjang = ?)
                         ORDER BY p.nama_peran, mk.kode_kompetensi
                     `;
                     
-                    const paramsUniversal = [
+                    const paramsUmum = [
                         id, 
-                        universalFungsiId, 
-                        ...universalPeranIds,
-                        user.id_jabatan, // PFM
-                        universalJabatanId, // Universal
-                        target.id, // Jenjang target (Ahli Pertama)
-                        universalJenjangId // Jenjang Universal
+                        umumFungsiId, 
+                        ...umumPeranIds,
+                        user.id_jabatan,
+                        umumJabatanId,
+                        target.id,
+                        umumJenjangId
                     ];
                     
-                    const [kompetensiUniversal] = await db.query(queryUniversal, paramsUniversal);
+                    const [kompetensiUmum] = await db.query(queryUmum, paramsUmum);
                     
                     // Gabungkan kompetensi (hindari duplikasi)
                     const existingIds = new Set(kompetensi.map(k => k.id));
-                    const newKompetensi = kompetensiUniversal.filter(k => !existingIds.has(k.id));
+                    const newKompetensi = kompetensiUmum.filter(k => !existingIds.has(k.id));
                     
                     kompetensi = [...kompetensi, ...newKompetensi];
-                    console.log(`✅ Ditambahkan ${newKompetensi.length} kompetensi universal`);
+                    console.log(`✅ Ditambahkan ${newKompetensi.length} kompetensi umum`);
                 }
             }
             
@@ -1222,22 +1224,22 @@ router.get('/:id/analisis-kenaikan', keycloakAuth, async (req, res) => {
             const [kompetensiLain] = await db.query(queryLain, paramsLain);
             kompetensi = kompetensiLain;
             
-            // Tambahkan juga kompetensi universal untuk semua peran user dengan informasi verified_by dan hasil_verif
-            if (universalFungsiId && universalJabatanId && universalJenjangId) {
-                console.log('🔍 Menambahkan kompetensi universal untuk lintas fungsi');
+            // Tambahkan juga kompetensi umum untuk semua peran user dengan informasi verified_by dan hasil_verif
+            if (umumFungsiId && umumJabatanId && umumJenjangId) {
+                console.log('🔍 Menambahkan kompetensi umum untuk lintas fungsi');
                 
-                // Cari peran yang termasuk dalam kategori universal
-                const [universalPeran] = await db.query(`
+                // Cari peran yang termasuk dalam kategori umum
+                const [umumPeran] = await db.query(`
                     SELECT id, nama_peran 
                     FROM kepegawaian.peran 
                     WHERE id_fungsi = ? 
                         AND id IN (${userPeranIds.map(() => '?').join(',')})
-                `, [universalFungsiId, ...userPeranIds]);
+                `, [umumFungsiId, ...userPeranIds]);
                 
-                if (universalPeran.length > 0) {
-                    const universalPeranIds = universalPeran.map(p => p.id);
+                if (umumPeran.length > 0) {
+                    const umumPeranIds = umumPeran.map(p => p.id);
                     
-                    const queryUniversal = `
+                    const queryUmum = `
                         SELECT 
                             mk.id,
                             mk.kode_kompetensi,
@@ -1267,29 +1269,29 @@ router.get('/:id/analisis-kenaikan', keycloakAuth, async (req, res) => {
                             AND uk.id_user = ?
                         LEFT JOIN kepegawaian.user v ON uk.verified_by = v.id
                         WHERE mk.id_fungsi = ?
-                            AND km.id_peran IN (${universalPeranIds.map(() => '?').join(',')})
+                            AND km.id_peran IN (${umumPeranIds.map(() => '?').join(',')})
                             AND (km.id_jabatan = ? OR km.id_jabatan = ?)
                             AND (km.id_jenjang = ? OR km.id_jenjang = ?)
                         ORDER BY p.nama_peran, mk.kode_kompetensi
                     `;
                     
-                    const paramsUniversal = [
+                    const paramsUmum = [
                         id, 
-                        universalFungsiId, 
-                        ...universalPeranIds,
+                        umumFungsiId, 
+                        ...umumPeranIds,
                         user.id_jabatan,
-                        universalJabatanId,
+                        umumJabatanId,
                         target.id,
-                        universalJenjangId
+                        umumJenjangId
                     ];
                     
-                    const [kompetensiUniversal] = await db.query(queryUniversal, paramsUniversal);
+                    const [kompetensiUmum] = await db.query(queryUmum, paramsUmum);
                     
                     const existingIds = new Set(kompetensi.map(k => k.id));
-                    const newKompetensi = kompetensiUniversal.filter(k => !existingIds.has(k.id));
+                    const newKompetensi = kompetensiUmum.filter(k => !existingIds.has(k.id));
                     
                     kompetensi = [...kompetensi, ...newKompetensi];
-                    console.log(`✅ Ditambahkan ${newKompetensi.length} kompetensi universal`);
+                    console.log(`✅ Ditambahkan ${newKompetensi.length} kompetensi umum`);
                 }
             }
         }
@@ -1457,11 +1459,11 @@ router.get('/:id/analisis-kenaikan', keycloakAuth, async (req, res) => {
                     daftar_peran_fungsi: uniquePeran,
                     mode_analisis: modeAnalisis,
                     is_lintas_fungsi: !isSameFungsi,
-                    includes_universal: true,
-                    includes_jenjang_universal: true,
+                    includes_umum: true,
+                    includes_jenjang_umum: true,
                     message: !isSameFungsi 
-                        ? `Analisis lintas fungsi: Menampilkan semua kompetensi untuk fungsi ${fungsi.nama_fungsi} + kompetensi universal dari semua peran Anda (termasuk jenjang universal)`
-                        : `Analisis sesuai peran: Menampilkan kompetensi untuk semua peran Anda di fungsi ${fungsi.nama_fungsi} + kompetensi universal (termasuk jenjang universal)`
+                        ? `Analisis lintas fungsi: Menampilkan semua kompetensi untuk fungsi ${fungsi.nama_fungsi} + kompetensi umum dari semua peran Anda (termasuk jenjang umum)`
+                        : `Analisis sesuai peran: Menampilkan kompetensi untuk semua peran Anda di fungsi ${fungsi.nama_fungsi} + kompetensi umum (termasuk jenjang umum)`
                 },
                 role_info: {
                     isAdmin,
