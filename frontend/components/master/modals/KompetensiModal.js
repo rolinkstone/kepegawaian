@@ -151,24 +151,14 @@ const KompetensiModal = ({
     }
 
     // Cek duplikasi mapping (jabatan + jenjang + peran)
-    const duplicates = [];
-    mapping.forEach((map, index) => {
-      mapping.forEach((otherMap, otherIndex) => {
-        if (index !== otherIndex) {
-          if (
-            map.id_jabatan === otherMap.id_jabatan &&
-            map.id_jenjang === otherMap.id_jenjang &&
-            map.id_peran === otherMap.id_peran
-          ) {
-            duplicates.push(`Jabatan: ${getJabatanName(map.id_jabatan)}, Jenjang: ${getJenjangName(map.id_jenjang)}, Peran: ${getPeranName(map.id_peran)}`);
-          }
-        }
-      });
-    });
-
-    if (duplicates.length > 0) {
-      setError(`Terdapat mapping duplikat: ${duplicates[0]}`);
-      return false;
+    const seen = new Set();
+    for (let map of mapping) {
+      const key = `${map.id_jabatan}|${map.id_jenjang}|${map.id_peran}`;
+      if (seen.has(key)) {
+        setError(`Terdapat mapping duplikat untuk Jabatan: ${getJabatanName(map.id_jabatan)}, Jenjang: ${getJenjangName(map.id_jenjang)}, Peran: ${getPeranName(map.id_peran)}`);
+        return false;
+      }
+      seen.add(key);
     }
 
     return true;
@@ -222,6 +212,7 @@ const KompetensiModal = ({
   };
 
   const handleSubmit = async () => {
+    // Validasi
     if (!formData.kode_kompetensi.trim()) {
       setError('Kode kompetensi harus diisi');
       return;
@@ -252,7 +243,7 @@ const KompetensiModal = ({
         mapping: mapping.map(({ id_jabatan, id_jenjang, id_peran, is_mandatory }) => ({
           id_jabatan: parseInt(id_jabatan),
           id_jenjang: parseInt(id_jenjang),
-          id_peran: parseInt(id_peran), // Kirim id_peran
+          id_peran: parseInt(id_peran),
           is_mandatory: is_mandatory !== false
         }))
       };
@@ -304,7 +295,7 @@ const KompetensiModal = ({
             )}
             
             <Grid container spacing={2}>
-              {/* Kode Kompetensi */}
+              {/* Kode Kompetensi - BISA DIEDIT UNTUK EDIT MODE */}
               <Grid item xs={12} md={6}>
                 <TextField
                   fullWidth
@@ -314,16 +305,16 @@ const KompetensiModal = ({
                   onChange={handleChange}
                   placeholder="Contoh: K001, P001, A001"
                   required
-                  disabled={loading || mode === 'edit'}
+                  disabled={loading}
                   error={!!error && !formData.kode_kompetensi.trim()}
                   helperText={error && !formData.kode_kompetensi.trim() ? 'Kode kompetensi wajib diisi' : ''}
                   InputProps={{
-                    readOnly: mode === 'edit',
+                    // Hapus readOnly agar bisa diedit
                   }}
                 />
               </Grid>
               
-              {/* Fungsi */}
+              {/* Fungsi - TIDAK BISA DIEDIT SAAT EDIT MODE */}
               <Grid item xs={12} md={6}>
                 <FormControl fullWidth required error={!!error && !formData.id_fungsi}>
                   <InputLabel>Fungsi</InputLabel>
@@ -349,7 +340,7 @@ const KompetensiModal = ({
                 </FormControl>
               </Grid>
               
-              {/* Peran Default */}
+              {/* Peran Default - TIDAK BISA DIEDIT SAAT EDIT MODE */}
               <Grid item xs={12} md={6}>
                 <FormControl 
                   fullWidth 

@@ -1,12 +1,38 @@
 // components/userskompetensi/modals/VerifyModal.js
 import React, { useState, useEffect } from 'react';
+import { useSession } from 'next-auth/react';
 import Swal from 'sweetalert2';
 
 const VerifyModal = ({ show, onClose, data, onConfirm }) => {
+    const { data: session } = useSession();
     const [status, setStatus] = useState('');
     const [hasilVerif, setHasilVerif] = useState('');
     const [keterangan, setKeterangan] = useState('');
     const [loading, setLoading] = useState(false);
+    const [adminInfo, setAdminInfo] = useState({ name: '', nip: '' });
+
+    // Dapatkan informasi admin dari session
+    useEffect(() => {
+        if (show && session?.user) {
+            const adminName = session.user.name || 
+                             session.user.fullname || 
+                             session.user.nama ||
+                             session.user.preferred_username ||
+                             'Admin';
+            
+            const adminNip = session.user.preferred_username || 
+                            session.user.username || 
+                            session.user.nip ||
+                            null;
+            
+            setAdminInfo({
+                name: adminName,
+                nip: adminNip
+            });
+            
+            console.log('🔐 Admin Info dari session:', { name: adminName, nip: adminNip });
+        }
+    }, [show, session]);
 
     useEffect(() => {
         // Reset form ketika modal dibuka dengan data baru
@@ -44,13 +70,14 @@ const VerifyModal = ({ show, onClose, data, onConfirm }) => {
         setLoading(true);
         
         try {
-            // Kirim data verifikasi sebagai object
+            // Kirim data verifikasi dengan nama admin dari Keycloak
             await onConfirm(data.id, { 
                 status, 
                 hasil_verif: hasilVerif,
-                keterangan: keterangan 
+                keterangan: keterangan,
+                verified_by: adminInfo.name,  // Langsung kirim nama admin
+                verified_by_nip: adminInfo.nip
             });
-            // Modal akan ditutup oleh container setelah sukses
         } catch (error) {
             console.error('Error in verify modal:', error);
             Swal.fire({
@@ -63,7 +90,7 @@ const VerifyModal = ({ show, onClose, data, onConfirm }) => {
         }
     };
 
-    // Fungsi untuk mendapatkan warna badge berdasarkan status
+    // Fungsi untuk mendapatkan warna badge
     const getStatusColor = (status) => {
         switch(status) {
             case 'Lulus': return 'bg-green-100 text-green-800';
@@ -73,7 +100,6 @@ const VerifyModal = ({ show, onClose, data, onConfirm }) => {
         }
     };
 
-    // Fungsi untuk mendapatkan warna badge hasil verifikasi
     const getHasilVerifColor = (hasil) => {
         switch(hasil) {
             case 'Valid': return 'bg-green-100 text-green-800';
@@ -100,6 +126,29 @@ const VerifyModal = ({ show, onClose, data, onConfirm }) => {
                 </div>
 
                 <form onSubmit={handleSubmit} className="p-6 space-y-4">
+                    {/* Informasi Verifikator (Admin) */}
+                    <div className="p-4 bg-purple-50 rounded-lg border border-purple-200">
+                        <h3 className="font-medium text-purple-800 mb-2 flex items-center">
+                            <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                            </svg>
+                            Verifikator (Admin yang Login)
+                        </h3>
+                        <div className="grid grid-cols-2 gap-2 text-sm">
+                            <div>
+                                <span className="font-medium text-purple-700">Nama Admin:</span>
+                                <p className="mt-1 text-purple-900 font-semibold">{adminInfo.name}</p>
+                            </div>
+                            <div>
+                                <span className="font-medium text-purple-700">NIP:</span>
+                                <p className="mt-1 text-purple-900">{adminInfo.nip || '-'}</p>
+                            </div>
+                        </div>
+                        <p className="text-xs text-purple-600 mt-2">
+                            ⚡ Nama di atas akan tercatat sebagai verifikator
+                        </p>
+                    </div>
+
                     {/* Informasi Pegawai */}
                     <div className="p-4 bg-gray-50 rounded-lg">
                         <h3 className="font-medium text-gray-700 mb-2">Informasi Pegawai</h3>
@@ -167,7 +216,7 @@ const VerifyModal = ({ show, onClose, data, onConfirm }) => {
                                 </svg>
                                 <div>
                                     <p className="font-medium">Verifikasi Sebelumnya:</p>
-                                    <p>Diverifikasi oleh: {data.verified_by_nama || '-'}</p>
+                                    <p>Diverifikasi oleh: {data.verified_by}</p>
                                     <p>Pada: {data.verified_at ? new Date(data.verified_at).toLocaleString('id-ID') : '-'}</p>
                                     {data.keterangan && (
                                         <p className="mt-1">Keterangan: {data.keterangan}</p>
@@ -230,20 +279,20 @@ const VerifyModal = ({ show, onClose, data, onConfirm }) => {
                         />
                     </div>
 
-                    {/* Informasi Verifikasi */}
-                    <div className="p-3 bg-blue-50 rounded-lg text-sm text-blue-800">
+                    {/* Ringkasan Verifikasi */}
+                    <div className="p-3 bg-green-50 rounded-lg text-sm text-green-800">
                         <div className="flex items-start">
                             <svg className="w-5 h-5 mr-2 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                             </svg>
                             <div>
-                                <p className="font-medium">Informasi Verifikasi:</p>
+                                <p className="font-medium">Ringkasan Verifikasi:</p>
                                 <ul className="list-disc list-inside mt-1 space-y-1">
-                                    <li>Anda akan bertindak sebagai verifikator</li>
-                                    <li>ID Admin Anda akan tercatat di field <span className="font-mono bg-blue-100 px-1">verified_by</span></li>
-                                    <li>Hasil verifikasi akan tercatat di field <span className="font-mono bg-blue-100 px-1">hasil_verif</span></li>
-                                    <li>Keterangan akan tercatat di field <span className="font-mono bg-blue-100 px-1">keterangan</span></li>
-                                    <li>Waktu verifikasi akan tercatat di field <span className="font-mono bg-blue-100 px-1">verified_at</span></li>
+                                    <li><strong>Verifikator:</strong> {adminInfo.name}</li>
+                                    <li><strong>Status baru:</strong> {status || '(belum dipilih)'}</li>
+                                    <li><strong>Hasil verifikasi:</strong> {hasilVerif || '(belum dipilih)'}</li>
+                                    {keterangan && <li><strong>Keterangan:</strong> {keterangan}</li>}
+                                    <li><strong>Waktu verifikasi:</strong> {new Date().toLocaleString('id-ID')}</li>
                                 </ul>
                             </div>
                         </div>

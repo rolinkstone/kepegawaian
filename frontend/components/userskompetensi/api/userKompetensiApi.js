@@ -291,6 +291,8 @@ export const fetchOptions = async (session) => {
 /**
  * PATCH /userskompetensi/:id/verify
  */
+// components/userskompetensi/api/userKompetensiApi.js
+
 export const verifyUserKompetensi = async (session, id, data) => {
     const token = getToken(session);
     
@@ -304,6 +306,17 @@ export const verifyUserKompetensi = async (session, id, data) => {
     const baseUrl = process.env.NEXT_PUBLIC_API_URL;
     const url = `${baseUrl}/userskompetensi/${id}/verify`;
     
+    // Kirim data dengan verified_by berupa nama admin
+    const payload = {
+        status: data.status,
+        hasil_verif: data.hasil_verif,
+        keterangan: data.keterangan || null,
+        verified_by: data.verified_by,  // Langsung nama admin dari Keycloak
+        verified_by_nip: data.verified_by_nip
+    };
+    
+    console.log('📤 Sending verification payload:', payload);
+    
     try {
         const response = await fetch(url, {
             method: 'PATCH',
@@ -311,20 +324,21 @@ export const verifyUserKompetensi = async (session, id, data) => {
                 'Authorization': `Bearer ${token}`,
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify(data)
+            body: JSON.stringify(payload)
         });
         
-        const result = await handleResponse(response);
+        const result = await response.json();
         
-        if (!response.ok && result.success === undefined) {
+        if (!response.ok) {
             return {
                 success: false,
-                message: result.message || 'Gagal verifikasi data'
+                message: result.message || `HTTP Error ${response.status}`
             };
         }
         
         return result;
     } catch (error) {
+        console.error('❌ verifyUserKompetensi error:', error);
         return {
             success: false,
             message: error.message || 'Terjadi kesalahan koneksi'
