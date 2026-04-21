@@ -673,17 +673,16 @@ router.delete('/:id', keycloakAuth, async (req, res) => {
  * PATCH /api/userskompetensi/:id/verify
  * Verifikasi data user kompetensi
  */
+// backend/routes/userskompetensi.js - PATCH /:id/verify
+
 router.patch('/:id/verify', keycloakAuth, async (req, res) => {
-    const username = getUsername(req.user);
-    const userNip = getUserNipFromToken(req.user);
     const { id } = req.params;
-    const { status, hasil_verif, keterangan } = req.body;
+    const { status, hasil_verif, keterangan, verified_by, verified_by_nip } = req.body;
     
-    console.log(`✅ ${username} memverifikasi user kompetensi ID: ${id}`);
-    console.log(`📝 Data verifikasi:`, { status, hasil_verif, keterangan });
-    console.log(`🔍 User NIP dari token: ${userNip}`);
+    console.log(`✅ Verifikasi user kompetensi ID: ${id}`);
+    console.log(`📝 Data verifikasi:`, { status, hasil_verif, keterangan, verified_by, verified_by_nip });
     
-    // Validasi status
+    // Validasi input
     if (!status || !['Lulus', 'Tidak Lulus', 'Dalam Proses'].includes(status)) {
         return res.status(400).json({
             success: false,
@@ -691,7 +690,6 @@ router.patch('/:id/verify', keycloakAuth, async (req, res) => {
         });
     }
     
-    // Validasi hasil_verif
     if (!hasil_verif || !['Valid', 'Tidak Valid', 'Perlu Revisi'].includes(hasil_verif)) {
         return res.status(400).json({
             success: false,
@@ -700,53 +698,13 @@ router.patch('/:id/verify', keycloakAuth, async (req, res) => {
     }
     
     try {
-        // CEK DUA KEMUNGKINAN:
-        // 1. Cari berdasarkan NIP
-        let [verifier] = await db.query(
-            'SELECT id, nama, nip FROM kepegawaian.user WHERE nip = ?',
-            [userNip]
-        );
-        
-        // 2. Jika tidak ditemukan, coba cari berdasarkan username (preferred_username)
-        if (verifier.length === 0) {
-            console.log(`🔍 User dengan NIP ${userNip} tidak ditemukan, mencoba mencari berdasarkan username...`);
-            
-            // Ambil username dari token (bisa dari preferred_username atau username)
-            const username_from_token = req.user.preferred_username || req.user.username;
-            
-            if (username_from_token && username_from_token !== userNip) {
-                [verifier] = await db.query(
-                    'SELECT id, nama, nip FROM kepegawaian.user WHERE nip = ? OR nama LIKE ?',
-                    [username_from_token, `%${username_from_token}%`]
-                );
-            }
-        }
-        
-        // 3. Jika masih tidak ditemukan, gunakan user pertama (untuk testing) - HAPUS DI PRODUCTION
-        if (verifier.length === 0) {
-            console.log('⚠️ TESTING MODE: Menggunakan user pertama sebagai verifikator');
-            [verifier] = await db.query(
-                'SELECT id, nama, nip FROM kepegawaian.user LIMIT 1'
-            );
-        }
-        
-        if (verifier.length === 0) {
-            return res.status(404).json({
-                success: false,
-                message: 'Data verifikator tidak ditemukan. Pastikan user Anda terdaftar di database.'
-            });
-        }
-        
-        const verifierId = verifier[0].id;
-        console.log(`🔑 Verifikator ditemukan: ${verifier[0].nama} (NIP: ${verifier[0].nip}, ID: ${verifierId})`);
-        
-        // Update database dengan menambahkan hasil_verif dan keterangan
+        // Update database - verified_by langsung menyimpan nama admin
         const query = `
             UPDATE kepegawaian.user_kompetensi
             SET status = ?, 
                 hasil_verif = ?,
                 keterangan = ?,
-                verified_by = ?, 
+                verified_by = ?,
                 verified_at = NOW()
             WHERE id = ?
         `;
@@ -755,7 +713,7 @@ router.patch('/:id/verify', keycloakAuth, async (req, res) => {
             status, 
             hasil_verif, 
             keterangan || null, 
-            verifierId, 
+            verified_by || req.user?.name || 'Admin',  // Gunakan nama dari frontend atau fallback
             id
         ]);
         
@@ -766,29 +724,18 @@ router.patch('/:id/verify', keycloakAuth, async (req, res) => {
             });
         }
         
-        // Ambil data yang sudah diverifikasi
-        const [verifiedData] = await db.query(`
-            SELECT 
-                uk.*,
-                u.nama as user_nama,
-                u.nip as user_nip,
-                mk.kode_kompetensi,
-                mk.nama_kompetensi,
-                v.nama as verified_by_nama
-            FROM kepegawaian.user_kompetensi uk
-            JOIN kepegawaian.user u ON uk.id_user = u.id
-            JOIN kepegawaian.master_kompetensi mk ON uk.id_kompetensi = mk.id
-            LEFT JOIN kepegawaian.user v ON uk.verified_by = v.id
-            WHERE uk.id = ?
-        `, [id]);
-        
-        console.log(`✅ Data berhasil diverifikasi oleh ${verifier[0].nama} (ID: ${verifierId})`);
-        console.log(`📊 Hasil Verifikasi: ${hasil_verif}, Keterangan: ${keterangan || '-'}`);
+        console.log(`✅ Data berhasil diverifikasi oleh: ${verified_by}`);
         
         res.status(200).json({
             success: true,
-            message: `Data user kompetensi berhasil diverifikasi`,
-            data: verifiedData[0] || { id: parseInt(id) }
+            message: `Data berhasil diverifikasi oleh ${verified_by}`,
+            data: {
+                id: parseInt(id),
+                verified_by: verified_by,
+                verified_at: new Date().toISOString(),
+                hasil_verif: hasil_verif,
+                status: status
+            }
         });
         
     } catch (error) {

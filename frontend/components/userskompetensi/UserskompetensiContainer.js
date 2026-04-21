@@ -962,18 +962,21 @@ useEffect(() => {
                                                     </button>
                                                 ) : '-'}
                                             </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                                {item.verified_by_nama ? (
-                                                    <div className="flex flex-col">
-                                                        <span>{item.verified_by_nama}</span>
-                                                        {item.verified_at && (
-                                                            <span className="text-xs text-gray-500">
-                                                                {new Date(item.verified_at).toLocaleDateString('id-ID')}
-                                                            </span>
-                                                        )}
-                                                    </div>
-                                                ) : '-'}
-                                            </td>
+                                          
+                                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                                            {item.verified_by ? (
+                                                                <div className="flex flex-col">
+                                                                    <span className="font-medium">{item.verified_by}</span>
+                                                                    {item.verified_at && (
+                                                                        <span className="text-xs text-gray-500">
+                                                                            {new Date(item.verified_at).toLocaleDateString('id-ID')}
+                                                                        </span>
+                                                                    )}
+                                                                </div>
+                                                            ) : (
+                                                                <span className="text-yellow-600 text-xs">Belum diverifikasi</span>
+                                                            )}
+                                                        </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                                 <div className="flex space-x-2">
                                                     {/* Tombol Detail - selalu aktif */}

@@ -18,12 +18,22 @@ const UserskompetensiForm = ({ show, onClose, onSuccess, editingData, options, u
     const [previewFile, setPreviewFile] = useState(null);
     const [errors, setErrors] = useState({});
     const [currentUser, setCurrentUser] = useState(null);
-    const [debugInfo, setDebugInfo] = useState('');
+    
+    // Filter untuk pegawai
+    const [searchUserTerm, setSearchUserTerm] = useState('');
+    const [filteredUsers, setFilteredUsers] = useState([]);
+    const [showUserDropdown, setShowUserDropdown] = useState(false);
+    
+    // Filter untuk kompetensi
+    const [searchKompetensiTerm, setSearchKompetensiTerm] = useState('');
+    const [filteredKompetensi, setFilteredKompetensi] = useState([]);
+    const [showKompetensiDropdown, setShowKompetensiDropdown] = useState(false);
 
-    // Dapatkan data user saat ini dari session
+    const isAdmin = userRoles?.isAdmin || false;
+
+    // Dapatkan data user saat ini dari session (untuk non-admin)
     useEffect(() => {
-        if (session?.user && options.users) {
-            // Coba dapatkan NIP dari berbagai sumber
+        if (!isAdmin && session?.user && options.users) {
             const userNip = session.user.preferred_username || 
                            session.user.username || 
                            session.user.email || 
@@ -31,85 +41,80 @@ const UserskompetensiForm = ({ show, onClose, onSuccess, editingData, options, u
             
             console.log('🔍 Session user:', session.user);
             console.log('🔍 Mencari user dengan NIP:', userNip);
-            console.log('📋 Data users dari options:', options.users);
             
-            // Cari user berdasarkan NIP
             let foundUser = options.users.find(u => u.nip === userNip);
             
-            // Jika tidak ditemukan, coba cari berdasarkan bagian dari NIP
             if (!foundUser && userNip) {
-                console.log('🔍 Mencari user dengan partial match...');
                 foundUser = options.users.find(u => u.nip?.includes(userNip) || userNip.includes(u.nip));
-            }
-            
-            // Jika masih tidak ditemukan, ambil user pertama (untuk testing)
-            if (!foundUser && options.users.length > 0) {
-                console.log('⚠️ User tidak ditemukan, menggunakan user pertama untuk testing');
-                foundUser = options.users[0];
-                setDebugInfo(`User tidak ditemukan, menggunakan: ${foundUser.nama} (${foundUser.nip})`);
             }
             
             if (foundUser) {
                 setCurrentUser(foundUser);
                 console.log('✅ Current user ditemukan:', foundUser);
-                setDebugInfo(`User ditemukan: ${foundUser.nama} (${foundUser.nip})`);
-            } else {
-                console.log('❌ Current user tidak ditemukan dalam options.users');
-                setDebugInfo('User tidak ditemukan dalam database. Silakan hubungi admin.');
+            } else if (options.users.length > 0) {
+                setCurrentUser(options.users[0]);
+                console.log('⚠️ Fallback ke user pertama:', options.users[0]);
             }
         }
-    }, [session, options.users]);
+    }, [session, options.users, isAdmin]);
 
-    // Set id_user otomatis untuk user biasa dan katim
+    // Filter users untuk dropdown (khusus admin)
     useEffect(() => {
-        if (!editingData && show) {
-            if (!userRoles.isAdmin) {
-                if (currentUser) {
-                    const userId = currentUser.id.toString();
-                    console.log('📌 Auto-set id_user:', userId);
-                    setFormData(prev => ({
-                        ...prev,
-                        id_user: userId
-                    }));
-                    setDebugInfo(`ID User diset: ${userId} (${currentUser.nama})`);
-                } else {
-                    console.log('⚠️ currentUser tidak ada, id_user tidak bisa diset otomatis');
-                    
-                    // Jika tidak ada currentUser tapi options.users ada, ambil user pertama
-                    if (options.users && options.users.length > 0) {
-                        const fallbackUser = options.users[0];
-                        setCurrentUser(fallbackUser);
-                        setFormData(prev => ({
-                            ...prev,
-                            id_user: fallbackUser.id.toString()
-                        }));
-                        setDebugInfo(`Menggunakan fallback user: ${fallbackUser.nama}`);
-                    }
-                }
-            } else {
-                console.log('📌 Admin mode - id_user akan dipilih manual');
-                setDebugInfo('Admin mode - silakan pilih pegawai');
-            }
+        if (isAdmin && options.users && searchUserTerm) {
+            const filtered = options.users.filter(user => 
+                user.nama?.toLowerCase().includes(searchUserTerm.toLowerCase()) ||
+                user.nip?.toLowerCase().includes(searchUserTerm.toLowerCase())
+            );
+            setFilteredUsers(filtered.slice(0, 10));
+        } else if (isAdmin && options.users) {
+            setFilteredUsers(options.users.slice(0, 10));
         }
-    }, [editingData, userRoles.isAdmin, currentUser, show, options.users]);
+    }, [searchUserTerm, options.users, isAdmin]);
 
-    // Reset form ketika modal dibuka/tutup
+    // Filter kompetensi untuk dropdown (untuk semua user)
+    useEffect(() => {
+        if (options.kompetensi && searchKompetensiTerm) {
+            const filtered = options.kompetensi.filter(kom => 
+                kom.nama_kompetensi?.toLowerCase().includes(searchKompetensiTerm.toLowerCase()) ||
+                kom.kode_kompetensi?.toLowerCase().includes(searchKompetensiTerm.toLowerCase()) ||
+                kom.nama_fungsi?.toLowerCase().includes(searchKompetensiTerm.toLowerCase())
+            );
+            setFilteredKompetensi(filtered.slice(0, 20));
+        } else if (options.kompetensi) {
+            setFilteredKompetensi(options.kompetensi.slice(0, 20));
+        }
+    }, [searchKompetensiTerm, options.kompetensi]);
+
+    // Set id_user otomatis untuk non-admin
+    useEffect(() => {
+        if (!isAdmin && !editingData && show && currentUser) {
+            setFormData(prev => ({
+                ...prev,
+                id_user: currentUser.id?.toString() || ''
+            }));
+        }
+    }, [isAdmin, editingData, currentUser, show]);
+
+    // Reset form ketika modal dibuka
     useEffect(() => {
         if (show) {
             console.log('📋 Form ditampilkan, editingData:', editingData);
             
             if (editingData) {
-                console.log('📝 Editing data:', editingData);
-                const newFormData = {
+                setFormData({
                     id_user: editingData.id_user?.toString() || '',
                     id_kompetensi: editingData.id_kompetensi?.toString() || '',
                     tanggal_dipenuhi: editingData.tanggal_dipenuhi || '',
                     nilai: editingData.nilai?.toString() || '',
                     status: editingData.status || 'Dalam Proses',
                     bukti: editingData.bukti || null
-                };
-                setFormData(newFormData);
-                setDebugInfo(`Mode Edit - ID: ${editingData.id}`);
+                });
+                
+                // Set search term untuk kompetensi yang dipilih
+                const selectedKom = options.kompetensi?.find(k => k.id?.toString() === editingData.id_kompetensi?.toString());
+                if (selectedKom) {
+                    setSearchKompetensiTerm(`${selectedKom.kode_kompetensi} - ${selectedKom.nama_kompetensi}`);
+                }
                 
                 if (editingData.bukti) {
                     const fileUrl = `${process.env.NEXT_PUBLIC_API_URL}/uploads/${editingData.bukti}`;
@@ -122,36 +127,24 @@ const UserskompetensiForm = ({ show, onClose, onSuccess, editingData, options, u
                 resetForm();
             }
         }
-    }, [show, editingData]);
+    }, [show, editingData, options.kompetensi]);
 
     const resetForm = () => {
-        let newIdUser = '';
-        
-        if (!userRoles.isAdmin) {
-            if (currentUser) {
-                newIdUser = currentUser.id?.toString() || '';
-            } else if (options.users && options.users.length > 0) {
-                // Fallback ke user pertama
-                newIdUser = options.users[0].id?.toString() || '';
-                setDebugInfo(`Fallback ke user: ${options.users[0].nama}`);
-            }
-        }
-        
-        console.log('📌 Reset form dengan id_user:', newIdUser);
-        
-        const newFormData = {
-            id_user: newIdUser,
+        setFormData({
+            id_user: !isAdmin && currentUser ? currentUser.id?.toString() || '' : '',
             id_kompetensi: '',
             tanggal_dipenuhi: '',
             nilai: '',
             status: 'Dalam Proses',
             bukti: null
-        };
-        
-        setFormData(newFormData);
+        });
         setSelectedFile(null);
         setPreviewFile(null);
         setErrors({});
+        setSearchUserTerm('');
+        setSearchKompetensiTerm('');
+        setShowUserDropdown(false);
+        setShowKompetensiDropdown(false);
     };
 
     const handleChange = (e) => {
@@ -163,13 +156,31 @@ const UserskompetensiForm = ({ show, onClose, onSuccess, editingData, options, u
         }
     };
 
+    const handleSelectUser = (user) => {
+        setFormData(prev => ({ ...prev, id_user: user.id.toString() }));
+        setSearchUserTerm(`${user.nama} (${user.nip})`);
+        setShowUserDropdown(false);
+        if (errors.id_user) {
+            setErrors(prev => ({ ...prev, id_user: null }));
+        }
+    };
+
+    const handleSelectKompetensi = (kompetensi) => {
+        setFormData(prev => ({ ...prev, id_kompetensi: kompetensi.id.toString() }));
+        setSearchKompetensiTerm(`${kompetensi.kode_kompetensi} - ${kompetensi.nama_kompetensi}`);
+        setShowKompetensiDropdown(false);
+        if (errors.id_kompetensi) {
+            setErrors(prev => ({ ...prev, id_kompetensi: null }));
+        }
+    };
+
     const handleFileChange = (e) => {
         const file = e.target.files[0];
         if (file) {
             console.log('📁 File selected:', file.name, file.type, file.size);
             
             const allowedTypes = ['application/pdf', 'image/jpeg', 'image/png', 'image/jpg'];
-            const maxSize = 2 * 1024 * 1024; // 2MB
+            const maxSize = 2 * 1024 * 1024;
 
             if (!allowedTypes.includes(file.type)) {
                 Swal.fire({
@@ -206,14 +217,8 @@ const UserskompetensiForm = ({ show, onClose, onSuccess, editingData, options, u
     const validateForm = () => {
         const newErrors = {};
         
-        console.log('🔍 Validasi form:', {
-            id_user: formData.id_user,
-            id_kompetensi: formData.id_kompetensi,
-            tanggal_dipenuhi: formData.tanggal_dipenuhi
-        });
-        
         if (!formData.id_user || formData.id_user === '') {
-            newErrors.id_user = 'Data user tidak ditemukan';
+            newErrors.id_user = 'Pegawai harus dipilih';
         }
         
         if (!formData.id_kompetensi || formData.id_kompetensi === '') {
@@ -228,97 +233,88 @@ const UserskompetensiForm = ({ show, onClose, onSuccess, editingData, options, u
         return Object.keys(newErrors).length === 0;
     };
 
-    // components/userskompetensi/UserskompetensiForm.js
-
-// components/userskompetensi/UserskompetensiForm.js
-
-const handleSubmit = async (e) => {
-    e.preventDefault();
-    
-    if (!validateForm()) {
-        Swal.fire({
-            icon: 'warning',
-            title: 'Validasi Gagal',
-            text: 'Harap lengkapi semua field yang wajib diisi'
-        });
-        return;
-    }
-
-    setLoading(true);
-    
-    try {
-        const formDataToSend = new FormData();
+    const handleSubmit = async (e) => {
+        e.preventDefault();
         
-        formDataToSend.append('id_user', String(formData.id_user));
-        formDataToSend.append('id_kompetensi', String(formData.id_kompetensi));
-        formDataToSend.append('tanggal_dipenuhi', String(formData.tanggal_dipenuhi));
-        formDataToSend.append('status', String(formData.status));
-        
-        if (formData.nilai && formData.nilai.trim() !== '') {
-            formDataToSend.append('nilai', String(formData.nilai));
-        }
-        
-        if (selectedFile) {
-            formDataToSend.append('bukti', selectedFile);
-        } else if (editingData && editingData.bukti && !selectedFile) {
-            formDataToSend.append('bukti_lama', editingData.bukti);
-        }
-
-        let response;
-        if (editingData) {
-            response = await updateUserKompetensi(session, editingData.id, formDataToSend);
-        } else {
-            response = await createUserKompetensi(session, formDataToSend);
-        }
-
-        // CEK RESPONSE
-        if (response && response.success) {
-            // SUKSES
-            Swal.fire({
-                icon: 'success',
-                title: 'Berhasil',
-                text: editingData ? 'Data berhasil diupdate' : 'Data berhasil ditambahkan',
-                timer: 1500,
-                showConfirmButton: false
-            });
-            
-            if (previewFile?.url && previewFile.url.startsWith('blob:')) {
-                URL.revokeObjectURL(previewFile.url);
-            }
-            
-            onSuccess();
-            onClose();
-        } 
-        else if (response && response.message && response.message.includes('sudah memiliki kompetensi ini')) {
-            // DUPLIKAT DATA - TAMPILKAN NOTIFIKASI TANPA ERROR DI CONSOLE
+        if (!validateForm()) {
             Swal.fire({
                 icon: 'warning',
-                title: 'Duplikasi Data',
-                text: response.message || 'User sudah memiliki kompetensi ini',
-                confirmButtonText: 'OK'
+                title: 'Validasi Gagal',
+                text: 'Harap lengkapi semua field yang wajib diisi'
             });
+            return;
         }
-        else {
-            // ERROR LAINNYA
+
+        setLoading(true);
+        
+        try {
+            const formDataToSend = new FormData();
+            
+            formDataToSend.append('id_user', String(formData.id_user));
+            formDataToSend.append('id_kompetensi', String(formData.id_kompetensi));
+            formDataToSend.append('tanggal_dipenuhi', String(formData.tanggal_dipenuhi));
+            formDataToSend.append('status', String(formData.status));
+            
+            if (formData.nilai && formData.nilai.trim() !== '') {
+                formDataToSend.append('nilai', String(formData.nilai));
+            }
+            
+            if (selectedFile) {
+                formDataToSend.append('bukti', selectedFile);
+            } else if (editingData && editingData.bukti && !selectedFile) {
+                formDataToSend.append('bukti_lama', editingData.bukti);
+            }
+
+            let response;
+            if (editingData) {
+                response = await updateUserKompetensi(session, editingData.id, formDataToSend);
+            } else {
+                response = await createUserKompetensi(session, formDataToSend);
+            }
+
+            if (response && response.success) {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Berhasil',
+                    text: editingData ? 'Data berhasil diupdate' : 'Data berhasil ditambahkan',
+                    timer: 1500,
+                    showConfirmButton: false
+                });
+                
+                if (previewFile?.url && previewFile.url.startsWith('blob:')) {
+                    URL.revokeObjectURL(previewFile.url);
+                }
+                
+                onSuccess();
+                onClose();
+            } 
+            else if (response && response.message && response.message.includes('sudah memiliki kompetensi ini')) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Duplikasi Data',
+                    text: response.message || 'User sudah memiliki kompetensi ini',
+                    confirmButtonText: 'OK'
+                });
+            }
+            else {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Gagal Menyimpan Data',
+                    text: response?.message || 'Terjadi kesalahan saat menyimpan data',
+                    confirmButtonText: 'OK'
+                });
+            }
+        } catch (error) {
             Swal.fire({
                 icon: 'error',
                 title: 'Gagal Menyimpan Data',
-                text: response?.message || 'Terjadi kesalahan saat menyimpan data',
+                text: error.message || 'Terjadi kesalahan saat menyimpan data',
                 confirmButtonText: 'OK'
             });
+        } finally {
+            setLoading(false);
         }
-    } catch (error) {
-        // Error yang tidak tertangkap (seharusnya tidak terjadi karena kita sudah handle di atas)
-        Swal.fire({
-            icon: 'error',
-            title: 'Gagal Menyimpan Data',
-            text: error.message || 'Terjadi kesalahan saat menyimpan data',
-            confirmButtonText: 'OK'
-        });
-    } finally {
-        setLoading(false);
-    }
-};
+    };
 
     const handleClose = () => {
         if (previewFile?.url && previewFile.url.startsWith('blob:')) {
@@ -329,10 +325,14 @@ const handleSubmit = async (e) => {
 
     if (!show) return null;
 
+    // Dapatkan nama pegawai yang dipilih
+    const selectedUserName = options.users?.find(u => u.id?.toString() === formData.id_user)?.nama || '';
+    const selectedUserNip = options.users?.find(u => u.id?.toString() === formData.id_user)?.nip || '';
+
     return (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
             <div className="bg-white rounded-lg w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-                <div className="flex justify-between items-center p-6 border-b">
+                <div className="flex justify-between items-center p-6 border-b sticky top-0 bg-white z-10">
                     <h2 className="text-xl font-bold text-gray-800">
                         {editingData ? 'Edit Kompetensi Pegawai' : 'Tambah Kompetensi Pegawai'}
                     </h2>
@@ -347,39 +347,142 @@ const handleSubmit = async (e) => {
                     </button>
                 </div>
 
-                {/* Debug Info */}
-                
-
-               
+                {/* Info Role */}
+                <div className="px-6 pt-4">
+                    {isAdmin ? (
+                        <div className="bg-blue-50 text-blue-800 p-2 rounded-lg text-sm">
+                            <span className="font-medium">👑 Mode Admin:</span> Anda dapat memilih pegawai yang akan ditambahkan kompetensinya
+                        </div>
+                    ) : (
+                        <div className="bg-gray-50 text-gray-800 p-2 rounded-lg text-sm">
+                            <span className="font-medium">👤 Mode User:</span> Kompetensi akan ditambahkan untuk Anda sendiri
+                            {currentUser && (
+                                <div className="mt-1 text-xs text-gray-600">
+                                    Pegawai: {currentUser.nama} ({currentUser.nip})
+                                </div>
+                            )}
+                        </div>
+                    )}
+                </div>
 
                 <form onSubmit={handleSubmit} className="p-6 space-y-4" encType="multipart/form-data">
-                    {/* Hidden field untuk id_user */}
-                    <input type="hidden" name="id_user" value={formData.id_user} />
+                    
+                    {/* Pilih Pegawai - KHUSUS UNTUK ADMIN */}
+                    {isAdmin && (
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                Pilih Pegawai <span className="text-red-500">*</span>
+                            </label>
+                            <div className="relative">
+                                <input
+                                    type="text"
+                                    value={searchUserTerm || (formData.id_user ? `${selectedUserName} (${selectedUserNip})` : '')}
+                                    onChange={(e) => {
+                                        setSearchUserTerm(e.target.value);
+                                        setShowUserDropdown(true);
+                                        if (!e.target.value && !formData.id_user) {
+                                            setFormData(prev => ({ ...prev, id_user: '' }));
+                                        }
+                                    }}
+                                    onFocus={() => setShowUserDropdown(true)}
+                                    placeholder="Cari pegawai berdasarkan nama atau NIP..."
+                                    className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                                        errors.id_user ? 'border-red-500' : 'border-gray-300'
+                                    }`}
+                                    disabled={loading}
+                                />
+                                
+                                {showUserDropdown && filteredUsers.length > 0 && (
+                                    <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                                        {filteredUsers.map(user => (
+                                            <div
+                                                key={user.id}
+                                                onClick={() => handleSelectUser(user)}
+                                                className="px-4 py-2 hover:bg-blue-50 cursor-pointer border-b last:border-b-0"
+                                            >
+                                                <div className="font-medium text-gray-900">{user.nama}</div>
+                                                <div className="text-sm text-gray-500">NIP: {user.nip} | {user.nama_fungsi || '-'}</div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                            {errors.id_user && (
+                                <p className="mt-1 text-sm text-red-600">{errors.id_user}</p>
+                            )}
+                            {formData.id_user && selectedUserName && (
+                                <p className="mt-1 text-sm text-green-600">
+                                    ✓ Pegawai dipilih: {selectedUserName} ({selectedUserNip})
+                                </p>
+                            )}
+                        </div>
+                    )}
 
-                    {/* Pilih Kompetensi */}
+                    {/* Hidden field untuk id_user (non-admin) */}
+                    {!isAdmin && (
+                        <input type="hidden" name="id_user" value={formData.id_user} />
+                    )}
+
+                    {/* Pilih Kompetensi - DENGAN FILTER */}
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
                             Kompetensi <span className="text-red-500">*</span>
                         </label>
-                        <select
-                            name="id_kompetensi"
-                            value={formData.id_kompetensi}
-                            onChange={handleChange}
-                            className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                                errors.id_kompetensi ? 'border-red-500' : 'border-gray-300'
-                            }`}
-                            disabled={loading}
-                        >
-                            <option value="">Pilih Kompetensi</option>
-                            {options.kompetensi?.map(kom => (
-                                <option key={kom.id} value={kom.id}>
-                                    {kom.kode_kompetensi} - {kom.nama_kompetensi} ({kom.nama_fungsi || '-'})
-                                </option>
-                            ))}
-                        </select>
+                        <div className="relative">
+                            <input
+                                type="text"
+                                value={searchKompetensiTerm}
+                                onChange={(e) => {
+                                    setSearchKompetensiTerm(e.target.value);
+                                    setShowKompetensiDropdown(true);
+                                    if (!e.target.value) {
+                                        setFormData(prev => ({ ...prev, id_kompetensi: '' }));
+                                    }
+                                }}
+                                onFocus={() => setShowKompetensiDropdown(true)}
+                                placeholder="Cari kompetensi berdasarkan nama, kode, atau fungsi..."
+                                className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                                    errors.id_kompetensi ? 'border-red-500' : 'border-gray-300'
+                                }`}
+                                disabled={loading}
+                            />
+                            
+                            {showKompetensiDropdown && filteredKompetensi.length > 0 && (
+                                <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                                    {filteredKompetensi.map(kom => (
+                                        <div
+                                            key={kom.id}
+                                            onClick={() => handleSelectKompetensi(kom)}
+                                            className="px-4 py-2 hover:bg-blue-50 cursor-pointer border-b last:border-b-0"
+                                        >
+                                            <div className="font-medium text-gray-900">
+                                                {kom.kode_kompetensi} - {kom.nama_kompetensi}
+                                            </div>
+                                            <div className="text-sm text-gray-500">
+                                                Fungsi: {kom.nama_fungsi || '-'}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                            
+                            {showKompetensiDropdown && filteredKompetensi.length === 0 && searchKompetensiTerm && (
+                                <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg p-4 text-center text-gray-500">
+                                    Tidak ditemukan kompetensi dengan kata kunci "{searchKompetensiTerm}"
+                                </div>
+                            )}
+                        </div>
                         {errors.id_kompetensi && (
                             <p className="mt-1 text-sm text-red-600">{errors.id_kompetensi}</p>
                         )}
+                        {formData.id_kompetensi && (
+                            <p className="mt-1 text-sm text-green-600">
+                                ✓ Kompetensi dipilih: {options.kompetensi?.find(k => k.id?.toString() === formData.id_kompetensi)?.kode_kompetensi} - {options.kompetensi?.find(k => k.id?.toString() === formData.id_kompetensi)?.nama_kompetensi}
+                            </p>
+                        )}
+                        <p className="text-xs text-gray-500 mt-1">
+                            💡 Tips: Ketik untuk mencari kompetensi berdasarkan nama, kode, atau fungsi
+                        </p>
                     </div>
 
                     {/* Tanggal Dipenuhi */}
@@ -457,33 +560,41 @@ const handleSubmit = async (e) => {
                         
                         {previewFile && (
                             <div className="mt-2 p-2 bg-gray-50 rounded-lg text-sm">
-                                File: {previewFile.name}
+                                <span className="font-medium">File baru:</span> {previewFile.name}
                             </div>
                         )}
                         
                         {editingData && editingData.bukti && !selectedFile && (
                             <div className="mt-2 p-2 bg-blue-50 rounded-lg text-sm">
-                                File saat ini: {editingData.bukti}
+                                <span className="font-medium">File saat ini:</span> {editingData.bukti}
                             </div>
                         )}
                     </div>
 
                     {/* Tombol Submit */}
-                    <div className="flex justify-end gap-3 pt-4 border-t">
+                    <div className="flex justify-end gap-3 pt-4 border-t sticky bottom-0 bg-white py-4">
                         <button
                             type="button"
                             onClick={handleClose}
-                            className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+                            className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
                             disabled={loading}
                         >
                             Batal
                         </button>
                         <button
                             type="submit"
-                            disabled={loading || !currentUser}
-                            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-blue-300"
+                            disabled={loading || (!isAdmin && !currentUser)}
+                            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-blue-300 transition-colors"
                         >
-                            {loading ? 'Menyimpan...' : (editingData ? 'Update' : 'Simpan')}
+                            {loading ? (
+                                <div className="flex items-center gap-2">
+                                    <svg className="animate-spin h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                    </svg>
+                                    Menyimpan...
+                                </div>
+                            ) : (editingData ? 'Update' : 'Simpan')}
                         </button>
                     </div>
                 </form>
