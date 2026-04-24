@@ -123,131 +123,12 @@ const Home = () => {
   const [kompetensiWajibBelumDipenuhi, setKompetensiWajibBelumDipenuhi] = useState([]);
   const [isLoadingKompetensiWajib, setIsLoadingKompetensiWajib] = useState(false);
 
-  const COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899'];
+  // State untuk notifikasi admin - pegawai yang belum 100% memenuhi kompetensi wajib
+  const [pegawaiBelumLengkap, setPegawaiBelumLengkap] = useState([]);
+  const [isLoadingPegawaiStatus, setIsLoadingPegawaiStatus] = useState(false);
+  const [allPegawaiData, setAllPegawaiData] = useState([]);
 
-  // DATA SIMULASI UNTUK TESTING - TAMPILKAN SEMUA USER
-  const MOCK_ALL_USERS_DATA = [
-    {
-      id: 1,
-      user_nip: '198001012005011001',
-      user_nama: 'Dr. Ahmad Budiman, M.Si',
-      user_jabatan: 'Kepala Balai',
-      kode_kompetensi: 'KOMP-001',
-      nama_kompetensi: 'Manajemen Pengawasan Obat dan Makanan',
-      verified_by: null,
-      hasil_verif: null,
-      status: 'Menunggu',
-      tanggal_dipenuhi: '2024-01-15'
-    },
-    {
-      id: 2,
-      user_nip: '198001012005011001',
-      user_nama: 'Dr. Ahmad Budiman, M.Si',
-      user_jabatan: 'Kepala Balai',
-      kode_kompetensi: 'KOMP-002',
-      nama_kompetensi: 'Pengawasan Keamanan Pangan',
-      verified_by: null,
-      hasil_verif: null,
-      status: 'Menunggu',
-      tanggal_dipenuhi: '2024-02-10'
-    },
-    {
-      id: 3,
-      user_nip: '198502122010022002',
-      user_nama: 'Siti Rahmawati, S.Si., Apt.',
-      user_jabatan: 'Kepala Bidang',
-      kode_kompetensi: 'KOMP-001',
-      nama_kompetensi: 'Manajemen Pengawasan Obat dan Makanan',
-      verified_by: 'admin1',
-      hasil_verif: 'Valid',
-      status: 'Lulus',
-      tanggal_dipenuhi: '2024-01-20'
-    },
-    {
-      id: 4,
-      user_nip: '198502122010022002',
-      user_nama: 'Siti Rahmawati, S.Si., Apt.',
-      user_jabatan: 'Kepala Bidang',
-      kode_kompetensi: 'KOMP-003',
-      nama_kompetensi: 'Pengawasan Obat Tradisional',
-      verified_by: null,
-      hasil_verif: null,
-      status: 'Menunggu',
-      tanggal_dipenuhi: '2024-03-01'
-    },
-    {
-      id: 5,
-      user_nip: '199003152015031003',
-      user_nama: 'Bambang Prasetyo, S.T.',
-      user_jabatan: 'Kepala Seksi',
-      kode_kompetensi: 'KOMP-002',
-      nama_kompetensi: 'Pengawasan Keamanan Pangan',
-      verified_by: null,
-      hasil_verif: null,
-      status: 'Menunggu',
-      tanggal_dipenuhi: '2024-02-25'
-    },
-    {
-      id: 6,
-      user_nip: '199003152015031003',
-      user_nama: 'Bambang Prasetyo, S.T.',
-      user_jabatan: 'Kepala Seksi',
-      kode_kompetensi: 'KOMP-004',
-      nama_kompetensi: 'Pengawasan Kosmetik',
-      verified_by: 'admin2',
-      hasil_verif: 'Perlu Revisi',
-      status: 'Tidak Lulus',
-      tanggal_dipenuhi: '2024-01-30'
-    },
-    {
-      id: 7,
-      user_nip: '199112202018042004',
-      user_nama: 'Dewi Lestari, S.Farm., Apt.',
-      user_jabatan: 'Pengawas Farmasi Muda',
-      kode_kompetensi: 'KOMP-001',
-      nama_kompetensi: 'Manajemen Pengawasan Obat dan Makanan',
-      verified_by: null,
-      hasil_verif: null,
-      status: 'Menunggu',
-      tanggal_dipenuhi: '2024-03-10'
-    },
-    {
-      id: 8,
-      user_nip: '199112202018042004',
-      user_nama: 'Dewi Lestari, S.Farm., Apt.',
-      user_jabatan: 'Pengawas Farmasi Muda',
-      kode_kompetensi: 'KOMP-005',
-      nama_kompetensi: 'Inspeksi Sarana Produksi',
-      verified_by: null,
-      hasil_verif: null,
-      status: 'Menunggu',
-      tanggal_dipenuhi: '2024-02-28'
-    },
-    {
-      id: 9,
-      user_nip: '199112202018042004',
-      user_nama: 'Dewi Lestari, S.Farm., Apt.',
-      user_jabatan: 'Pengawas Farmasi Muda',
-      kode_kompetensi: 'KOMP-006',
-      nama_kompetensi: 'Pengujian Laboratorium',
-      verified_by: null,
-      hasil_verif: null,
-      status: 'Menunggu',
-      tanggal_dipenuhi: '2024-03-05'
-    },
-    {
-      id: 10,
-      user_nip: '198807202009032005',
-      user_nama: 'Eko Supriyanto, S.Sos.',
-      user_jabatan: 'Analis Kebijakan',
-      kode_kompetensi: 'KOMP-002',
-      nama_kompetensi: 'Pengawasan Keamanan Pangan',
-      verified_by: 'admin1',
-      hasil_verif: 'Tidak Valid',
-      status: 'Tidak Lulus',
-      tanggal_dipenuhi: '2024-01-25'
-    }
-  ];
+  const COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899'];
 
   useEffect(() => {
     if (!loading && !session) {
@@ -259,10 +140,11 @@ const Home = () => {
     if (session?.user) {
       extractUserInfo(session);
       fetchDashboardData();
-      fetchKompetensiWajibUser(); // Tambahkan fetch kompetensi wajib
-      // Untuk admin, ambil semua data kompetensi untuk verifikasi
+      fetchKompetensiWajibUser();
+      // Untuk admin, ambil semua data
       if (userInfo.role === 'admin' || userInfo.role === 'admin_tambun_raya') {
         fetchAllKompetensiData();
+        fetchAllPegawaiForAdmin();
       }
     }
   }, [session]);
@@ -275,13 +157,117 @@ const Home = () => {
     }
   }, [userInfo.nip]);
 
+  // Ambil semua pegawai untuk admin
+  const fetchAllPegawaiForAdmin = async () => {
+    setIsLoadingPegawaiStatus(true);
+    try {
+      const token = session?.accessToken || localStorage.getItem('token');
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/pegawai?all=true&is_active=true`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const result = await response.json();
+      
+      if (result.success && result.data) {
+        setAllPegawaiData(result.data);
+        await analyzePegawaiKompetensiWajib(result.data);
+      }
+    } catch (error) {
+      console.error('Error fetching all pegawai:', error);
+    } finally {
+      setIsLoadingPegawaiStatus(false);
+    }
+  };
+
+  // Analisis kompetensi wajib pegawai
+  const analyzePegawaiKompetensiWajib = async (pegawaiList) => {
+    try {
+      const token = session?.accessToken || localStorage.getItem('token');
+      const currentYear = new Date().getFullYear().toString();
+      
+      // Ambil kompetensi wajib
+      const kompetensiWajibResult = await fetchKompetensiWajib(session, { tahun: currentYear });
+      
+      if (!kompetensiWajibResult.success || !kompetensiWajibResult.data) {
+        console.log('Tidak ada kompetensi wajib');
+        setPegawaiBelumLengkap([]);
+        return;
+      }
+      
+      const kompetensiWajib = kompetensiWajibResult.data;
+      const totalKompetensiWajib = kompetensiWajib.length;
+      
+      if (totalKompetensiWajib === 0) {
+        setPegawaiBelumLengkap([]);
+        return;
+      }
+      
+      // Untuk setiap pegawai, hitung berapa kompetensi wajib yang sudah dipenuhi
+      const pegawaiStatus = await Promise.all(pegawaiList.map(async (pegawai) => {
+        try {
+          // Ambil kompetensi pegawai
+          const kompetensiResponse = await fetch(
+            `${process.env.NEXT_PUBLIC_API_URL}/userskompetensi/user/${pegawai.id}`,
+            { headers: { 'Authorization': `Bearer ${token}` } }
+          );
+          const kompetensiResult = await kompetensiResponse.json();
+          
+          // Filter kompetensi yang valid (Lulus + hasil_verif Valid)
+          const kompetensiValid = kompetensiResult.success && kompetensiResult.data
+            ? kompetensiResult.data.filter(k => k.status === 'Lulus' && k.hasil_verif === 'Valid')
+            : [];
+          
+          const kompetensiValidIds = new Set(kompetensiValid.map(k => k.id_kompetensi));
+          
+          // Hitung kompetensi wajib yang sudah dipenuhi
+          const sudahDipenuhi = kompetensiWajib.filter(kw => kompetensiValidIds.has(kw.id_kompetensi)).length;
+          const belumDipenuhi = totalKompetensiWajib - sudahDipenuhi;
+          const persentase = totalKompetensiWajib > 0 ? Math.round((sudahDipenuhi / totalKompetensiWajib) * 100) : 0;
+          
+          return {
+            ...pegawai,
+            totalKompetensiWajib,
+            sudahDipenuhi,
+            belumDipenuhi,
+            persentase,
+            isComplete: sudahDipenuhi === totalKompetensiWajib,
+            kompetensiWajibList: kompetensiWajib.map(kw => ({
+              ...kw,
+              sudahDipenuhi: kompetensiValidIds.has(kw.id_kompetensi)
+            }))
+          };
+        } catch (err) {
+          console.error(`Error for pegawai ${pegawai.id}:`, err);
+          return {
+            ...pegawai,
+            totalKompetensiWajib,
+            sudahDipenuhi: 0,
+            belumDipenuhi: totalKompetensiWajib,
+            persentase: 0,
+            isComplete: false,
+            kompetensiWajibList: []
+          };
+        }
+      }));
+      
+      // Filter pegawai yang belum 100% memenuhi kompetensi wajib
+      const belumLengkap = pegawaiStatus.filter(p => !p.isComplete);
+      // Urutkan berdasarkan persentase terendah
+      belumLengkap.sort((a, b) => a.persentase - b.persentase);
+      
+      setPegawaiBelumLengkap(belumLengkap);
+      console.log('📊 Pegawai belum lengkap kompetensi wajib:', belumLengkap.length);
+      
+    } catch (error) {
+      console.error('Error analyzing pegawai kompetensi:', error);
+    }
+  };
+
   // Fetch kompetensi wajib untuk user
   const fetchKompetensiWajibUser = async () => {
     setIsLoadingKompetensiWajib(true);
     try {
       const currentYear = new Date().getFullYear().toString();
       
-      // Ambil kompetensi wajib untuk tahun ini
       const result = await fetchKompetensiWajib(session, { tahun: currentYear });
       
       if (result.success && result.data) {
@@ -298,7 +284,6 @@ const Home = () => {
   // Hitung kompetensi wajib yang belum dipenuhi (setelah userKompetensi di-load)
   useEffect(() => {
     if (kompetensiWajibData.length > 0 && userKompetensi.length > 0) {
-      // Ambil kompetensi user yang sudah valid (Lulus + hasil_verif Valid)
       const validUserKompetensi = userKompetensi.filter(item => 
         item.status === 'Lulus' && item.hasil_verif === 'Valid'
       );
@@ -306,13 +291,11 @@ const Home = () => {
       
       const userKompetensiIds = new Set(validUserKompetensi.map(k => k.id_kompetensi));
       
-      // Filter kompetensi wajib yang belum dipenuhi user
       const belumDipenuhi = kompetensiWajibData.filter(kw => !userKompetensiIds.has(kw.id_kompetensi));
       setKompetensiWajibBelumDipenuhi(belumDipenuhi);
       
       console.log('📊 Kompetensi wajib BELUM dipenuhi:', belumDipenuhi.length);
     } else if (kompetensiWajibData.length > 0 && userKompetensi.length === 0) {
-      // Jika user belum punya kompetensi sama sekali
       setKompetensiWajibBelumDipenuhi(kompetensiWajibData);
       console.log('📊 Kompetensi wajib BELUM dipenuhi (user belum punya kompetensi):', kompetensiWajibData.length);
     }
@@ -326,21 +309,16 @@ const Home = () => {
       
       const result = await fetchUserKompetensi(session, { all: true });
       
-      console.log('📥 Raw all kompetensi result:', result);
-      console.log('📥 Data length:', result.data?.length);
-      
       if (result.success && result.data && result.data.length > 0) {
         setAllKompetensiData(result.data);
         processUnverifiedKompetensi(result.data);
       } else {
-        console.log('⚠️ Using mock data for testing...');
-        setAllKompetensiData(MOCK_ALL_USERS_DATA);
-        processUnverifiedKompetensi(MOCK_ALL_USERS_DATA);
+        console.log('⚠️ No kompetensi data found');
+        setUsersWithUnverifiedKompetensi([]);
       }
     } catch (error) {
       console.error('Error fetching all kompetensi:', error);
-      setAllKompetensiData(MOCK_ALL_USERS_DATA);
-      processUnverifiedKompetensi(MOCK_ALL_USERS_DATA);
+      setUsersWithUnverifiedKompetensi([]);
     } finally {
       setIsLoadingAdminNotification(false);
     }
@@ -349,19 +327,12 @@ const Home = () => {
   // Proses data kompetensi untuk mendapatkan kompetensi yang BELUM DIVERIFIKASI (untuk admin)
   const processUnverifiedKompetensi = (data) => {
     if (!data || data.length === 0) {
-      console.log('No kompetensi data available');
       setUsersWithUnverifiedKompetensi([]);
       return;
     }
-
-    console.log('Processing unverified kompetensi from', data.length, 'records');
     
-    // Filter hanya kompetensi yang BELUM diverifikasi (verified_by === null)
     const unverifiedData = data.filter(item => !item.verified_by);
     
-    console.log('Unverified kompetensi count:', unverifiedData.length);
-    
-    // Kelompokkan berdasarkan user_nip
     const grouped = unverifiedData.reduce((acc, item) => {
       const nip = item.user_nip;
       if (!nip) return acc;
@@ -391,20 +362,8 @@ const Home = () => {
       return acc;
     }, {});
     
-    console.log('Grouped data:', Object.keys(grouped).length, 'users');
-    
-    // Filter hanya yang memiliki unverified kompetensi
     const filtered = Object.values(grouped).filter(u => u.unverifiedKompetensi.length > 0);
-    // Urutkan berdasarkan jumlah terbanyak
     filtered.sort((a, b) => b.unverifiedKompetensi.length - a.unverifiedKompetensi.length);
-    
-    console.log('📊 Users with unverified kompetensi:', filtered.length);
-    filtered.forEach(u => {
-      console.log(`- ${u.nama} (${u.nip}): ${u.unverifiedKompetensi.length} kompetensi menunggu verifikasi`);
-      u.unverifiedKompetensi.forEach(k => {
-        console.log(`  * ${k.kode} - ${k.nama}`);
-      });
-    });
     
     setUsersWithUnverifiedKompetensi(filtered);
   };
@@ -495,13 +454,9 @@ const Home = () => {
     setIsLoading(true);
     setFetchError(null);
     try {
-      console.log('📡 Fetching dashboard stats...');
       const result = await fetchDashboardStats(session);
       
-      console.log('📥 Dashboard result:', result);
-      
       if (result.success) {
-        console.log('📊 Dashboard Data:', result.data);
         setStats(result.data);
       } else {
         console.error('Failed to fetch dashboard data:', result.message);
@@ -518,18 +473,14 @@ const Home = () => {
   // Fetch kompetensi milik user yang sedang login
   const fetchUserKompetensiData = async () => {
     try {
-      console.log('📡 Fetching user kompetensi for NIP:', userInfo.nip);
-      
       const result = await fetchUserKompetensi(session, { all: true });
       
       if (result.success) {
-        // Filter hanya data user yang sedang login
         const userNip = userInfo.nip;
         const userData = result.data.filter(item => item.user_nip === userNip);
         
         setUserKompetensi(userData);
         
-        // Hitung statistik
         const total = userData.length;
         const lulus = userData.filter(item => item.status === 'Lulus' && item.hasil_verif === 'Valid').length;
         const tidakLulus = userData.filter(item => item.status === 'Tidak Lulus' || item.hasil_verif === 'Tidak Valid').length;
@@ -603,6 +554,12 @@ const Home = () => {
     }
   };
 
+  const getProgressColor = (persentase) => {
+    if (persentase >= 80) return 'bg-green-500';
+    if (persentase >= 50) return 'bg-yellow-500';
+    return 'bg-red-500';
+  };
+
   const StatCard = ({ title, value, icon, color, subtitle }) => (
     <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-6 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
       <div className="flex items-center justify-between">
@@ -639,7 +596,6 @@ const Home = () => {
 
   return (
     <DashboardLayout>
-      {/* Inject CSS animations */}
       <style dangerouslySetInnerHTML={{ __html: blinkAnimation }} />
       
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
@@ -667,6 +623,122 @@ const Home = () => {
 
         {/* Main Content */}
         <div className="px-8 py-8 max-w-[1600px] mx-auto">
+
+          {/* NOTIFIKASI UNTUK ADMIN: PEGAWAI YANG BELUM 100% MEMENUHI KOMPETENSI WAJIB */}
+          {isAdmin && pegawaiBelumLengkap.length > 0 && (
+            <div className="mb-8 bg-gradient-to-r from-orange-500 to-red-500 rounded-2xl shadow-xl overflow-hidden slide-in pulse-glow">
+              <div className="px-8 py-6 flex items-start text-white">
+                <div className="flex-shrink-0 mr-6">
+                  <span className="text-5xl animate-bounce inline-block">📊</span>
+                </div>
+                <div className="flex-1">
+                  <div className="flex items-center justify-between flex-wrap mb-3">
+                    <p className="font-bold text-2xl flex items-center gap-3">
+                      <span className="blink-text bg-red-600 px-4 py-2 rounded-lg shadow-lg">
+                        ⚠️ PEGAWAI YANG BELUM 100% MEMENUHI KOMPETENSI WAJIB
+                      </span>
+                      <span className="bg-yellow-400 text-yellow-900 text-sm px-3 py-1 rounded-full animate-pulse font-bold">
+                        {pegawaiBelumLengkap.length} pegawai
+                      </span>
+                    </p>
+                  </div>
+                  <p className="text-sm text-white/90 mb-4 flex items-center">
+                    <span className="inline-block w-2 h-2 bg-red-400 rounded-full mr-2 animate-pulse"></span>
+                    {pegawaiBelumLengkap.length} pegawai belum menyelesaikan 100% kompetensi wajib tahun {new Date().getFullYear()}
+                  </p>
+
+                  {isLoadingPegawaiStatus ? (
+                    <div className="flex items-center justify-center py-8">
+                      <div className="animate-spin rounded-full h-8 w-8 border-2 border-white border-t-transparent"></div>
+                      <span className="ml-3">Memuat data...</span>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="space-y-3 max-h-96 overflow-y-auto pr-2">
+                        {pegawaiBelumLengkap.slice(0, 5).map((pegawai, idx) => (
+                          <div key={pegawai.nip || idx} className="bg-white/10 rounded-lg p-4 hover:bg-white/20 transition-all duration-300 hover:scale-105 transform cursor-pointer">
+                            <div className="flex justify-between items-center mb-2 flex-wrap gap-2">
+                              <div>
+                                <span className="font-bold text-white text-lg">{pegawai.nama}</span>
+                                <span className="text-xs text-white/70 ml-2">NIP: {pegawai.nip}</span>
+                                {pegawai.nama_fungsi && (
+                                  <span className="text-xs text-white/70 ml-2">• {pegawai.nama_fungsi}</span>
+                                )}
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <span className="text-xs bg-blue-400 text-white px-2 py-1 rounded-full font-bold">
+                                  {pegawai.persentase}%
+                                </span>
+                                <span className="text-xs bg-yellow-400 text-yellow-900 px-2 py-1 rounded-full">
+                                  {pegawai.sudahDipenuhi}/{pegawai.totalKompetensiWajib}
+                                </span>
+                              </div>
+                            </div>
+                            
+                            {/* Progress Bar */}
+                            <div className="mb-3">
+                              <div className="w-full bg-white/30 rounded-full h-2">
+                                <div 
+                                  className={`${getProgressColor(pegawai.persentase)} h-2 rounded-full transition-all duration-500`} 
+                                  style={{ width: `${pegawai.persentase}%` }}
+                                ></div>
+                              </div>
+                            </div>
+                            
+                            {/* Daftar kompetensi wajib yang belum dipenuhi */}
+                            <div className="space-y-1 mt-2">
+                              {pegawai.kompetensiWajibList?.filter(k => !k.sudahDipenuhi).slice(0, 3).map((kom, kidx) => (
+                                <div key={kidx} className="text-sm text-white/80 flex items-center gap-2">
+                                  <span className="text-red-300">⚠️</span>
+                                  <span className="font-mono text-xs bg-black/20 px-1.5 py-0.5 rounded">
+                                    {kom.kode_kompetensi}
+                                  </span>
+                                  <span className="text-xs">{kom.nama_kompetensi?.substring(0, 50)}</span>
+                                </div>
+                              ))}
+                              {pegawai.kompetensiWajibList?.filter(k => !k.sudahDipenuhi).length > 3 && (
+                                <p className="text-xs text-white/60">
+                                  +{pegawai.kompetensiWajibList.filter(k => !k.sudahDipenuhi).length - 3} kompetensi lainnya
+                                </p>
+                              )}
+                            </div>
+                            
+                            <div className="mt-3 flex gap-3">
+                              <Link 
+                                href={`/users_kompetensi?nip=${pegawai.nip}`} 
+                                className="text-xs text-white underline hover:no-underline hover:text-yellow-200 transition-colors"
+                              >
+                                Lihat semua kompetensi →
+                              </Link>
+                              <Link 
+                                href={`/pelatihan`} 
+                                className="text-xs text-yellow-200 underline hover:no-underline hover:text-yellow-100 transition-colors"
+                              >
+                                📚 Rekomendasi Pelatihan
+                              </Link>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                      {pegawaiBelumLengkap.length > 5 && (
+                        <p className="text-xs text-white/80 mt-2 text-center">
+                          +{pegawaiBelumLengkap.length - 5} pegawai lainnya
+                        </p>
+                      )}
+                      <div className="mt-4 pt-3 border-t border-white/20 text-right">
+                        <Link 
+                          href="/users_kompetensi" 
+                          className="text-sm bg-white/20 px-4 py-2 rounded-lg hover:bg-white/30 transition-all duration-300 hover:scale-105 transform inline-block"
+                        >
+                          Kelola Semua Pegawai →
+                        </Link>
+                      </div>
+                    </>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* NOTIFIKASI KOMPETENSI WAJIB YANG HARUS DIPENUHI - UNTUK USER BIASA */}
           {!isAdmin && kompetensiWajibBelumDipenuhi.length > 0 && (
@@ -762,7 +834,7 @@ const Home = () => {
 
           {/* NOTIFIKASI UNTUK ADMIN: KOMPETENSI YANG HARUS DIVERIFIKASI */}
           {isAdmin && usersWithUnverifiedKompetensi.length > 0 && (
-            <div className="mb-8 bg-gradient-to-r from-red-500 to-pink-500 rounded-2xl shadow-xl overflow-hidden slide-in">
+            <div className="mb-8 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-2xl shadow-xl overflow-hidden slide-in">
               <div className="px-8 py-6 flex items-start text-white">
                 <div className="flex-shrink-0 mr-6">
                   <span className="text-5xl animate-bounce inline-block">🔔</span>
@@ -770,7 +842,7 @@ const Home = () => {
                 <div className="flex-1">
                   <div className="flex items-center justify-between flex-wrap mb-3">
                     <p className="font-bold text-2xl flex items-center gap-3">
-                      <span className="blink-text bg-red-600 px-4 py-2 rounded-lg shadow-lg">
+                      <span className="blink-text bg-blue-600 px-4 py-2 rounded-lg shadow-lg">
                         ⚠️ KOMPETENSI YANG HARUS DIVERIFIKASI
                       </span>
                       <span className="bg-yellow-400 text-yellow-900 text-sm px-3 py-1 rounded-full animate-pulse font-bold">
@@ -779,7 +851,7 @@ const Home = () => {
                     </p>
                   </div>
                   <p className="text-sm text-white/90 mb-4 flex items-center">
-                    <span className="inline-block w-2 h-2 bg-red-400 rounded-full mr-2 animate-pulse"></span>
+                    <span className="inline-block w-2 h-2 bg-blue-400 rounded-full mr-2 animate-pulse"></span>
                     Berikut adalah daftar kompetensi yang <strong className="mx-1">BELUM DIVERIFIKASI</strong> dan perlu segera diverifikasi
                   </p>
 
@@ -1052,11 +1124,18 @@ const Home = () => {
           {isAdmin && (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
               <StatCard
-                title="Total Kompetensi"
-                value={stats.kompetensi.total}
-                icon="🎓"
+                title="Total Pegawai"
+                value={allPegawaiData.length}
+                icon="👥"
                 color="bg-blue-100 text-blue-600"
-                subtitle="Seluruh kompetensi"
+                subtitle="Seluruh pegawai aktif"
+              />
+              <StatCard
+                title="Belum 100% Kompetensi Wajib"
+                value={pegawaiBelumLengkap.length}
+                icon="⚠️"
+                color="bg-red-100 text-red-600"
+                subtitle="Perlu pendampingan"
               />
               <StatCard
                 title="Menunggu Verifikasi"
@@ -1064,13 +1143,6 @@ const Home = () => {
                 icon="⏳"
                 color="bg-yellow-100 text-yellow-600"
                 subtitle="Perlu segera diverifikasi"
-              />
-              <StatCard
-                title="User dengan Kompetensi"
-                value={usersWithUnverifiedKompetensi.length}
-                icon="👥"
-                color="bg-purple-100 text-purple-600"
-                subtitle="Yang memiliki kompetensi pending"
               />
               <StatCard
                 title="Jadwal Pelatihan"
