@@ -47,6 +47,85 @@ const httpsAgent = new https.Agent({
     rejectUnauthorized: true
 });
 
+// ========== LOGIN ROUTE (TANPA AUTH) UNTUK POSTMAN ==========
+app.post('/api/login', async (req, res) => {
+    try {
+        console.log('📥 Login request received');
+        console.log('📥 Body:', req.body);
+        
+        const { username, password } = req.body;
+        
+        if (!username || !password) {
+            return res.status(400).json({
+                success: false,
+                message: 'Username dan password diperlukan'
+            });
+        }
+        
+        // Forward ke Keycloak
+        const keycloakUrl = `${KEYCLOAK_CONFIG.url}/realms/${KEYCLOAK_CONFIG.realm}/protocol/openid-connect/token`;
+        
+        const params = new URLSearchParams();
+        params.append('client_id', KEYCLOAK_CONFIG.clientId);
+        params.append('client_secret', KEYCLOAK_CONFIG.clientSecret);
+        params.append('grant_type', 'password');
+        params.append('username', username);
+        params.append('password', password);
+        
+        console.log('📡 Calling Keycloak:', keycloakUrl);
+        
+        const response = await axios.post(keycloakUrl, params, {
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded'
+            },
+            httpsAgent: httpsAgent
+        });
+        
+        if (response.data && response.data.access_token) {
+            // Decode token untuk mendapatkan informasi user
+            const decoded = jwt.decode(response.data.access_token);
+            
+            console.log(`✅ Login successful: ${username}`);
+            
+            return res.json({
+                success: true,
+                message: 'Login berhasil',
+                data: {
+                    access_token: response.data.access_token,
+                    refresh_token: response.data.refresh_token,
+                    expires_in: response.data.expires_in,
+                    token_type: response.data.token_type,
+                    user: {
+                        id: decoded?.sub,
+                        username: decoded?.preferred_username || username,
+                        email: decoded?.email,
+                        name: decoded?.name,
+                        roles: decoded?.realm_access?.roles || []
+                    }
+                }
+            });
+        } else {
+            throw new Error('No access token received');
+        }
+        
+    } catch (error) {
+        console.error('❌ Login error:', error.response?.data || error.message);
+        
+        if (error.response?.status === 401) {
+            return res.status(401).json({
+                success: false,
+                message: 'Username atau password salah'
+            });
+        }
+        
+        res.status(500).json({
+            success: false,
+            message: 'Terjadi kesalahan saat login',
+            error: error.message
+        });
+    }
+});
+
 // ========== AUTH MIDDLEWARE ==========
 const enhancedAuth = async (req, res, next) => {
     try {
@@ -117,7 +196,18 @@ const enhancedAuth = async (req, res, next) => {
             roles: decoded.realm_access?.roles || []
         };
 
-        console.log(`✅ User authenticated: ${req.user.username}`);
+        // Extract roles from realm_access or resource_access
+        let roles = [];
+        if (decoded.realm_access && decoded.realm_access.roles) {
+            roles = decoded.realm_access.roles;
+        } else if (decoded.resource_access && decoded.resource_access['nextjs-local'] && decoded.resource_access['nextjs-local'].roles) {
+            roles = decoded.resource_access['nextjs-local'].roles;
+        }
+        
+        req.user.extractedRoles = roles;
+        
+        console.log(`✅ User authenticated: ${req.user.username} (${req.path})`);
+
         next();
 
     } catch (error) {
@@ -203,6 +293,15 @@ app.get('/uploads-list', (req, res) => {
     }
 });
 
+// Health check endpoint (public)
+app.get('/api/health', (req, res) => {
+    res.json({
+        success: true,
+        message: 'Server is running',
+        timestamp: new Date().toISOString()
+    });
+});
+
 // ========== IMPORT ROUTES ==========
 const standarkompetensiRoutes = require('./routes/standarkompetensi');
 const masterRoutes = require('./routes/master');
@@ -211,6 +310,7 @@ const userskompetensiRoutes = require('./routes/userskompetensi');
 const pelatihanRoutes = require('./routes/pelatihan');
 const keycloakRoutes = require('./routes/keycloak');
 const dashboardRoutes = require('./routes/dashboard');
+const kompetensiWajibRoutes = require('./routes/kompetensiWajib'); // TAMBAHKAN INI
 
 // ========== MOUNT ROUTES ==========
 app.use('/api/standarkompetensi', standarkompetensiRoutes);
@@ -220,13 +320,35 @@ app.use('/api/userskompetensi', userskompetensiRoutes);
 app.use('/api/pelatihan', pelatihanRoutes);
 app.use('/api/keycloak', keycloakRoutes);
 app.use('/api/dashboard', dashboardRoutes);
+app.use('/api/kompetensi-wajib', kompetensiWajibRoutes); // TAMBAHKAN INI
 
+// Error handling middleware
+app.use((err, req, res, next) => {
+    console.error('❌ Global error handler:', err);
+    res.status(500).json({
+        success: false,
+        message: 'Terjadi kesalahan server',
+        error: err.message
+    });
+});
+
+// 404 handler
+app.use((req, res) => {
+    console.log(`❌ Route not found: ${req.method} ${req.path}`);
+    res.status(404).json({
+        success: false,
+        message: `Route ${req.path} tidak ditemukan`
+    });
+});
 
 // ========== START SERVER ==========
 app.listen(PORT, () => {
     console.log(`
     ============================================
     🚀 SERVER READY: http://localhost:${PORT}
+    📁 Uploads directory: ${UPLOADS_DIR}
+    🔐 Auth enabled for protected routes
+    📝 Public routes: /api/login, /api/health
     ============================================
     `);
 });
