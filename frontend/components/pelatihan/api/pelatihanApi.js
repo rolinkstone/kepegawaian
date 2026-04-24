@@ -681,3 +681,313 @@ export const respondUndangan = async (session, id, status) => {
         };
     }
 };
+
+// ========== KOMPETENSI WAJIB API ==========
+
+/**
+ * GET /api/pelatihan/kompetensi-wajib
+ * Mendapatkan semua kompetensi wajib
+ */
+export const fetchKompetensiWajib = async (session, params = {}) => {
+    const token = getToken(session);
+    
+    if (!token) {
+        return {
+            success: false,
+            message: 'Token tidak ditemukan',
+            data: []
+        };
+    }
+    
+    const queryParams = new URLSearchParams();
+    if (params.tahun) queryParams.append('tahun', params.tahun);
+    
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL;
+    const url = `${baseUrl}/pelatihan/kompetensi-wajib${queryParams.toString() ? `?${queryParams}` : ''}`;
+    
+    try {
+        const response = await fetch(url, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        return await handleResponse(response);
+    } catch (error) {
+        console.error('Error fetching kompetensi wajib:', error);
+        return {
+            success: false,
+            message: error.message,
+            data: []
+        };
+    }
+};
+
+/**
+ * GET /api/pelatihan/kompetensi-wajib/tahun/:tahun
+ * Mendapatkan kompetensi wajib berdasarkan tahun
+ */
+export const fetchKompetensiWajibByTahun = async (session, tahun) => {
+    const token = getToken(session);
+    
+    if (!token) {
+        return {
+            success: false,
+            message: 'Token tidak ditemukan',
+            data: []
+        };
+    }
+    
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL;
+    const url = `${baseUrl}/pelatihan/kompetensi-wajib/tahun/${tahun}`;
+    
+    try {
+        const response = await fetch(url, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        return await handleResponse(response);
+    } catch (error) {
+        console.error('Error fetching kompetensi wajib by tahun:', error);
+        return {
+            success: false,
+            message: error.message,
+            data: []
+        };
+    }
+};
+
+/**
+ * GET /api/pelatihan/kompetensi-wajib/tahun-options
+ * Mendapatkan daftar tahun yang tersedia
+ */
+export const fetchTahunOptions = async (session) => {
+    const token = getToken(session);
+    
+    if (!token) {
+        return {
+            success: false,
+            message: 'Token tidak ditemukan',
+            data: []
+        };
+    }
+    
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL;
+    const url = `${baseUrl}/pelatihan/kompetensi-wajib/tahun-options`;
+    
+    try {
+        const response = await fetch(url, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        return await handleResponse(response);
+    } catch (error) {
+        console.error('Error fetching tahun options:', error);
+        return {
+            success: false,
+            message: error.message,
+            data: []
+        };
+    }
+};
+
+/**
+ * GET /api/pelatihan/kompetensi-wajib/options/kompetensi
+ * Mendapatkan daftar kompetensi yang belum menjadi wajib untuk tahun tertentu
+ */
+export const fetchAvailableKompetensi = async (session, tahun) => {
+    const token = getToken(session);
+    
+    if (!token) {
+        return {
+            success: false,
+            message: 'Token tidak ditemukan',
+            data: []
+        };
+    }
+    
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL;
+    const url = `${baseUrl}/pelatihan/kompetensi-wajib/options/kompetensi${tahun ? `?tahun=${tahun}` : ''}`;
+    
+    try {
+        const response = await fetch(url, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        return await handleResponse(response);
+    } catch (error) {
+        console.error('Error fetching available kompetensi:', error);
+        return {
+            success: false,
+            message: error.message,
+            data: []
+        };
+    }
+};
+
+/**
+ * POST /api/pelatihan/kompetensi-wajib
+ * Menambah kompetensi wajib baru (hanya admin)
+ */
+export const createKompetensiWajib = async (session, data) => {
+    const token = getToken(session);
+    
+    if (!token) {
+        return {
+            success: false,
+            message: 'Token tidak ditemukan'
+        };
+    }
+    
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL;
+    const url = `${baseUrl}/pelatihan/kompetensi-wajib`;
+    
+    console.log('📤 POST /kompetensi-wajib:', data);
+    
+    try {
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(data)
+        });
+        
+        return await handleResponse(response);
+    } catch (error) {
+        console.error('Error creating kompetensi wajib:', error);
+        return {
+            success: false,
+            message: error.message
+        };
+    }
+};
+
+/**
+ * POST /api/pelatihan/kompetensi-wajib/bulk
+ * Menambah multiple kompetensi wajib sekaligus (hanya admin)
+ */
+export const createKompetensiWajibBulk = async (session, kompetensiIds, tahun) => {
+    const token = getToken(session);
+    
+    if (!token) {
+        return {
+            success: false,
+            message: 'Token tidak ditemukan'
+        };
+    }
+    
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL;
+    const url = `${baseUrl}/pelatihan/kompetensi-wajib/bulk`;
+    
+    console.log('📤 POST /kompetensi-wajib/bulk:', { kompetensi_ids: kompetensiIds, tahun });
+    
+    try {
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                kompetensi_ids: kompetensiIds,
+                tahun: tahun
+            })
+        });
+        
+        return await handleResponse(response);
+    } catch (error) {
+        console.error('Error creating kompetensi wajib bulk:', error);
+        return {
+            success: false,
+            message: error.message
+        };
+    }
+};
+
+/**
+ * DELETE /api/pelatihan/kompetensi-wajib/:id
+ * Menghapus kompetensi wajib (hanya admin)
+ */
+export const deleteKompetensiWajib = async (session, id) => {
+    const token = getToken(session);
+    
+    if (!token) {
+        return {
+            success: false,
+            message: 'Token tidak ditemukan'
+        };
+    }
+    
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL;
+    const url = `${baseUrl}/pelatihan/kompetensi-wajib/${id}`;
+    
+    try {
+        const response = await fetch(url, {
+            method: 'DELETE',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        return await handleResponse(response);
+    } catch (error) {
+        console.error('Error deleting kompetensi wajib:', error);
+        return {
+            success: false,
+            message: error.message
+        };
+    }
+};
+
+/**
+ * DELETE /api/pelatihan/kompetensi-wajib/tahun/:tahun
+ * Menghapus semua kompetensi wajib untuk tahun tertentu (hanya admin)
+ */
+export const deleteKompetensiWajibByTahun = async (session, tahun) => {
+    const token = getToken(session);
+    
+    if (!token) {
+        return {
+            success: false,
+            message: 'Token tidak ditemukan'
+        };
+    }
+    
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL;
+    const url = `${baseUrl}/pelatihan/kompetensi-wajib/tahun/${tahun}`;
+    
+    try {
+        const response = await fetch(url, {
+            method: 'DELETE',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        return await handleResponse(response);
+    } catch (error) {
+        console.error('Error deleting kompetensi wajib by tahun:', error);
+        return {
+            success: false,
+            message: error.message
+        };
+    }
+};

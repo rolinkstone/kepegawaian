@@ -4,6 +4,8 @@ import { useSession } from 'next-auth/react';
 import Swal from 'sweetalert2';
 import PelatihanForm from './PelatihanForm';
 import MasterPelatihanForm from './MasterPelatihanForm';
+import KompetensiWajibForm from './KompetensiWajibForm';
+import KompetensiWajibList from './KompetensiWajibList';
 import FilterSection from './FilterSection';
 import DetailJadwalModal from './modals/DetailJadwalModal';
 import UndangPesertaModal from './modals/UndangPesertaModal';
@@ -45,7 +47,7 @@ const PelatihanContainer = () => {
     });
 
     // State untuk tab
-    const [activeTab, setActiveTab] = useState('jadwal'); // 'jadwal' atau 'master'
+    const [activeTab, setActiveTab] = useState('jadwal'); // 'jadwal', 'master', 'kompetensi_wajib'
 
     // Filter states
     const [filters, setFilters] = useState({
@@ -58,6 +60,7 @@ const PelatihanContainer = () => {
     const [options, setOptions] = useState({
         pelatihan: [],
         users: [],
+        kompetensi: [],
         status_options: ['Draft', 'Publik', 'Berlangsung', 'Selesai', 'Dibatalkan'],
         metode_options: ['Offline', 'Online', 'Hybrid'],
         status_undangan_options: ['Pending', 'Diterima', 'Ditolak'],
@@ -88,155 +91,152 @@ const PelatihanContainer = () => {
         selesai: 0
     });
 
-    // Di PelatihanContainer.js, tambahkan fungsi helper
-        const getUserNip = useCallback(() => {
-            if (!session?.user) return null;
-            
-            return session.user.preferred_username || 
-                session.user.username || 
-                session.user.nip || 
-                session.user.email?.split('@')[0] ||
-                null;
-        }, [session]);
+    // Fungsi helper untuk mendapatkan NIP user
+    const getUserNip = useCallback(() => {
+        if (!session?.user) return null;
+        
+        return session.user.preferred_username || 
+            session.user.username || 
+            session.user.nip || 
+            session.user.email?.split('@')[0] ||
+            null;
+    }, [session]);
+
     // ========== CEK USER ROLES ==========
-    // components/pelatihan/PelatihanContainer.js
+    useEffect(() => {
+        if (session?.user) {
+            console.log('🔍 Session user:', session.user);
+            
+            let roles = [];
+            let isAdmin = false;
+            let isKatim = false;
 
-// ========== CEK USER ROLES ==========
-useEffect(() => {
-    if (session?.user) {
-        console.log('🔍 Session user:', session.user);
-        
-        let roles = [];
-        let isAdmin = false;
-        let isKatim = false;
-
-        // CEK 1: Dari session.user.roles (array)
-        if (session.user.roles && Array.isArray(session.user.roles)) {
-            console.log('🔍 roles dari array:', session.user.roles);
-            roles = [...roles, ...session.user.roles];
-            isAdmin = isAdmin || session.user.roles.includes('admin_tambun_raya');
-            isKatim = isKatim || session.user.roles.includes('katim');
-        }
-        
-        // CEK 2: Dari session.user.roles (string)
-        if (session.user.roles && typeof session.user.roles === 'string') {
-            const roleArray = session.user.roles.split(',').map(r => r.trim());
-            console.log('🔍 roles dari string:', roleArray);
-            roles = [...roles, ...roleArray];
-            isAdmin = isAdmin || roleArray.includes('admin_tambun_raya');
-            isKatim = isKatim || roleArray.includes('katim');
-        }
-        
-        // CEK 3: Dari session.user.realm_access (Keycloak specific)
-        if (session.user.realm_access?.roles) {
-            console.log('🔍 realm_access roles:', session.user.realm_access.roles);
-            const realmRoles = session.user.realm_access.roles;
-            roles = [...roles, ...realmRoles];
-            isAdmin = isAdmin || realmRoles.includes('admin_tambun_raya');
-            isKatim = isKatim || realmRoles.includes('katim');
-        }
-        
-        // CEK 4: Dari session.user.resource_access
-        if (session.user.resource_access) {
-            Object.keys(session.user.resource_access).forEach(client => {
-                if (session.user.resource_access[client].roles) {
-                    const clientRoles = session.user.resource_access[client].roles;
-                    console.log(`🔍 resource_access.${client} roles:`, clientRoles);
-                    roles = [...roles, ...clientRoles];
-                    isAdmin = isAdmin || clientRoles.includes('admin_tambun_raya');
-                    isKatim = isKatim || clientRoles.includes('katim');
+            // CEK 1: Dari session.user.roles (array)
+            if (session.user.roles && Array.isArray(session.user.roles)) {
+                console.log('🔍 roles dari array:', session.user.roles);
+                roles = [...roles, ...session.user.roles];
+                isAdmin = isAdmin || session.user.roles.includes('admin_tambun_raya');
+                isKatim = isKatim || session.user.roles.includes('katim');
+            }
+            
+            // CEK 2: Dari session.user.roles (string)
+            if (session.user.roles && typeof session.user.roles === 'string') {
+                const roleArray = session.user.roles.split(',').map(r => r.trim());
+                console.log('🔍 roles dari string:', roleArray);
+                roles = [...roles, ...roleArray];
+                isAdmin = isAdmin || roleArray.includes('admin_tambun_raya');
+                isKatim = isKatim || roleArray.includes('katim');
+            }
+            
+            // CEK 3: Dari session.user.realm_access (Keycloak specific)
+            if (session.user.realm_access?.roles) {
+                console.log('🔍 realm_access roles:', session.user.realm_access.roles);
+                const realmRoles = session.user.realm_access.roles;
+                roles = [...roles, ...realmRoles];
+                isAdmin = isAdmin || realmRoles.includes('admin_tambun_raya');
+                isKatim = isKatim || realmRoles.includes('katim');
+            }
+            
+            // CEK 4: Dari session.user.resource_access
+            if (session.user.resource_access) {
+                Object.keys(session.user.resource_access).forEach(client => {
+                    if (session.user.resource_access[client].roles) {
+                        const clientRoles = session.user.resource_access[client].roles;
+                        console.log(`🔍 resource_access.${client} roles:`, clientRoles);
+                        roles = [...roles, ...clientRoles];
+                        isAdmin = isAdmin || clientRoles.includes('admin_tambun_raya');
+                        isKatim = isKatim || clientRoles.includes('katim');
+                    }
+                });
+            }
+            
+            // CEK 5: Dari session.user.client_roles (jika ada)
+            if (session.user.client_roles) {
+                console.log('🔍 client_roles:', session.user.client_roles);
+                const clientRoles = session.user.client_roles;
+                roles = [...roles, ...clientRoles];
+                isAdmin = isAdmin || clientRoles.includes('admin_tambun_raya');
+                isKatim = isKatim || clientRoles.includes('katim');
+            }
+            
+            // CEK 6: Dari session.user.groups (jika ada)
+            if (session.user.groups) {
+                console.log('🔍 groups:', session.user.groups);
+            }
+            
+            // CEK 7: Dari session.user.email/username (fallback)
+            if (session.user.email) {
+                if (session.user.email.includes('admin')) {
+                    isAdmin = true;
+                    console.log('🔍 isAdmin dari email');
                 }
+                if (session.user.email.includes('katim')) {
+                    isKatim = true;
+                    console.log('🔍 isKatim dari email');
+                }
+            }
+            
+            if (session.user.preferred_username) {
+                if (session.user.preferred_username.includes('admin')) {
+                    isAdmin = true;
+                    console.log('🔍 isAdmin dari preferred_username');
+                }
+                if (session.user.preferred_username.includes('katim')) {
+                    isKatim = true;
+                    console.log('🔍 isKatim dari preferred_username');
+                }
+            }
+            
+            // CEK 8: Dari token (jika ada accessToken)
+            if (session.accessToken) {
+                try {
+                    const tokenParts = session.accessToken.split('.');
+                    if (tokenParts.length === 3) {
+                        const payload = JSON.parse(atob(tokenParts[1]));
+                        console.log('🔍 Token payload:', payload);
+                        
+                        if (payload.realm_access?.roles) {
+                            roles = [...roles, ...payload.realm_access.roles];
+                            isAdmin = isAdmin || payload.realm_access.roles.includes('admin_tambun_raya');
+                            isKatim = isKatim || payload.realm_access.roles.includes('katim');
+                        }
+                        
+                        if (payload.resource_access) {
+                            Object.keys(payload.resource_access).forEach(client => {
+                                if (payload.resource_access[client].roles) {
+                                    roles = [...roles, ...payload.resource_access[client].roles];
+                                    isAdmin = isAdmin || payload.resource_access[client].roles.includes('admin_tambun_raya');
+                                    isKatim = isKatim || payload.resource_access[client].roles.includes('katim');
+                                }
+                            });
+                        }
+                    }
+                } catch (e) {
+                    console.error('Error decoding token:', e);
+                }
+            }
+            
+            // Hapus duplikasi roles
+            roles = [...new Set(roles)];
+            
+            console.log('🔍 FINAL RESULTS =====');
+            console.log('🔍 All roles found:', roles);
+            console.log('🔍 isAdmin:', isAdmin);
+            console.log('🔍 isKatim:', isKatim);
+            
+            setUserRoles({
+                isAdmin,
+                isKatim,
+                isUser: !isAdmin && !isKatim,
+                roles
             });
         }
-        
-        // CEK 5: Dari session.user.client_roles (jika ada)
-        if (session.user.client_roles) {
-            console.log('🔍 client_roles:', session.user.client_roles);
-            const clientRoles = session.user.client_roles;
-            roles = [...roles, ...clientRoles];
-            isAdmin = isAdmin || clientRoles.includes('admin_tambun_raya');
-            isKatim = isKatim || clientRoles.includes('katim');
-        }
-        
-        // CEK 6: Dari session.user.groups (jika ada)
-        if (session.user.groups) {
-            console.log('🔍 groups:', session.user.groups);
-            // Groups mungkin mengandung role
-        }
-        
-        // CEK 7: Dari session.user.email/username (fallback)
-        if (session.user.email) {
-            if (session.user.email.includes('admin')) {
-                isAdmin = true;
-                console.log('🔍 isAdmin dari email');
-            }
-            if (session.user.email.includes('katim')) {
-                isKatim = true;
-                console.log('🔍 isKatim dari email');
-            }
-        }
-        
-        if (session.user.preferred_username) {
-            if (session.user.preferred_username.includes('admin')) {
-                isAdmin = true;
-                console.log('🔍 isAdmin dari preferred_username');
-            }
-            if (session.user.preferred_username.includes('katim')) {
-                isKatim = true;
-                console.log('🔍 isKatim dari preferred_username');
-            }
-        }
-        
-        // CEK 8: Dari token (jika ada accessToken)
-        if (session.accessToken) {
-            try {
-                const tokenParts = session.accessToken.split('.');
-                if (tokenParts.length === 3) {
-                    const payload = JSON.parse(atob(tokenParts[1]));
-                    console.log('🔍 Token payload:', payload);
-                    
-                    if (payload.realm_access?.roles) {
-                        roles = [...roles, ...payload.realm_access.roles];
-                        isAdmin = isAdmin || payload.realm_access.roles.includes('admin_tambun_raya');
-                        isKatim = isKatim || payload.realm_access.roles.includes('katim');
-                    }
-                    
-                    if (payload.resource_access) {
-                        Object.keys(payload.resource_access).forEach(client => {
-                            if (payload.resource_access[client].roles) {
-                                roles = [...roles, ...payload.resource_access[client].roles];
-                                isAdmin = isAdmin || payload.resource_access[client].roles.includes('admin_tambun_raya');
-                                isKatim = isKatim || payload.resource_access[client].roles.includes('katim');
-                            }
-                        });
-                    }
-                }
-            } catch (e) {
-                console.error('Error decoding token:', e);
-            }
-        }
-        
-        // Hapus duplikasi roles
-        roles = [...new Set(roles)];
-        
-        console.log('🔍 FINAL RESULTS =====');
-        console.log('🔍 All roles found:', roles);
-        console.log('🔍 isAdmin:', isAdmin);
-        console.log('🔍 isKatim:', isKatim);
-        
-        setUserRoles({
-            isAdmin,
-            isKatim,
-            isUser: !isAdmin && !isKatim,
-            roles
-        });
-    }
-}, [session]);
+    }, [session]);
 
-// Debug tambahan - tampilkan userRoles di console setiap kali berubah
-useEffect(() => {
-    console.log('👤 User Roles State:', userRoles);
-}, [userRoles]);
+    // Debug tambahan - tampilkan userRoles di console setiap kali berubah
+    useEffect(() => {
+        console.log('👤 User Roles State:', userRoles);
+    }, [userRoles]);
 
     // Tentukan apakah user bisa membuat jadwal
     const canCreateJadwal = userRoles.isKatim || userRoles.isAdmin;
@@ -292,11 +292,13 @@ useEffect(() => {
             }
         } catch (error) {
             console.error('Error fetching data:', error);
-            Swal.fire({
-                icon: 'error',
-                title: 'Error',
-                text: `Gagal memuat data: ${error.message}`
-            });
+            if (showMessage) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: `Gagal memuat data: ${error.message}`
+                });
+            }
         } finally {
             setLoading(false);
             setInitialLoading(false);
@@ -372,9 +374,10 @@ useEffect(() => {
     const handleRefresh = () => {
         if (activeTab === 'jadwal') {
             fetchData(true);
-        } else {
+        } else if (activeTab === 'master') {
             fetchMasterData();
         }
+        // Untuk kompetensi_wajib, refresh akan ditangani oleh komponennya sendiri
     };
 
     // ========== HANDLER UNTUK JADWAL PELATIHAN ==========
@@ -613,7 +616,7 @@ useEffect(() => {
                     <div className="flex gap-2 mt-2">
                         {userRoles.isAdmin && (
                             <span className="px-2 py-1 bg-purple-100 text-purple-800 text-xs rounded-full">
-                                Admin (dapat mengelola master pelatihan)
+                                Admin (dapat mengelola master & kompetensi wajib)
                             </span>
                         )}
                         {userRoles.isKatim && (
@@ -623,30 +626,32 @@ useEffect(() => {
                         )}
                     </div>
                     
-                    {/* Stats Cards */}
-                    <div className="flex gap-4 mt-4">
-                        <div className="bg-blue-50 p-3 rounded-lg">
-                            <p className="text-sm text-blue-600">Total Jadwal</p>
-                            <p className="text-xl font-bold text-blue-700">{stats.total}</p>
+                    {/* Stats Cards - Hanya tampilkan untuk tab jadwal */}
+                    {activeTab === 'jadwal' && (
+                        <div className="flex gap-4 mt-4">
+                            <div className="bg-blue-50 p-3 rounded-lg">
+                                <p className="text-sm text-blue-600">Total Jadwal</p>
+                                <p className="text-xl font-bold text-blue-700">{stats.total}</p>
+                            </div>
+                            <div className="bg-gray-50 p-3 rounded-lg">
+                                <p className="text-sm text-gray-600">Draft</p>
+                                <p className="text-xl font-bold text-gray-700">{stats.draft}</p>
+                            </div>
+                            <div className="bg-green-50 p-3 rounded-lg">
+                                <p className="text-sm text-green-600">Publik</p>
+                                <p className="text-xl font-bold text-green-700">{stats.publik}</p>
+                            </div>
+                            <div className="bg-purple-50 p-3 rounded-lg">
+                                <p className="text-sm text-purple-600">Selesai</p>
+                                <p className="text-xl font-bold text-purple-700">{stats.selesai}</p>
+                            </div>
                         </div>
-                        <div className="bg-gray-50 p-3 rounded-lg">
-                            <p className="text-sm text-gray-600">Draft</p>
-                            <p className="text-xl font-bold text-gray-700">{stats.draft}</p>
-                        </div>
-                        <div className="bg-green-50 p-3 rounded-lg">
-                            <p className="text-sm text-green-600">Publik</p>
-                            <p className="text-xl font-bold text-green-700">{stats.publik}</p>
-                        </div>
-                        <div className="bg-purple-50 p-3 rounded-lg">
-                            <p className="text-sm text-purple-600">Selesai</p>
-                            <p className="text-xl font-bold text-purple-700">{stats.selesai}</p>
-                        </div>
-                    </div>
+                    )}
                 </div>
                 
                 <div className="flex gap-2">
-                    {/* TOMBOL UNTUK MASTER PELATIHAN (HANYA ADMIN) */}
-                     {(userRoles.isKatim || userRoles.isAdmin) && (
+                    {/* Tombol berdasarkan tab aktif */}
+                    {activeTab === 'master' && (userRoles.isKatim || userRoles.isAdmin) && (
                         <button
                             onClick={handleAddMaster}
                             className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 flex items-center shadow-lg"
@@ -658,8 +663,7 @@ useEffect(() => {
                         </button>
                     )}
                     
-                    {/* TOMBOL BUAT JADWAL (KATIM DAN ADMIN) */}
-                    {(userRoles.isKatim || userRoles.isAdmin) && (
+                    {activeTab === 'jadwal' && (userRoles.isKatim || userRoles.isAdmin) && (
                         <button
                             onClick={handleAdd}
                             className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center shadow-lg"
@@ -683,20 +687,22 @@ useEffect(() => {
                 </div>
             </div>
 
-            {/* Filter Section */}
-            <FilterSection
-                filters={filters}
-                onFilterChange={handleFilterChange}
-                onReset={handleResetFilters}
-                options={options}
-            />
+            {/* Filter Section - Hanya untuk tab jadwal */}
+            {activeTab === 'jadwal' && (
+                <FilterSection
+                    filters={filters}
+                    onFilterChange={handleFilterChange}
+                    onReset={handleResetFilters}
+                    options={options}
+                />
+            )}
 
             {/* Tab Navigation */}
             <div className="border-b border-gray-200 mb-6">
                 <nav className="flex space-x-4">
                     <button
                         onClick={() => setActiveTab('jadwal')}
-                        className={`py-2 px-4 font-medium text-sm ${
+                        className={`py-2 px-4 font-medium text-sm transition-colors ${
                             activeTab === 'jadwal'
                                 ? 'border-b-2 border-blue-500 text-blue-600'
                                 : 'text-gray-500 hover:text-gray-700'
@@ -707,13 +713,25 @@ useEffect(() => {
                     {userRoles.isAdmin && (
                         <button
                             onClick={() => setActiveTab('master')}
-                            className={`py-2 px-4 font-medium text-sm ${
+                            className={`py-2 px-4 font-medium text-sm transition-colors ${
                                 activeTab === 'master'
                                     ? 'border-b-2 border-purple-500 text-purple-600'
                                     : 'text-gray-500 hover:text-gray-700'
                             }`}
                         >
                             Master Pelatihan
+                        </button>
+                    )}
+                    {userRoles.isAdmin && (
+                        <button
+                            onClick={() => setActiveTab('kompetensi_wajib')}
+                            className={`py-2 px-4 font-medium text-sm transition-colors ${
+                                activeTab === 'kompetensi_wajib'
+                                    ? 'border-b-2 border-green-500 text-green-600'
+                                    : 'text-gray-500 hover:text-gray-700'
+                            }`}
+                        >
+                            Kompetensi Wajib
                         </button>
                     )}
                 </nav>
@@ -734,13 +752,18 @@ useEffect(() => {
                     onUndang={handleUndangPeserta}
                     userRoles={userRoles}
                     getStatusBadge={getStatusBadge}
-                    userNip={getUserNip()} // Tambahkan ini
+                    userNip={getUserNip()}
                 />
-            ) : (
+            ) : activeTab === 'master' ? (
                 <MasterPelatihanList 
                     data={masterPelatihan}
                     onEdit={handleEditMaster}
                     onDelete={handleDeleteMaster}
+                    userRoles={userRoles}
+                />
+            ) : (
+                <KompetensiWajibList 
+                    session={session}
                     userRoles={userRoles}
                 />
             )}

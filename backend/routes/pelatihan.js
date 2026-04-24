@@ -1315,4 +1315,435 @@ router.put('/undangan/:id', keycloakAuth, async (req, res) => {
     }
 });
 
+
+// ========== KOMPETENSI WAJIB ==========
+
+/**
+ * GET /api/pelatihan/kompetensi-wajib
+ * Mendapatkan semua kompetensi wajib
+ */
+router.get('/kompetensi-wajib', keycloakAuth, async (req, res) => {
+    const { tahun } = req.query;
+    
+    try {
+        let query = `
+            SELECT 
+                kw.id,
+                kw.id_kompetensi,
+                kw.nama_kompetensi,
+                kw.tahun,
+                kw.created_at,
+                kw.created_by,
+                mk.kode_kompetensi,
+                mk.nama_kompetensi as kompetensi_original,
+                f.nama_fungsi
+            FROM kepegawaian.kompetensi_wajib kw
+            JOIN kepegawaian.master_kompetensi mk ON kw.id_kompetensi = mk.id
+            LEFT JOIN kepegawaian.fungsi f ON mk.id_fungsi = f.id
+            WHERE 1=1
+        `;
+        
+        const params = [];
+        
+        if (tahun) {
+            query += ` AND kw.tahun = ?`;
+            params.push(tahun);
+        }
+        
+        query += ` ORDER BY kw.tahun DESC, mk.kode_kompetensi`;
+        
+        const [rows] = await db.query(query, params);
+        
+        res.status(200).json({
+            success: true,
+            data: rows
+        });
+    } catch (error) {
+        console.error('Error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Terjadi kesalahan server',
+            error: error.message
+        });
+    }
+});
+
+/**
+ * GET /api/pelatihan/kompetensi-wajib/tahun/:tahun
+ * Mendapatkan kompetensi wajib berdasarkan tahun
+ */
+router.get('/kompetensi-wajib/tahun/:tahun', keycloakAuth, async (req, res) => {
+    const { tahun } = req.params;
+    
+    try {
+        const [rows] = await db.query(`
+            SELECT 
+                kw.id,
+                kw.id_kompetensi,
+                kw.nama_kompetensi,
+                kw.tahun,
+                mk.kode_kompetensi,
+                mk.nama_kompetensi as kompetensi_original,
+                f.nama_fungsi
+            FROM kepegawaian.kompetensi_wajib kw
+            JOIN kepegawaian.master_kompetensi mk ON kw.id_kompetensi = mk.id
+            LEFT JOIN kepegawaian.fungsi f ON mk.id_fungsi = f.id
+            WHERE kw.tahun = ?
+            ORDER BY mk.kode_kompetensi
+        `, [tahun]);
+        
+        res.status(200).json({
+            success: true,
+            data: rows
+        });
+    } catch (error) {
+        console.error('Error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Terjadi kesalahan server',
+            error: error.message
+        });
+    }
+});
+
+/**
+ * GET /api/pelatihan/kompetensi-wajib/tahun-options
+ * Mendapatkan daftar tahun yang tersedia
+ */
+router.get('/kompetensi-wajib/tahun-options', keycloakAuth, async (req, res) => {
+    try {
+        const [rows] = await db.query(`
+            SELECT DISTINCT tahun 
+            FROM kepegawaian.kompetensi_wajib 
+            ORDER BY tahun DESC
+        `);
+        
+        const tahunOptions = rows.map(row => row.tahun);
+        
+        res.status(200).json({
+            success: true,
+            data: tahunOptions
+        });
+    } catch (error) {
+        console.error('Error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Terjadi kesalahan server',
+            error: error.message
+        });
+    }
+});
+
+/**
+ * POST /api/pelatihan/kompetensi-wajib
+ * Menambah kompetensi wajib baru (hanya admin)
+ */
+router.post('/kompetensi-wajib', keycloakAuth, async (req, res) => {
+    // Hanya admin yang bisa menambah kompetensi wajib
+    if (!isAdminTambunRaya(req.user)) {
+        return res.status(403).json({
+            success: false,
+            message: 'Hanya admin yang dapat menambah kompetensi wajib'
+        });
+    }
+    
+    const userNip = getUserNipFromToken(req.user);
+    const { id_kompetensi, nama_kompetensi, tahun } = req.body;
+    
+    console.log('📥 POST /kompetensi-wajib - User NIP:', userNip);
+    console.log('📥 Request body:', req.body);
+    
+    // Validasi
+    if (!id_kompetensi || !tahun) {
+        return res.status(400).json({
+            success: false,
+            message: 'Kompetensi dan tahun harus diisi'
+        });
+    }
+    
+    // Validasi tahun (4 digit)
+    if (!/^\d{4}$/.test(tahun)) {
+        return res.status(400).json({
+            success: false,
+            message: 'Tahun harus berupa 4 digit angka'
+        });
+    }
+    
+    try {
+        // Cek duplikasi
+        const [existing] = await db.query(
+            'SELECT id FROM kepegawaian.kompetensi_wajib WHERE id_kompetensi = ? AND tahun = ?',
+            [id_kompetensi, tahun]
+        );
+        
+        if (existing.length > 0) {
+            return res.status(400).json({
+                success: false,
+                message: 'Kompetensi sudah ditetapkan sebagai wajib untuk tahun ini'
+            });
+        }
+        
+        // Insert kompetensi wajib
+        const [result] = await db.query(`
+            INSERT INTO kepegawaian.kompetensi_wajib 
+            (id_kompetensi, nama_kompetensi, tahun, created_by)
+            VALUES (?, ?, ?, ?)
+        `, [id_kompetensi, nama_kompetensi, tahun, userNip]);
+        
+        console.log(`✅ ${userNip} menambah kompetensi wajib: ${id_kompetensi} untuk tahun ${tahun}`);
+        
+        res.status(201).json({
+            success: true,
+            message: 'Kompetensi wajib berhasil ditambahkan',
+            data: { id: result.insertId }
+        });
+    } catch (error) {
+        console.error('Error detail:', error);
+        
+        if (error.code === 'ER_DUP_ENTRY') {
+            return res.status(400).json({
+                success: false,
+                message: 'Kompetensi sudah ditetapkan sebagai wajib untuk tahun ini'
+            });
+        }
+        
+        res.status(500).json({
+            success: false,
+            message: 'Terjadi kesalahan server: ' + error.message,
+            error: error.message
+        });
+    }
+});
+
+/**
+ * POST /api/pelatihan/kompetensi-wajib/bulk
+ * Menambah multiple kompetensi wajib sekaligus (hanya admin)
+ */
+router.post('/kompetensi-wajib/bulk', keycloakAuth, async (req, res) => {
+    // Hanya admin yang bisa menambah kompetensi wajib
+    if (!isAdminTambunRaya(req.user)) {
+        return res.status(403).json({
+            success: false,
+            message: 'Hanya admin yang dapat menambah kompetensi wajib'
+        });
+    }
+    
+    const userNip = getUserNipFromToken(req.user);
+    const { kompetensi_ids, tahun } = req.body;
+    
+    console.log('📥 POST /kompetensi-wajib/bulk - User NIP:', userNip);
+    console.log('📥 Request body:', req.body);
+    
+    // Validasi
+    if (!kompetensi_ids || !kompetensi_ids.length || !tahun) {
+        return res.status(400).json({
+            success: false,
+            message: 'Kompetensi dan tahun harus diisi'
+        });
+    }
+    
+    // Validasi tahun (4 digit)
+    if (!/^\d{4}$/.test(tahun)) {
+        return res.status(400).json({
+            success: false,
+            message: 'Tahun harus berupa 4 digit angka'
+        });
+    }
+    
+    const connection = await db.getConnection();
+    await connection.beginTransaction();
+    
+    try {
+        // Ambil data kompetensi
+        const [kompetensiList] = await connection.query(
+            'SELECT id, kode_kompetensi, nama_kompetensi FROM kepegawaian.master_kompetensi WHERE id IN (?)',
+            [kompetensi_ids]
+        );
+        
+        const kompetensiMap = new Map();
+        kompetensiList.forEach(k => kompetensiMap.set(k.id, k));
+        
+        let inserted = 0;
+        let skipped = 0;
+        
+        for (const idKompetensi of kompetensi_ids) {
+            const kompetensi = kompetensiMap.get(idKompetensi);
+            if (!kompetensi) continue;
+            
+            try {
+                await connection.query(`
+                    INSERT INTO kepegawaian.kompetensi_wajib 
+                    (id_kompetensi, nama_kompetensi, tahun, created_by)
+                    VALUES (?, ?, ?, ?)
+                `, [idKompetensi, kompetensi.nama_kompetensi, tahun, userNip]);
+                inserted++;
+            } catch (err) {
+                if (err.code === 'ER_DUP_ENTRY') {
+                    skipped++;
+                    console.log(`⚠️ Duplikat: ${kompetensi.kode_kompetensi} untuk tahun ${tahun}`);
+                } else {
+                    throw err;
+                }
+            }
+        }
+        
+        await connection.commit();
+        
+        console.log(`✅ ${userNip} menambah ${inserted} kompetensi wajib untuk tahun ${tahun} (skipped: ${skipped})`);
+        
+        res.status(201).json({
+            success: true,
+            message: `${inserted} kompetensi wajib berhasil ditambahkan${skipped > 0 ? ` (${skipped} duplikat diabaikan)` : ''}`,
+            data: { inserted, skipped }
+        });
+    } catch (error) {
+        await connection.rollback();
+        console.error('Error detail:', error);
+        
+        res.status(500).json({
+            success: false,
+            message: 'Terjadi kesalahan server: ' + error.message,
+            error: error.message
+        });
+    } finally {
+        connection.release();
+    }
+});
+
+/**
+ * DELETE /api/pelatihan/kompetensi-wajib/:id
+ * Menghapus kompetensi wajib (hanya admin)
+ */
+router.delete('/kompetensi-wajib/:id', keycloakAuth, async (req, res) => {
+    // Hanya admin yang bisa menghapus kompetensi wajib
+    if (!isAdminTambunRaya(req.user)) {
+        return res.status(403).json({
+            success: false,
+            message: 'Hanya admin yang dapat menghapus kompetensi wajib'
+        });
+    }
+    
+    const { id } = req.params;
+    const userNip = getUserNipFromToken(req.user);
+    
+    try {
+        // Cek apakah data ada
+        const [existing] = await db.query(
+            'SELECT * FROM kepegawaian.kompetensi_wajib WHERE id = ?',
+            [id]
+        );
+        
+        if (existing.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: 'Data kompetensi wajib tidak ditemukan'
+            });
+        }
+        
+        await db.query('DELETE FROM kepegawaian.kompetensi_wajib WHERE id = ?', [id]);
+        
+        console.log(`✅ ${userNip} menghapus kompetensi wajib ID: ${id}`);
+        
+        res.status(200).json({
+            success: true,
+            message: 'Kompetensi wajib berhasil dihapus'
+        });
+    } catch (error) {
+        console.error('Error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Terjadi kesalahan server',
+            error: error.message
+        });
+    }
+});
+
+/**
+ * DELETE /api/pelatihan/kompetensi-wajib/tahun/:tahun
+ * Menghapus semua kompetensi wajib untuk tahun tertentu (hanya admin)
+ */
+router.delete('/kompetensi-wajib/tahun/:tahun', keycloakAuth, async (req, res) => {
+    // Hanya admin yang bisa menghapus kompetensi wajib
+    if (!isAdminTambunRaya(req.user)) {
+        return res.status(403).json({
+            success: false,
+            message: 'Hanya admin yang dapat menghapus kompetensi wajib'
+        });
+    }
+    
+    const { tahun } = req.params;
+    const userNip = getUserNipFromToken(req.user);
+    
+    try {
+        const [result] = await db.query(
+            'DELETE FROM kepegawaian.kompetensi_wajib WHERE tahun = ?',
+            [tahun]
+        );
+        
+        console.log(`✅ ${userNip} menghapus ${result.affectedRows} kompetensi wajib untuk tahun ${tahun}`);
+        
+        res.status(200).json({
+            success: true,
+            message: `${result.affectedRows} kompetensi wajib untuk tahun ${tahun} berhasil dihapus`
+        });
+    } catch (error) {
+        console.error('Error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Terjadi kesalahan server',
+            error: error.message
+        });
+    }
+});
+
+/**
+ * GET /api/pelatihan/kompetensi-wajib/options/kompetensi
+ * Mendapatkan daftar kompetensi yang belum menjadi wajib untuk tahun tertentu
+ */
+router.get('/kompetensi-wajib/options/kompetensi', keycloakAuth, async (req, res) => {
+    const { tahun } = req.query;
+    
+    try {
+        let query = `
+            SELECT 
+                mk.id,
+                mk.kode_kompetensi,
+                mk.nama_kompetensi,
+                f.nama_fungsi
+            FROM kepegawaian.master_kompetensi mk
+            LEFT JOIN kepegawaian.fungsi f ON mk.id_fungsi = f.id
+        `;
+        
+        const params = [];
+        
+        if (tahun) {
+            query += `
+                WHERE mk.id NOT IN (
+                    SELECT id_kompetensi 
+                    FROM kepegawaian.kompetensi_wajib 
+                    WHERE tahun = ?
+                )
+            `;
+            params.push(tahun);
+        }
+        
+        query += ` ORDER BY mk.kode_kompetensi`;
+        
+        const [rows] = await db.query(query, params);
+        
+        res.status(200).json({
+            success: true,
+            data: rows
+        });
+    } catch (error) {
+        console.error('Error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Terjadi kesalahan server',
+            error: error.message
+        });
+    }
+});
+
+module.exports = router;
 module.exports = router;

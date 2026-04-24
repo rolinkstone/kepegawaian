@@ -218,9 +218,234 @@ router.get('/:id', keycloakAuth, async (req, res) => {
     }
 });
 
+
+// backend/routes/userskompetensi.js
+
+// Tambahkan endpoint ini setelah route GET /user/:userId
+
+/**
+ * GET /api/userskompetensi/cek/:userId/:kompetensiId
+ * Cek apakah user memiliki kompetensi tertentu (dengan status Lulus dan hasil_verif Valid)
+ */
+router.get('/cek/:userId/:kompetensiId', keycloakAuth, async (req, res) => {
+    const { userId, kompetensiId } = req.params;
+    console.log(`🔍 Cek kompetensi user ${userId} untuk kompetensi ID: ${kompetensiId}`);
+
+    try {
+        const query = `
+            SELECT 
+                uk.id,
+                uk.id_user,
+                uk.id_kompetensi,
+                uk.tanggal_dipenuhi,
+                uk.bukti,
+                uk.nilai,
+                uk.status,
+                uk.hasil_verif,
+                uk.keterangan,
+                uk.verified_by,
+                uk.verified_at,
+                mk.kode_kompetensi,
+                mk.nama_kompetensi
+            FROM kepegawaian.user_kompetensi uk
+            JOIN kepegawaian.master_kompetensi mk ON uk.id_kompetensi = mk.id
+            WHERE uk.id_user = ? AND uk.id_kompetensi = ?
+        `;
+
+        const [rows] = await db.query(query, [userId, kompetensiId]);
+        
+        let sudahMemenuhi = false;
+        let detail = null;
+        
+        if (rows.length > 0) {
+            detail = rows[0];
+            // Cek apakah kompetensi dianggap MEMENUHI:
+            // 1. Status = 'Lulus'
+            // 2. hasil_verif = 'Valid'
+            sudahMemenuhi = (detail.status === 'Lulus' && detail.hasil_verif === 'Valid');
+        }
+        
+        console.log(`📊 User ${userId} - Kompetensi ${kompetensiId}: ${sudahMemenuhi ? 'SUDAH MEMENUHI' : 'BELUM MEMENUHI'}`);
+        
+        res.status(200).json({
+            success: true,
+            data: {
+                sudah_memenuhi: sudahMemenuhi,
+                detail: detail ? {
+                    id: detail.id,
+                    status: detail.status,
+                    hasil_verif: detail.hasil_verif,
+                    tanggal_dipenuhi: detail.tanggal_dipenuhi,
+                    nilai: detail.nilai,
+                    keterangan: detail.keterangan,
+                    verified_by: detail.verified_by,
+                    verified_at: detail.verified_at
+                } : null
+            }
+        });
+        
+    } catch (error) {
+        console.error('❌ Error checking user competency:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Terjadi kesalahan server',
+            error: error.message
+        });
+    }
+});
+
+/**
+ * GET /api/userskompetensi/check-bulk
+ * Cek multiple user untuk kompetensi tertentu (optimized)
+ */
+router.get('/check-bulk', keycloakAuth, async (req, res) => {
+    const { kompetensiId, userIds } = req.query;
+    
+    if (!kompetensiId) {
+        return res.status(400).json({
+            success: false,
+            message: 'kompetensiId harus diisi'
+        });
+    }
+    
+    let userIdsArray = [];
+    if (userIds) {
+        userIdsArray = userIds.split(',').map(id => parseInt(id));
+    }
+    
+    console.log(`🔍 Bulk check kompetensi ${kompetensiId} untuk ${userIdsArray.length} user`);
+    
+    try {
+        let query = `
+            SELECT 
+                uk.id_user,
+                uk.id_kompetensi,
+                uk.status,
+                uk.hasil_verif,
+                uk.tanggal_dipenuhi,
+                uk.nilai,
+                uk.keterangan,
+                uk.verified_by,
+                uk.verified_at
+            FROM kepegawaian.user_kompetensi uk
+            WHERE uk.id_kompetensi = ?
+        `;
+        
+        const params = [kompetensiId];
+        
+        if (userIdsArray.length > 0) {
+            query += ` AND uk.id_user IN (${userIdsArray.map(() => '?').join(',')})`;
+            params.push(...userIdsArray);
+        }
+        
+        const [rows] = await db.query(query, params);
+        
+        // Buat map hasil
+        const resultMap = {};
+        rows.forEach(row => {
+            const sudahMemenuhi = (row.status === 'Lulus' && row.hasil_verif === 'Valid');
+            resultMap[row.id_user] = {
+                sudah_memenuhi: sudahMemenuhi,
+                status: row.status,
+                hasil_verif: row.hasil_verif,
+                tanggal_dipenuhi: row.tanggal_dipenuhi,
+                nilai: row.nilai,
+                keterangan: row.keterangan
+            };
+        });
+        
+        res.status(200).json({
+            success: true,
+            data: resultMap
+        });
+        
+    } catch (error) {
+        console.error('❌ Error bulk checking competencies:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Terjadi kesalahan server',
+            error: error.message
+        });
+    }
+});
+
+/**
+ * GET /api/userskompetensi/statistics/kompetensi/:kompetensiId
+ * Statistik pemenuhan kompetensi untuk kompetensi tertentu
+ */
+router.get('/statistics/kompetensi/:kompetensiId', keycloakAuth, async (req, res) => {
+    const { kompetensiId } = req.params;
+    
+    try {
+        // Total pegawai aktif
+        const [totalPegawai] = await db.query(`
+            SELECT COUNT(*) as total 
+            FROM kepegawaian.user 
+            WHERE is_active = 1
+        `);
+        
+        // Pegawai yang sudah memenuhi kompetensi ini (Lulus + Valid)
+        const [sudahMemenuhi] = await db.query(`
+            SELECT COUNT(DISTINCT uk.id_user) as total
+            FROM kepegawaian.user_kompetensi uk
+            WHERE uk.id_kompetensi = ? 
+                AND uk.status = 'Lulus' 
+                AND uk.hasil_verif = 'Valid'
+        `, [kompetensiId]);
+        
+        // Pegawai yang memiliki data tapi belum valid
+        const [menungguVerifikasi] = await db.query(`
+            SELECT COUNT(DISTINCT uk.id_user) as total
+            FROM kepegawaian.user_kompetensi uk
+            WHERE uk.id_kompetensi = ? 
+                AND uk.status = 'Lulus' 
+                AND (uk.hasil_verif IS NULL OR uk.hasil_verif != 'Valid')
+        `, [kompetensiId]);
+        
+        // Pegawai yang tidak lulus
+        const [tidakLulus] = await db.query(`
+            SELECT COUNT(DISTINCT uk.id_user) as total
+            FROM kepegawaian.user_kompetensi uk
+            WHERE uk.id_kompetensi = ? 
+                AND uk.status = 'Tidak Lulus'
+        `, [kompetensiId]);
+        
+        const total = totalPegawai[0]?.total || 0;
+        const sudah = sudahMemenuhi[0]?.total || 0;
+        const menunggu = menungguVerifikasi[0]?.total || 0;
+        const tidak = tidakLulus[0]?.total || 0;
+        const belum = total - sudah - menunggu - tidak;
+        
+        res.status(200).json({
+            success: true,
+            data: {
+                total_pegawai: total,
+                sudah_memenuhi: sudah,
+                menunggu_verifikasi: menunggu,
+                tidak_lulus: tidak,
+                belum_mengikuti: belum > 0 ? belum : 0,
+                persentase: total > 0 ? Math.round((sudah / total) * 100) : 0
+            }
+        });
+        
+    } catch (error) {
+        console.error('❌ Error getting competency statistics:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Terjadi kesalahan server',
+            error: error.message
+        });
+    }
+});
 /**
  * GET /api/userskompetensi/user/:userId
  * Mendapatkan kompetensi untuk user tertentu
+ */
+// backend/routes/userskompetensi.js - Perbaiki route GET /user/:userId
+
+/**
+ * GET /api/userskompetensi/user/:userId
+ * Mendapatkan kompetensi untuk user tertentu (dengan informasi verifikasi lengkap)
  */
 router.get('/user/:userId', keycloakAuth, async (req, res) => {
     const { userId } = req.params;
@@ -229,7 +454,17 @@ router.get('/user/:userId', keycloakAuth, async (req, res) => {
     try {
         const query = `
             SELECT 
-                uk.*,
+                uk.id,
+                uk.id_user,
+                uk.id_kompetensi,
+                DATE_FORMAT(uk.tanggal_dipenuhi, '%Y-%m-%d') as tanggal_dipenuhi,
+                uk.bukti,
+                uk.nilai,
+                uk.status,
+                uk.hasil_verif,
+                uk.keterangan,
+                uk.verified_by,
+                DATE_FORMAT(uk.verified_at, '%Y-%m-%d %H:%i:%s') as verified_at,
                 mk.kode_kompetensi,
                 mk.nama_kompetensi,
                 f.nama_fungsi as kompetensi_fungsi,
@@ -245,6 +480,11 @@ router.get('/user/:userId', keycloakAuth, async (req, res) => {
         const [rows] = await db.query(query, [userId]);
         
         console.log(`📊 Data kompetensi user ${userId} berhasil diambil, ${rows.length} records`);
+        
+        // Log untuk debugging verifikasi
+        rows.forEach(row => {
+            console.log(`  - ${row.kode_kompetensi}: status=${row.status}, hasil_verif=${row.hasil_verif}, verified_by=${row.verified_by_nama || row.verified_by}`);
+        });
 
         res.status(200).json({
             success: true,
