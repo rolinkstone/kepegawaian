@@ -1,7 +1,7 @@
 // pages/home.js
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/router';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import DashboardLayout from '../components/DashboardLayout';
 import Link from 'next/link';
 import { fetchDashboardStats } from '../components/dashboard/api/dashboardApi';
@@ -130,35 +130,154 @@ const Home = () => {
 
   const COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899'];
 
-  useEffect(() => {
-    if (!loading && !session) {
-      router.push('/login');
-    }
-  }, [session, loading, router]);
-
-  useEffect(() => {
-    if (session?.user) {
-      extractUserInfo(session);
-      fetchDashboardData();
-      fetchKompetensiWajibUser();
-      // Untuk admin, ambil semua data
-      if (userInfo.role === 'admin' || userInfo.role === 'admin_tambun_raya') {
-        fetchAllKompetensiData();
-        fetchAllPegawaiForAdmin();
+  // === FUNGSI REFRESH DATA (dibuat reusable) ===
+  const refreshDashboardData = useCallback(async () => {
+    console.log('🔄 Refreshing dashboard data...');
+    try {
+      const result = await fetchDashboardStats(session);
+      if (result.success) {
+        setStats(result.data);
+        console.log('✅ Dashboard stats refreshed');
       }
+    } catch (error) {
+      console.error('Error refreshing dashboard:', error);
     }
   }, [session]);
 
-  // Panggil fetchUserKompetensiData setelah userInfo terisi
-  useEffect(() => {
-    if (userInfo.nip && userInfo.nip !== '-') {
-      console.log('🔄 userInfo updated, fetching kompetensi for NIP:', userInfo.nip);
-      fetchUserKompetensiData();
+  const refreshAdminNotifications = useCallback(async () => {
+    if (!userInfo.nip) return;
+    
+    const isAdminRole = userInfo.role === 'admin' || userInfo.role === 'admin_tambun_raya';
+    
+    if (isAdminRole) {
+      console.log('🔄 Refreshing admin notifications...');
+      await fetchAllKompetensiData();
+      await fetchAllPegawaiForAdmin();
     }
-  }, [userInfo.nip]);
+  }, [userInfo.role, userInfo.nip]);
+
+  const refreshUserKompetensiData = useCallback(async () => {
+    if (!userInfo.nip || userInfo.nip === '-') return;
+    
+    console.log('🔄 Refreshing user kompetensi data...');
+    try {
+      const result = await fetchUserKompetensi(session, { all: true });
+      
+      if (result.success) {
+        const userNip = userInfo.nip;
+        const userData = result.data.filter(item => item.user_nip === userNip);
+        
+        setUserKompetensi(userData);
+        
+        const total = userData.length;
+        const lulus = userData.filter(item => item.status === 'Lulus' && item.hasil_verif === 'Valid').length;
+        const tidakLulus = userData.filter(item => item.status === 'Tidak Lulus' || item.hasil_verif === 'Tidak Valid').length;
+        const dalamProses = userData.filter(item => !item.verified_by).length;
+        const perluRevisi = userData.filter(item => item.hasil_verif === 'Perlu Revisi').length;
+        
+        setUserKompetensiStats({
+          total,
+          lulus,
+          tidakLulus,
+          dalamProses,
+          perluRevisi,
+          persentase: total > 0 ? Math.round((lulus / total) * 100) : 0
+        });
+        console.log('✅ User kompetensi refreshed');
+      }
+    } catch (error) {
+      console.error('Error refreshing user kompetensi:', error);
+    }
+  }, [session, userInfo.nip]);
+
+  const refreshKompetensiWajibUser = useCallback(async () => {
+    setIsLoadingKompetensiWajib(true);
+    try {
+      const currentYear = new Date().getFullYear().toString();
+      const result = await fetchKompetensiWajib(session, { tahun: currentYear });
+      
+      if (result.success && result.data) {
+        setKompetensiWajibData(result.data);
+        console.log('📊 Kompetensi wajib refreshed:', result.data.length);
+      }
+    } catch (error) {
+      console.error('Error fetching kompetensi wajib:', error);
+    } finally {
+      setIsLoadingKompetensiWajib(false);
+    }
+  }, [session]);
+
+  // Fungsi untuk mengambil SEMUA data kompetensi (untuk admin)
+  const fetchAllKompetensiData = useCallback(async () => {
+    setIsLoadingAdminNotification(true);
+    try {
+      console.log('📡 Fetching ALL kompetensi data for admin...');
+      
+      const result = await fetchUserKompetensi(session, { all: true });
+      
+      if (result.success && result.data && result.data.length > 0) {
+        setAllKompetensiData(result.data);
+        processUnverifiedKompetensi(result.data);
+        console.log('✅ Admin kompetensi data refreshed');
+      } else {
+        console.log('⚠️ No kompetensi data found');
+        setUsersWithUnverifiedKompetensi([]);
+      }
+    } catch (error) {
+      console.error('Error fetching all kompetensi:', error);
+      setUsersWithUnverifiedKompetensi([]);
+    } finally {
+      setIsLoadingAdminNotification(false);
+    }
+  }, [session]);
+
+  // Proses data kompetensi untuk mendapatkan kompetensi yang BELUM DIVERIFIKASI
+  const processUnverifiedKompetensi = useCallback((data) => {
+    if (!data || data.length === 0) {
+      setUsersWithUnverifiedKompetensi([]);
+      return;
+    }
+    
+    const unverifiedData = data.filter(item => !item.verified_by);
+    
+    const grouped = unverifiedData.reduce((acc, item) => {
+      const nip = item.user_nip;
+      if (!nip) return acc;
+      
+      if (!acc[nip]) {
+        acc[nip] = {
+          nip: nip,
+          nama: item.user_nama || item.user_name || item.nama_user || nip,
+          jabatan: item.user_jabatan || item.jabatan_user || '-',
+          email: item.user_email || '-',
+          totalKompetensi: 0,
+          unverifiedKompetensi: []
+        };
+      }
+      
+      acc[nip].totalKompetensi++;
+      acc[nip].unverifiedKompetensi.push({
+        id: item.id,
+        kode: item.kode_kompetensi,
+        nama: item.nama_kompetensi,
+        status: 'Menunggu Verifikasi',
+        tanggal: item.tanggal_dipenuhi,
+        verified_by: item.verified_by,
+        hasil_verif: item.hasil_verif
+      });
+      
+      return acc;
+    }, {});
+    
+    const filtered = Object.values(grouped).filter(u => u.unverifiedKompetensi.length > 0);
+    filtered.sort((a, b) => b.unverifiedKompetensi.length - a.unverifiedKompetensi.length);
+    
+    setUsersWithUnverifiedKompetensi(filtered);
+    console.log('✅ Unverified kompetensi processed:', filtered.length, 'users');
+  }, []);
 
   // Ambil semua pegawai untuk admin
-  const fetchAllPegawaiForAdmin = async () => {
+  const fetchAllPegawaiForAdmin = useCallback(async () => {
     setIsLoadingPegawaiStatus(true);
     try {
       const token = session?.accessToken || localStorage.getItem('token');
@@ -170,16 +289,17 @@ const Home = () => {
       if (result.success && result.data) {
         setAllPegawaiData(result.data);
         await analyzePegawaiKompetensiWajib(result.data);
+        console.log('✅ All pegawai data refreshed');
       }
     } catch (error) {
       console.error('Error fetching all pegawai:', error);
     } finally {
       setIsLoadingPegawaiStatus(false);
     }
-  };
+  }, [session]);
 
   // Analisis kompetensi wajib pegawai
-  const analyzePegawaiKompetensiWajib = async (pegawaiList) => {
+  const analyzePegawaiKompetensiWajib = useCallback(async (pegawaiList) => {
     try {
       const token = session?.accessToken || localStorage.getItem('token');
       const currentYear = new Date().getFullYear().toString();
@@ -260,113 +380,16 @@ const Home = () => {
     } catch (error) {
       console.error('Error analyzing pegawai kompetensi:', error);
     }
-  };
+  }, [session]);
 
-  // Fetch kompetensi wajib untuk user
-  const fetchKompetensiWajibUser = async () => {
-    setIsLoadingKompetensiWajib(true);
-    try {
-      const currentYear = new Date().getFullYear().toString();
-      
-      const result = await fetchKompetensiWajib(session, { tahun: currentYear });
-      
-      if (result.success && result.data) {
-        setKompetensiWajibData(result.data);
-        console.log('📊 Kompetensi wajib tahun ini:', result.data.length);
-      }
-    } catch (error) {
-      console.error('Error fetching kompetensi wajib:', error);
-    } finally {
-      setIsLoadingKompetensiWajib(false);
-    }
-  };
-
-  // Hitung kompetensi wajib yang belum dipenuhi (setelah userKompetensi di-load)
-  useEffect(() => {
-    if (kompetensiWajibData.length > 0 && userKompetensi.length > 0) {
-      const validUserKompetensi = userKompetensi.filter(item => 
-        item.status === 'Lulus' && item.hasil_verif === 'Valid'
-      );
-      setKompetensiUserValid(validUserKompetensi);
-      
-      const userKompetensiIds = new Set(validUserKompetensi.map(k => k.id_kompetensi));
-      
-      const belumDipenuhi = kompetensiWajibData.filter(kw => !userKompetensiIds.has(kw.id_kompetensi));
-      setKompetensiWajibBelumDipenuhi(belumDipenuhi);
-      
-      console.log('📊 Kompetensi wajib BELUM dipenuhi:', belumDipenuhi.length);
-    } else if (kompetensiWajibData.length > 0 && userKompetensi.length === 0) {
-      setKompetensiWajibBelumDipenuhi(kompetensiWajibData);
-      console.log('📊 Kompetensi wajib BELUM dipenuhi (user belum punya kompetensi):', kompetensiWajibData.length);
-    }
-  }, [kompetensiWajibData, userKompetensi]);
-
-  // Fungsi untuk mengambil SEMUA data kompetensi (untuk admin)
-  const fetchAllKompetensiData = async () => {
-    setIsLoadingAdminNotification(true);
-    try {
-      console.log('📡 Fetching ALL kompetensi data for admin...');
-      
-      const result = await fetchUserKompetensi(session, { all: true });
-      
-      if (result.success && result.data && result.data.length > 0) {
-        setAllKompetensiData(result.data);
-        processUnverifiedKompetensi(result.data);
-      } else {
-        console.log('⚠️ No kompetensi data found');
-        setUsersWithUnverifiedKompetensi([]);
-      }
-    } catch (error) {
-      console.error('Error fetching all kompetensi:', error);
-      setUsersWithUnverifiedKompetensi([]);
-    } finally {
-      setIsLoadingAdminNotification(false);
-    }
-  };
-
-  // Proses data kompetensi untuk mendapatkan kompetensi yang BELUM DIVERIFIKASI (untuk admin)
-  const processUnverifiedKompetensi = (data) => {
-    if (!data || data.length === 0) {
-      setUsersWithUnverifiedKompetensi([]);
-      return;
-    }
-    
-    const unverifiedData = data.filter(item => !item.verified_by);
-    
-    const grouped = unverifiedData.reduce((acc, item) => {
-      const nip = item.user_nip;
-      if (!nip) return acc;
-      
-      if (!acc[nip]) {
-        acc[nip] = {
-          nip: nip,
-          nama: item.user_nama || item.user_name || item.nama_user || nip,
-          jabatan: item.user_jabatan || item.jabatan_user || '-',
-          email: item.user_email || '-',
-          totalKompetensi: 0,
-          unverifiedKompetensi: []
-        };
-      }
-      
-      acc[nip].totalKompetensi++;
-      acc[nip].unverifiedKompetensi.push({
-        id: item.id,
-        kode: item.kode_kompetensi,
-        nama: item.nama_kompetensi,
-        status: 'Menunggu Verifikasi',
-        tanggal: item.tanggal_dipenuhi,
-        verified_by: item.verified_by,
-        hasil_verif: item.hasil_verif
-      });
-      
-      return acc;
-    }, {});
-    
-    const filtered = Object.values(grouped).filter(u => u.unverifiedKompetensi.length > 0);
-    filtered.sort((a, b) => b.unverifiedKompetensi.length - a.unverifiedKompetensi.length);
-    
-    setUsersWithUnverifiedKompetensi(filtered);
-  };
+  // Fungsi refresh semua data (untuk digunakan saat tab aktif kembali)
+  const refreshAllData = useCallback(async () => {
+    console.log('🔄 REFRESHING ALL DATA (tab became active)...');
+    await refreshDashboardData();
+    await refreshUserKompetensiData();
+    await refreshKompetensiWajibUser();
+    await refreshAdminNotifications();
+  }, [refreshDashboardData, refreshUserKompetensiData, refreshKompetensiWajibUser, refreshAdminNotifications]);
 
   const extractUserInfo = (session) => {
     try {
@@ -470,36 +493,127 @@ const Home = () => {
     }
   };
 
-  // Fetch kompetensi milik user yang sedang login
-  const fetchUserKompetensiData = async () => {
-    try {
-      const result = await fetchUserKompetensi(session, { all: true });
+  // Hitung kompetensi wajib yang belum dipenuhi (setelah userKompetensi di-load)
+  useEffect(() => {
+    if (kompetensiWajibData.length > 0 && userKompetensi.length > 0) {
+      const validUserKompetensi = userKompetensi.filter(item => 
+        item.status === 'Lulus' && item.hasil_verif === 'Valid'
+      );
+      setKompetensiUserValid(validUserKompetensi);
       
-      if (result.success) {
-        const userNip = userInfo.nip;
-        const userData = result.data.filter(item => item.user_nip === userNip);
-        
-        setUserKompetensi(userData);
-        
-        const total = userData.length;
-        const lulus = userData.filter(item => item.status === 'Lulus' && item.hasil_verif === 'Valid').length;
-        const tidakLulus = userData.filter(item => item.status === 'Tidak Lulus' || item.hasil_verif === 'Tidak Valid').length;
-        const dalamProses = userData.filter(item => !item.verified_by).length;
-        const perluRevisi = userData.filter(item => item.hasil_verif === 'Perlu Revisi').length;
-        
-        setUserKompetensiStats({
-          total,
-          lulus,
-          tidakLulus,
-          dalamProses,
-          perluRevisi,
-          persentase: total > 0 ? Math.round((lulus / total) * 100) : 0
-        });
-      }
-    } catch (error) {
-      console.error('Error fetching user kompetensi:', error);
+      const userKompetensiIds = new Set(validUserKompetensi.map(k => k.id_kompetensi));
+      
+      const belumDipenuhi = kompetensiWajibData.filter(kw => !userKompetensiIds.has(kw.id_kompetensi));
+      setKompetensiWajibBelumDipenuhi(belumDipenuhi);
+      
+      console.log('📊 Kompetensi wajib BELUM dipenuhi:', belumDipenuhi.length);
+    } else if (kompetensiWajibData.length > 0 && userKompetensi.length === 0) {
+      setKompetensiWajibBelumDipenuhi(kompetensiWajibData);
+      console.log('📊 Kompetensi wajib BELUM dipenuhi (user belum punya kompetensi):', kompetensiWajibData.length);
     }
-  };
+  }, [kompetensiWajibData, userKompetensi]);
+
+  // useEffect untuk initial load
+  useEffect(() => {
+    if (!loading && !session) {
+      router.push('/login');
+    }
+  }, [session, loading, router]);
+
+  useEffect(() => {
+    if (session?.user) {
+      extractUserInfo(session);
+      fetchDashboardData();
+      refreshKompetensiWajibUser(); // pakai refresh function
+    }
+  }, [session]);
+
+  // Panggil refreshUserKompetensiData setelah userInfo terisi
+  useEffect(() => {
+    if (userInfo.nip && userInfo.nip !== '-') {
+      console.log('🔄 userInfo updated, fetching kompetensi for NIP:', userInfo.nip);
+      refreshUserKompetensiData();
+    }
+  }, [userInfo.nip, refreshUserKompetensiData]);
+
+  // Untuk admin, ambil semua data setelah userInfo terisi
+  useEffect(() => {
+    if ((userInfo.role === 'admin' || userInfo.role === 'admin_tambun_raya') && userInfo.nip && userInfo.nip !== '-') {
+      fetchAllKompetensiData();
+      fetchAllPegawaiForAdmin();
+    }
+  }, [userInfo.role, userInfo.nip, fetchAllKompetensiData, fetchAllPegawaiForAdmin]);
+
+  // === SOLUSI UTAMA: Listener untuk visibilitychange (tab aktif kembali) ===
+  useEffect(() => {
+    // Handler ketika tab menjadi aktif kembali
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        console.log('👁️ Tab became visible - refreshing all notifications...');
+        
+        // Refresh data utama
+        refreshAllData();
+        
+        // Refresh tambahan untuk admin
+        if (userInfo.role === 'admin' || userInfo.role === 'admin_tambun_raya') {
+          fetchAllKompetensiData();
+          fetchAllPegawaiForAdmin();
+        } else {
+          // Untuk user biasa, refresh kompetensi wajib dan user kompetensi
+          refreshUserKompetensiData();
+          refreshKompetensiWajibUser();
+        }
+      }
+    };
+
+    // Handler untuk online/offline (jika koneksi pulih)
+    const handleOnline = () => {
+      console.log('🌐 Connection restored - refreshing data...');
+      refreshAllData();
+    };
+
+    // Handler untuk focus (ketika window di-focus kembali)
+    const handleFocus = () => {
+      console.log('🎯 Window focused - refreshing data...');
+      refreshAllData();
+    };
+
+    // Register event listeners
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('focus', handleFocus);
+    window.addEventListener('online', handleOnline);
+
+    // Cleanup
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('focus', handleFocus);
+      window.removeEventListener('online', handleOnline);
+    };
+  }, [refreshAllData, userInfo.role, refreshUserKompetensiData, refreshKompetensiWajibUser, fetchAllKompetensiData, fetchAllPegawaiForAdmin]);
+
+  // Optional: Interval refresh setiap 30 detik (jika diperlukan)
+  useEffect(() => {
+    // Refresh data setiap 30 detik untuk memastikan notifikasi selalu update
+    const intervalId = setInterval(() => {
+      if (document.visibilityState === 'visible') {
+        console.log('⏰ Interval refresh (30s) - updating notifications...');
+        
+        // Refresh notifikasi saja (lebih ringan)
+        if (userInfo.role === 'admin' || userInfo.role === 'admin_tambun_raya') {
+          fetchAllKompetensiData();
+          fetchAllPegawaiForAdmin();
+        } else {
+          refreshUserKompetensiData();
+          refreshKompetensiWajibUser();
+        }
+        
+        // Refresh dashboard stats
+        refreshDashboardData();
+      }
+    }, 30000); // 30 detik
+
+    return () => clearInterval(intervalId);
+  }, [userInfo.role, refreshUserKompetensiData, refreshKompetensiWajibUser, refreshDashboardData, fetchAllKompetensiData, fetchAllPegawaiForAdmin]);
 
   const getRoleColor = (role) => {
     switch (role) {
