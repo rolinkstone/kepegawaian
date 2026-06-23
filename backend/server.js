@@ -22,7 +22,7 @@ const PORT = process.env.PORT || 5001;
 // Pembatasan umum untuk semua API
 const apiLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 menit
-    max: 500,
+    max: 5000,
     standardHeaders: true,
     legacyHeaders: false,
     message: {
