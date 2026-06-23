@@ -17,12 +17,6 @@ export default function DashboardLayout({ children }) {
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const loading = status === 'loading';
 
-  useEffect(() => {
-    if (!loading && !session) {
-      router.push('/login');
-    }
-  }, [session, loading, router]);
-
   // Fungsi untuk cek apakah user memiliki role PPK - DIPERBAIKI
   const hasPPKRole = () => {
     console.log("🔍 Checking PPK role in session:", session);
