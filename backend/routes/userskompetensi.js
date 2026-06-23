@@ -3,6 +3,7 @@ const express = require('express');
 const router = express.Router();
 const db = require('../db');
 const { keycloakAuth, getUserId, getUsername } = require('../middleware/keycloakAuth');
+const { getUserNipFromToken, isAdminTambunRaya, isKatim } = require('../utils/keycloakHelpers');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
@@ -46,34 +47,6 @@ const upload = multer({
     fileFilter: fileFilter
 });
 
-// ========== HELPER FUNCTIONS ==========
-
-function getUserNipFromToken(user) {
-    if (!user) return null;
-    return user.preferred_username || user.username;
-}
-
-function isAdminTambunRaya(user) {
-    if (!user) return false;
-    const roles = user.extractedRoles || user.role || [];
-    return roles.includes('admin_tambun_raya');
-}
-
-function isKatim(user) {
-    if (!user) return false;
-    const roles = user.extractedRoles || user.role || [];
-    return roles.includes('katim');
-}
-
-async function getUserFungsiByNip(nip) {
-    if (!nip) return null;
-    const [rows] = await db.query(
-        'SELECT id_fungsi FROM kepegawaian.user WHERE nip = ?',
-        [nip]
-    );
-    return rows.length > 0 ? rows[0] : null;
-}
-
 // ========== CRUD USER KOMPETENSI ==========
 
 /**
@@ -100,6 +73,7 @@ router.get('/', keycloakAuth, async (req, res) => {
                 uk.id_kompetensi,
                 mk.kode_kompetensi,
                 mk.nama_kompetensi,
+                mk.deskripsi,
                 DATE_FORMAT(uk.tanggal_dipenuhi, '%Y-%m-%d') as tanggal_dipenuhi,
                 uk.bukti,
                 uk.nilai,
@@ -917,10 +891,10 @@ router.delete('/:id', keycloakAuth, async (req, res) => {
 
 router.patch('/:id/verify', keycloakAuth, async (req, res) => {
     const { id } = req.params;
-    const { status, hasil_verif, keterangan, verified_by, verified_by_nip } = req.body;
+    const { status, hasil_verif, keterangan } = req.body;
     
     console.log(`✅ Verifikasi user kompetensi ID: ${id}`);
-    console.log(`📝 Data verifikasi:`, { status, hasil_verif, keterangan, verified_by, verified_by_nip });
+    console.log(`📝 Data verifikasi:`, { status, hasil_verif, keterangan });
     
     // Validasi input
     if (!status || !['Lulus', 'Tidak Lulus', 'Dalam Proses'].includes(status)) {
@@ -938,7 +912,9 @@ router.patch('/:id/verify', keycloakAuth, async (req, res) => {
     }
     
     try {
-        // Update database - verified_by langsung menyimpan nama admin
+        // verified_by menyimpan nama user yang melakukan verifikasi
+        const verifierName = req.user?.name || 'Admin';
+
         const query = `
             UPDATE kepegawaian.user_kompetensi
             SET status = ?, 
@@ -953,7 +929,7 @@ router.patch('/:id/verify', keycloakAuth, async (req, res) => {
             status, 
             hasil_verif, 
             keterangan || null, 
-            verified_by || req.user?.name || 'Admin',  // Gunakan nama dari frontend atau fallback
+            verifierName,
             id
         ]);
         
@@ -964,14 +940,14 @@ router.patch('/:id/verify', keycloakAuth, async (req, res) => {
             });
         }
         
-        console.log(`✅ Data berhasil diverifikasi oleh: ${verified_by}`);
+        console.log(`✅ Data berhasil diverifikasi oleh: ${verifierName}`);
         
         res.status(200).json({
             success: true,
-            message: `Data berhasil diverifikasi oleh ${verified_by}`,
+            message: `Data berhasil diverifikasi oleh ${verifierName}`,
             data: {
                 id: parseInt(id),
-                verified_by: verified_by,
+                verified_by: verifierName,
                 verified_at: new Date().toISOString(),
                 hasil_verif: hasil_verif,
                 status: status
@@ -1010,6 +986,7 @@ router.get('/options/all', keycloakAuth, async (req, res) => {
                 mk.id, 
                 mk.kode_kompetensi, 
                 mk.nama_kompetensi,
+                mk.deskripsi,
                 f.nama_fungsi
             FROM kepegawaian.master_kompetensi mk
             LEFT JOIN kepegawaian.fungsi f ON mk.id_fungsi = f.id

@@ -924,6 +924,9 @@ useEffect(() => {
                                             <td className="px-6 py-4">
                                                 <div className="text-sm font-medium text-gray-900">{item.nama_kompetensi}</div>
                                                 <div className="text-sm text-gray-500">{item.kode_kompetensi}</div>
+                                                {item.deskripsi && (
+                                                    <div className="text-xs text-gray-400 mt-0.5">{item.deskripsi}</div>
+                                                )}
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                                                 {item.tanggal_dipenuhi}

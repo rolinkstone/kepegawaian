@@ -286,9 +286,30 @@ export default function SearchKegiatanPage() {
     // Logout handler
     const handleLogout = async () => {
         try {
-            await signOut({ callbackUrl: '/login' });
+            const keycloakIssuer = process.env.NEXT_PUBLIC_KEYCLOAK_ISSUER;
+            const clientId = process.env.NEXT_PUBLIC_KEYCLOAK_CLIENT_ID || 'local-kepegawaian';
+
+            await signOut({ redirect: false });
+
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            localStorage.removeItem('accessToken');
+
+            const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
+            let logoutUrl;
+
+            if (keycloakIssuer) {
+                logoutUrl = `${keycloakIssuer}/protocol/openid-connect/logout` +
+                    `?client_id=${encodeURIComponent(clientId)}` +
+                    `&post_logout_redirect_uri=${encodeURIComponent(baseUrl + '/login')}`;
+            } else {
+                logoutUrl = '/login';
+            }
+
+            window.location.href = logoutUrl;
         } catch (error) {
             console.error('Logout error:', error);
+            window.location.href = '/login';
         }
     };
 

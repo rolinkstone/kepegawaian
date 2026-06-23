@@ -685,7 +685,7 @@ export const respondUndangan = async (session, id, status) => {
 // ========== KOMPETENSI WAJIB API ==========
 
 /**
- * GET /api/pelatihan/kompetensi-wajib
+ * GET /api/kompetensi-wajib
  * Mendapatkan semua kompetensi wajib
  */
 export const fetchKompetensiWajib = async (session, params = {}) => {
@@ -703,7 +703,7 @@ export const fetchKompetensiWajib = async (session, params = {}) => {
     if (params.tahun) queryParams.append('tahun', params.tahun);
     
     const baseUrl = process.env.NEXT_PUBLIC_API_URL;
-    const url = `${baseUrl}/pelatihan/kompetensi-wajib${queryParams.toString() ? `?${queryParams}` : ''}`;
+    const url = `${baseUrl}/kompetensi-wajib${queryParams.toString() ? `?${queryParams}` : ''}`;
     
     try {
         const response = await fetch(url, {
@@ -726,7 +726,7 @@ export const fetchKompetensiWajib = async (session, params = {}) => {
 };
 
 /**
- * GET /api/pelatihan/kompetensi-wajib/tahun/:tahun
+ * GET /api/kompetensi-wajib/tahun/:tahun
  * Mendapatkan kompetensi wajib berdasarkan tahun
  */
 export const fetchKompetensiWajibByTahun = async (session, tahun) => {
@@ -741,7 +741,7 @@ export const fetchKompetensiWajibByTahun = async (session, tahun) => {
     }
     
     const baseUrl = process.env.NEXT_PUBLIC_API_URL;
-    const url = `${baseUrl}/pelatihan/kompetensi-wajib/tahun/${tahun}`;
+    const url = `${baseUrl}/kompetensi-wajib/tahun/${tahun}`;
     
     try {
         const response = await fetch(url, {
@@ -764,7 +764,7 @@ export const fetchKompetensiWajibByTahun = async (session, tahun) => {
 };
 
 /**
- * GET /api/pelatihan/kompetensi-wajib/tahun-options
+ * GET /api/kompetensi-wajib/tahun-options
  * Mendapatkan daftar tahun yang tersedia
  */
 export const fetchTahunOptions = async (session) => {
@@ -779,7 +779,7 @@ export const fetchTahunOptions = async (session) => {
     }
     
     const baseUrl = process.env.NEXT_PUBLIC_API_URL;
-    const url = `${baseUrl}/pelatihan/kompetensi-wajib/tahun-options`;
+    const url = `${baseUrl}/kompetensi-wajib/tahun-options`;
     
     try {
         const response = await fetch(url, {
@@ -802,7 +802,7 @@ export const fetchTahunOptions = async (session) => {
 };
 
 /**
- * GET /api/pelatihan/kompetensi-wajib/options/kompetensi
+ * GET /api/kompetensi-wajib/options/kompetensi
  * Mendapatkan daftar kompetensi yang belum menjadi wajib untuk tahun tertentu
  */
 export const fetchAvailableKompetensi = async (session, tahun) => {
@@ -817,7 +817,7 @@ export const fetchAvailableKompetensi = async (session, tahun) => {
     }
     
     const baseUrl = process.env.NEXT_PUBLIC_API_URL;
-    const url = `${baseUrl}/pelatihan/kompetensi-wajib/options/kompetensi${tahun ? `?tahun=${tahun}` : ''}`;
+    const url = `${baseUrl}/kompetensi-wajib/options/kompetensi${tahun ? `?tahun=${tahun}` : ''}`;
     
     try {
         const response = await fetch(url, {
@@ -840,7 +840,7 @@ export const fetchAvailableKompetensi = async (session, tahun) => {
 };
 
 /**
- * POST /api/pelatihan/kompetensi-wajib
+ * POST /api/kompetensi-wajib
  * Menambah kompetensi wajib baru (hanya admin)
  */
 export const createKompetensiWajib = async (session, data) => {
@@ -854,7 +854,7 @@ export const createKompetensiWajib = async (session, data) => {
     }
     
     const baseUrl = process.env.NEXT_PUBLIC_API_URL;
-    const url = `${baseUrl}/pelatihan/kompetensi-wajib`;
+    const url = `${baseUrl}/kompetensi-wajib`;
     
     console.log('📤 POST /kompetensi-wajib:', data);
     
@@ -879,7 +879,7 @@ export const createKompetensiWajib = async (session, data) => {
 };
 
 /**
- * POST /api/pelatihan/kompetensi-wajib/bulk
+ * POST /api/kompetensi-wajib/bulk
  * Menambah multiple kompetensi wajib sekaligus (hanya admin)
  */
 export const createKompetensiWajibBulk = async (session, kompetensiIds, tahun) => {
@@ -893,7 +893,7 @@ export const createKompetensiWajibBulk = async (session, kompetensiIds, tahun) =
     }
     
     const baseUrl = process.env.NEXT_PUBLIC_API_URL;
-    const url = `${baseUrl}/pelatihan/kompetensi-wajib/bulk`;
+    const url = `${baseUrl}/kompetensi-wajib/bulk`;
     
     console.log('📤 POST /kompetensi-wajib/bulk:', { kompetensi_ids: kompetensiIds, tahun });
     
@@ -921,7 +921,7 @@ export const createKompetensiWajibBulk = async (session, kompetensiIds, tahun) =
 };
 
 /**
- * DELETE /api/pelatihan/kompetensi-wajib/:id
+ * DELETE /api/kompetensi-wajib/:id
  * Menghapus kompetensi wajib (hanya admin)
  */
 export const deleteKompetensiWajib = async (session, id) => {
@@ -935,7 +935,7 @@ export const deleteKompetensiWajib = async (session, id) => {
     }
     
     const baseUrl = process.env.NEXT_PUBLIC_API_URL;
-    const url = `${baseUrl}/pelatihan/kompetensi-wajib/${id}`;
+    const url = `${baseUrl}/kompetensi-wajib/${id}`;
     
     try {
         const response = await fetch(url, {
@@ -957,7 +957,7 @@ export const deleteKompetensiWajib = async (session, id) => {
 };
 
 /**
- * DELETE /api/pelatihan/kompetensi-wajib/tahun/:tahun
+ * DELETE /api/kompetensi-wajib/tahun/:tahun
  * Menghapus semua kompetensi wajib untuk tahun tertentu (hanya admin)
  */
 export const deleteKompetensiWajibByTahun = async (session, tahun) => {
@@ -971,7 +971,7 @@ export const deleteKompetensiWajibByTahun = async (session, tahun) => {
     }
     
     const baseUrl = process.env.NEXT_PUBLIC_API_URL;
-    const url = `${baseUrl}/pelatihan/kompetensi-wajib/tahun/${tahun}`;
+    const url = `${baseUrl}/kompetensi-wajib/tahun/${tahun}`;
     
     try {
         const response = await fetch(url, {

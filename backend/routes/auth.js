@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const passport = require('passport');
+const axios = require('axios');
 const KEYCLOAK_CONFIG = require('../config/keycloak');
 
 // ========== AUTH ROUTES ==========

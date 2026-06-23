@@ -2,27 +2,15 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../db');
-
-// ========== HELPER FUNCTIONS ==========
-
-function getUserNipFromToken(user) {
-    if (!user) return null;
-    return user.preferred_username || user.username;
-}
-
-function isAdminTambunRaya(user) {
-    if (!user) return false;
-    const roles = user.extractedRoles || user.roles || [];
-    return roles.includes('admin_tambun_raya');
-}
-
+const { keycloakAuth, getUserId, getUsername } = require('../middleware/keycloakAuth');
+const { getUserNipFromToken, isAdminTambunRaya } = require('../utils/keycloakHelpers');
 // ========== KOMPETENSI WAJIB CRUD ==========
 
 /**
  * GET /api/kompetensi-wajib
  * Mendapatkan semua kompetensi wajib (bisa diakses semua user)
  */
-router.get('/', async (req, res) => {
+router.get('/', keycloakAuth, async (req, res) => {
     const { tahun } = req.query;
     
     try {
@@ -73,7 +61,7 @@ router.get('/', async (req, res) => {
  * GET /api/kompetensi-wajib/tahun/:tahun
  * Mendapatkan kompetensi wajib berdasarkan tahun
  */
-router.get('/tahun/:tahun', async (req, res) => {
+router.get('/tahun/:tahun', keycloakAuth, async (req, res) => {
     const { tahun } = req.params;
     
     try {
@@ -112,7 +100,7 @@ router.get('/tahun/:tahun', async (req, res) => {
  * GET /api/kompetensi-wajib/tahun-options
  * Mendapatkan daftar tahun yang tersedia
  */
-router.get('/tahun-options', async (req, res) => {
+router.get('/tahun-options', keycloakAuth, async (req, res) => {
     try {
         const [rows] = await db.query(`
             SELECT DISTINCT tahun 
@@ -140,7 +128,7 @@ router.get('/tahun-options', async (req, res) => {
  * POST /api/kompetensi-wajib
  * Menambah kompetensi wajib baru (hanya admin)
  */
-router.post('/', async (req, res) => {
+router.post('/', keycloakAuth, async (req, res) => {
     // Hanya admin yang bisa menambah kompetensi wajib
     if (!isAdminTambunRaya(req.user)) {
         return res.status(403).json({
@@ -221,7 +209,7 @@ router.post('/', async (req, res) => {
  * POST /api/kompetensi-wajib/bulk
  * Menambah multiple kompetensi wajib sekaligus (hanya admin)
  */
-router.post('/bulk', async (req, res) => {
+router.post('/bulk', keycloakAuth, async (req, res) => {
     // Hanya admin yang bisa menambah kompetensi wajib
     if (!isAdminTambunRaya(req.user)) {
         return res.status(403).json({
@@ -316,7 +304,7 @@ router.post('/bulk', async (req, res) => {
  * DELETE /api/kompetensi-wajib/:id
  * Menghapus kompetensi wajib (hanya admin)
  */
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', keycloakAuth, async (req, res) => {
     // Hanya admin yang bisa menghapus kompetensi wajib
     if (!isAdminTambunRaya(req.user)) {
         return res.status(403).json({
@@ -364,7 +352,7 @@ router.delete('/:id', async (req, res) => {
  * DELETE /api/kompetensi-wajib/tahun/:tahun
  * Menghapus semua kompetensi wajib untuk tahun tertentu (hanya admin)
  */
-router.delete('/tahun/:tahun', async (req, res) => {
+router.delete('/tahun/:tahun', keycloakAuth, async (req, res) => {
     // Hanya admin yang bisa menghapus kompetensi wajib
     if (!isAdminTambunRaya(req.user)) {
         return res.status(403).json({
@@ -402,7 +390,7 @@ router.delete('/tahun/:tahun', async (req, res) => {
  * GET /api/kompetensi-wajib/options/kompetensi
  * Mendapatkan daftar kompetensi yang belum menjadi wajib untuk tahun tertentu
  */
-router.get('/options/kompetensi', async (req, res) => {
+router.get('/options/kompetensi', keycloakAuth, async (req, res) => {
     const { tahun } = req.query;
     
     try {
@@ -455,7 +443,7 @@ router.get('/options/kompetensi', async (req, res) => {
  * Mendapatkan daftar pegawai yang belum memenuhi kompetensi tertentu
  * Hanya menampilkan pegawai yang memiliki peran yang sesuai dengan kompetensi
  */
-router.get('/:id/pegawai-belum-memenuhi', async (req, res) => {
+router.get('/:id/pegawai-belum-memenuhi', keycloakAuth, async (req, res) => {
     const { id } = req.params;
     const { search, id_fungsi } = req.query;
     
@@ -655,7 +643,7 @@ router.get('/:id/pegawai-belum-memenuhi', async (req, res) => {
  * GET /api/kompetensi-wajib/:id/statistik-pemenuhan
  * Mendapatkan statistik pemenuhan kompetensi berdasarkan peran
  */
-router.get('/:id/statistik-pemenuhan', async (req, res) => {
+router.get('/:id/statistik-pemenuhan', keycloakAuth, async (req, res) => {
     const { id } = req.params;
     
     try {
@@ -779,7 +767,7 @@ router.get('/:id/statistik-pemenuhan', async (req, res) => {
  * GET /api/kompetensi-wajib/:id/peran-info
  * Mendapatkan informasi peran yang dibutuhkan untuk kompetensi
  */
-router.get('/:id/peran-info', async (req, res) => {
+router.get('/:id/peran-info', keycloakAuth, async (req, res) => {
     const { id } = req.params;
     
     try {
