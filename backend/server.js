@@ -15,6 +15,9 @@ require('dotenv').config({ path: '.env.local' });
 
 const app = express();
 
+// Trust proxy untuk reverse proxy (Nginx, Docker, dll)
+app.set('trust proxy', 1);
+
 // ========== CONFIGURATION ==========
 const PORT = process.env.PORT || 5001;
 
