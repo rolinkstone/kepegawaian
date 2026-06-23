@@ -35,6 +35,10 @@ services:
     build: 
       context: ./frontend
       dockerfile: Dockerfile
+      args:
+        - NEXT_PUBLIC_API_URL=https://api-tambun.bbpompky.id/api
+        - NEXT_PUBLIC_KEYCLOAK_ISSUER=https://auth.bbpompky.id/realms/master
+        - NEXT_PUBLIC_KEYCLOAK_CLIENT_ID=kepegawaian
     container_name: tambunraya-frontend
     restart: unless-stopped
     dns:

@@ -12,6 +12,11 @@ COPY package.json package-lock.json ./
 RUN npm cache clean --force && \
     npm ci --no-audit --legacy-peer-deps
 
+# Build args untuk NEXT_PUBLIC_* (di-bake saat build time)
+ARG NEXT_PUBLIC_API_URL
+ARG NEXT_PUBLIC_KEYCLOAK_ISSUER
+ARG NEXT_PUBLIC_KEYCLOAK_CLIENT_ID
+
 # Copy source code
 COPY . .
 
