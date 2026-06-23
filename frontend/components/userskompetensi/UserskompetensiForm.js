@@ -77,7 +77,8 @@ const UserskompetensiForm = ({ show, onClose, onSuccess, editingData, options, u
             const filtered = options.kompetensi.filter(kom => 
                 kom.nama_kompetensi?.toLowerCase().includes(searchKompetensiTerm.toLowerCase()) ||
                 kom.kode_kompetensi?.toLowerCase().includes(searchKompetensiTerm.toLowerCase()) ||
-                kom.nama_fungsi?.toLowerCase().includes(searchKompetensiTerm.toLowerCase())
+                kom.nama_fungsi?.toLowerCase().includes(searchKompetensiTerm.toLowerCase()) ||
+                kom.deskripsi?.toLowerCase().includes(searchKompetensiTerm.toLowerCase())
             );
             setFilteredKompetensi(filtered.slice(0, 20));
         } else if (options.kompetensi) {
@@ -461,6 +462,11 @@ const UserskompetensiForm = ({ show, onClose, onSuccess, editingData, options, u
                                             <div className="text-sm text-gray-500">
                                                 Fungsi: {kom.nama_fungsi || '-'}
                                             </div>
+                                            {kom.deskripsi && (
+                                                <div className="text-xs text-gray-400 mt-0.5">
+                                                    {kom.deskripsi}
+                                                </div>
+                                            )}
                                         </div>
                                     ))}
                                 </div>
@@ -475,11 +481,21 @@ const UserskompetensiForm = ({ show, onClose, onSuccess, editingData, options, u
                         {errors.id_kompetensi && (
                             <p className="mt-1 text-sm text-red-600">{errors.id_kompetensi}</p>
                         )}
-                        {formData.id_kompetensi && (
-                            <p className="mt-1 text-sm text-green-600">
-                                ✓ Kompetensi dipilih: {options.kompetensi?.find(k => k.id?.toString() === formData.id_kompetensi)?.kode_kompetensi} - {options.kompetensi?.find(k => k.id?.toString() === formData.id_kompetensi)?.nama_kompetensi}
-                            </p>
-                        )}
+                        {formData.id_kompetensi && (() => {
+                            const selectedKom = options.kompetensi?.find(k => k.id?.toString() === formData.id_kompetensi);
+                            return (
+                                <div className="mt-1">
+                                    <p className="text-sm text-green-600">
+                                        ✓ Kompetensi dipilih: {selectedKom?.kode_kompetensi} - {selectedKom?.nama_kompetensi}
+                                    </p>
+                                    {selectedKom?.deskripsi && (
+                                        <p className="text-xs text-gray-500 mt-0.5 ml-4 italic">
+                                            {selectedKom.deskripsi}
+                                        </p>
+                                    )}
+                                </div>
+                            );
+                        })()}
                         <p className="text-xs text-gray-500 mt-1">
                             💡 Tips: Ketik untuk mencari kompetensi berdasarkan nama, kode, atau fungsi
                         </p>

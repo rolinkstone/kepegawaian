@@ -376,6 +376,32 @@ function getUsername(user) {
     return user.username || user.preferred_username || user.email || 'Unknown';
 }
 
+/**
+ * Mendapatkan NIP dari token Keycloak (preferred_username)
+ */
+function getUserNipFromToken(user) {
+    if (!user) return null;
+    return user.preferred_username || user.username;
+}
+
+/**
+ * Cek apakah user memiliki role admin_tambun_raya
+ */
+function isAdminTambunRaya(user) {
+    if (!user) return false;
+    const roles = user.extractedRoles || user.role || user.roles || [];
+    return roles.includes('admin_tambun_raya');
+}
+
+/**
+ * Cek apakah user memiliki role katim
+ */
+function isKatim(user) {
+    if (!user) return false;
+    const roles = user.extractedRoles || user.role || user.roles || [];
+    return roles.includes('katim');
+}
+
 module.exports = {
     getAdminCliToken,
     getPPKUsersFromKeycloak,
@@ -386,5 +412,8 @@ module.exports = {
     isUserKabalai,
     isRegularUser,
     getUserId,
-    getUsername
+    getUsername,
+    getUserNipFromToken,
+    isAdminTambunRaya,
+    isKatim
 };

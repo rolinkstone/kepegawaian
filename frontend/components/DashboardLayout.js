@@ -75,10 +75,35 @@ export default function DashboardLayout({ children }) {
 
   const handleLogout = async () => {
     try {
-      console.log("🚪 Logout via NextAuth");
-      await signOut({
-        callbackUrl: "/login"
-      });
+      console.log("🚪 Logout: destroy NextAuth session, then redirect to Keycloak logout");
+
+      // Dapatkan keycloakIssuer dari env
+      const keycloakIssuer = process.env.NEXT_PUBLIC_KEYCLOAK_ISSUER;
+      const clientId = process.env.NEXT_PUBLIC_KEYCLOAK_CLIENT_ID || process.env.KEYCLOAK_CLIENT_ID || 'nextjs-local';
+
+      // Hancurkan NextAuth session dulu (tanpa redirect)
+      await signOut({ redirect: false });
+
+      // Hapus localStorage
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      localStorage.removeItem('accessToken');
+
+      // Redirect ke Keycloak logout untuk menghancurkan SSO session
+      const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
+      let logoutUrl;
+
+      if (keycloakIssuer) {
+        // Logout dari Keycloak SSO (seperti Talawang)
+        logoutUrl = `${keycloakIssuer}/protocol/openid-connect/logout` +
+          `?client_id=${encodeURIComponent(clientId)}` +
+          `&post_logout_redirect_uri=${encodeURIComponent(baseUrl + '/login')}`;
+      } else {
+        logoutUrl = '/login';
+      }
+
+      console.log("🚪 Redirecting to Keycloak logout:", logoutUrl);
+      window.location.href = logoutUrl;
     } catch (err) {
       console.error("Logout error:", err);
       window.location.href = "/login";

@@ -1,17 +1,59 @@
-// backend/server.js
+// backend/server.js — MERGED with app.js
 const express = require('express');
 const path = require('path');
 const cors = require('cors');
+const session = require('express-session');
+const passport = require('passport');
+const KeycloakStrategy = require('passport-keycloak');
 const db = require('./db');
 const jwt = require('jsonwebtoken');
 const axios = require('axios');
 const https = require('https');
 const fs = require('fs');
+const rateLimit = require('express-rate-limit');
+require('dotenv').config({ path: '.env.local' });
 
 const app = express();
 
 // ========== CONFIGURATION ==========
 const PORT = process.env.PORT || 5001;
+
+// ========== RATE LIMITING ==========
+// Pembatasan umum untuk semua API
+const apiLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 menit
+    max: 500,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: {
+        success: false,
+        message: 'Terlalu banyak permintaan, silakan coba lagi dalam 15 menit'
+    }
+});
+
+// Pembatasan ketat untuk endpoint login (mencegah brute force)
+const loginLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 menit
+    max: 20,
+    message: {
+        success: false,
+        message: 'Terlalu banyak percobaan login, silakan coba lagi dalam 15 menit'
+    }
+});
+
+// Terapkan rate limiter umum ke semua API routes
+app.use('/api/', apiLimiter);
+
+// ========== KEYCLOAK CONFIG FROM ENV ==========
+const KEYCLOAK_CONFIG = {
+    url: process.env.KEYCLOAK_SERVER_URL || 'https://auth.bbpompky.id',
+    realm: process.env.KEYCLOAK_REALM || 'master',
+    clientId: process.env.KEYCLOAK_CLIENT_ID || 'nextjs-local',
+    clientSecret: process.env.KEYCLOAK_CLIENT_SECRET || '',
+    adminUsername: process.env.KEYCLOAK_ADMIN_USERNAME,
+    adminPassword: process.env.KEYCLOAK_ADMIN_PASSWORD,
+    serverUrl: process.env.KEYCLOAK_SERVER_URL || 'https://auth.bbpompky.id'
+};
 
 // ========== KONFIGURASI UPLOAD FOLDER ==========
 const UPLOADS_DIR = path.join(__dirname, 'uploads');
@@ -24,21 +66,67 @@ if (!fs.existsSync(UPLOADS_DIR)) {
 }
 
 app.use(cors({
-    origin: '*',
+    origin: process.env.FRONTEND_URL || 'http://localhost:3002',
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
-    allowedHeaders: ['Content-Type', 'Authorization']
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    credentials: true
 }));
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// ========== KEYCLOAK CONFIG ==========
-const KEYCLOAK_CONFIG = {
-    url: 'https://auth.bbpompky.id',
-    realm: 'master',
-    clientId: 'nextjs-local',
-    clientSecret: 'WJGi86sOoEcIW1IvD0ET40BgEnDvuSDj'
-};
+// ========== SESSION SETUP ==========
+app.use(session({
+    secret: process.env.SESSION_SECRET || 'your-secret-key',
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+        secure: process.env.NODE_ENV === 'production',
+        maxAge: 24 * 60 * 60 * 1000
+    }
+}));
+
+// ========== PASSPORT SETUP ==========
+app.use(passport.initialize());
+app.use(passport.session());
+
+// ========== PASSPORT KEYCLOAK STRATEGY ==========
+passport.use(new KeycloakStrategy({
+    host: KEYCLOAK_CONFIG.serverUrl,
+    realm: KEYCLOAK_CONFIG.realm,
+    clientID: KEYCLOAK_CONFIG.clientId,
+    clientSecret: KEYCLOAK_CONFIG.clientSecret,
+    callbackURL: `${process.env.BACKEND_URL || 'http://localhost:5001'}/api/auth/keycloak/callback`,
+    authorizationURL: `${KEYCLOAK_CONFIG.serverUrl}/realms/${KEYCLOAK_CONFIG.realm}/protocol/openid-connect/auth`,
+    tokenURL: `${KEYCLOAK_CONFIG.serverUrl}/realms/${KEYCLOAK_CONFIG.realm}/protocol/openid-connect/token`,
+    userInfoURL: `${KEYCLOAK_CONFIG.serverUrl}/realms/${KEYCLOAK_CONFIG.realm}/protocol/openid-connect/userinfo`
+}, (accessToken, refreshToken, profile, done) => {
+    console.log('🔑 Keycloak profile received:', profile);
+    const user = {
+        id: profile.id || profile.sub,
+        username: profile.preferred_username || profile.username,
+        email: profile.email,
+        firstName: profile.given_name || profile.firstName,
+        lastName: profile.family_name || profile.lastName,
+        fullName: profile.name,
+        nip: profile.nip,
+        roles: profile.realm_access?.roles || [],
+        accessToken: accessToken,
+        refreshToken: refreshToken,
+        profile: profile
+    };
+    return done(null, user);
+}));
+
+passport.serializeUser((user, done) => {
+    console.log('💾 Serializing user:', user.username);
+    done(null, user);
+});
+
+passport.deserializeUser((user, done) => {
+    console.log('📖 Deserializing user:', user.username);
+    done(null, user);
+});
 
 // ========== CUSTOM HTTPS AGENT ==========
 const httpsAgent = new https.Agent({
@@ -48,7 +136,7 @@ const httpsAgent = new https.Agent({
 });
 
 // ========== LOGIN ROUTE (TANPA AUTH) UNTUK POSTMAN ==========
-app.post('/api/login', async (req, res) => {
+app.post('/api/login', loginLimiter, async (req, res) => {
     try {
         console.log('📥 Login request received');
         console.log('📥 Body:', req.body);
@@ -132,12 +220,14 @@ const enhancedAuth = async (req, res, next) => {
         // Daftar route yang TIDAK memerlukan autentikasi
         const publicRoutes = [
             '/api/login',
+            '/api/auth/login',
+            '/api/auth/keycloak',
+            '/api/auth/failure',
+            '/api/auth/logout',
             '/api/health',
             '/api/validate',
             '/api/refresh',
             '/api/debug',
-            '/api/kegiatan/test/public',
-            '/uploads-list' // Untuk testing saja (bisa dihapus nanti)
         ];
 
         // Cek apakah request ke public route
@@ -274,25 +364,6 @@ app.get('/api/uploads/:filename', enhancedAuth, async (req, res) => {
     }
 });
 
-// Test route untuk cek file (tanpa autentikasi) - OPSIONAL, bisa dihapus jika tidak perlu
-app.get('/uploads-list', (req, res) => {
-    try {
-        const files = fs.readdirSync(UPLOADS_DIR);
-        res.json({
-            success: true,
-            uploads_dir: UPLOADS_DIR,
-            files: files,
-            urls: files.map(f => `http://localhost:${PORT}/api/uploads/${f}`)
-        });
-    } catch (error) {
-        res.status(500).json({
-            success: false,
-            message: 'Gagal membaca folder uploads',
-            error: error.message
-        });
-    }
-});
-
 // Health check endpoint (public)
 app.get('/api/health', (req, res) => {
     res.json({
@@ -303,6 +374,7 @@ app.get('/api/health', (req, res) => {
 });
 
 // ========== IMPORT ROUTES ==========
+const authRoutes = require('./routes/auth');
 const standarkompetensiRoutes = require('./routes/standarkompetensi');
 const masterRoutes = require('./routes/master');
 const pegawaiRoutes = require('./routes/pegawai');
@@ -310,9 +382,10 @@ const userskompetensiRoutes = require('./routes/userskompetensi');
 const pelatihanRoutes = require('./routes/pelatihan');
 const keycloakRoutes = require('./routes/keycloak');
 const dashboardRoutes = require('./routes/dashboard');
-const kompetensiWajibRoutes = require('./routes/kompetensiWajib'); // TAMBAHKAN INI
+const kompetensiWajibRoutes = require('./routes/kompetensiWajib');
 
 // ========== MOUNT ROUTES ==========
+app.use('/api/auth', authRoutes);
 app.use('/api/standarkompetensi', standarkompetensiRoutes);
 app.use('/api/master', masterRoutes);
 app.use('/api/pegawai', pegawaiRoutes);
@@ -320,7 +393,7 @@ app.use('/api/userskompetensi', userskompetensiRoutes);
 app.use('/api/pelatihan', pelatihanRoutes);
 app.use('/api/keycloak', keycloakRoutes);
 app.use('/api/dashboard', dashboardRoutes);
-app.use('/api/kompetensi-wajib', kompetensiWajibRoutes); // TAMBAHKAN INI
+app.use('/api/kompetensi-wajib', kompetensiWajibRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {

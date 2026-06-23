@@ -1,4 +1,4 @@
-// pages/home.js
+// pages/index.js - Dashboard Home
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/router';
 import { useEffect, useState, useCallback } from 'react';
@@ -62,6 +62,11 @@ const Home = () => {
     email: '',
     nip: '',
     jabatan: '',
+    jabatanId: null,
+    fungsi: '',
+    fungsiId: null,
+    peran: '',
+    peranId: null,
     role: '',
     roles: [],
     loginTime: '',
@@ -117,16 +122,22 @@ const Home = () => {
   const [isLoadingAdminNotification, setIsLoadingAdminNotification] = useState(false);
   const [allKompetensiData, setAllKompetensiData] = useState([]);
 
-  // State untuk kompetensi wajib user
+  // State untuk kompetensi wajib user (SUDAH DIFILTER berdasarkan jabatan/fungsi/peran)
   const [kompetensiWajibData, setKompetensiWajibData] = useState([]);
+  const [kompetensiWajibFiltered, setKompetensiWajibFiltered] = useState([]); // KOMPETENSI WAJIB YANG SESUAI JABATAN/FUNGSI/PERAN USER
   const [kompetensiUserValid, setKompetensiUserValid] = useState([]);
-  const [kompetensiWajibBelumDipenuhi, setKompetensiWajibBelumDipenuhi] = useState([]);
+  const [kompetensiWajibBelumDipenuhi, setKompetensiWajibBelumDipenuhi] = useState([]); // SUDAH DIFILTER
   const [isLoadingKompetensiWajib, setIsLoadingKompetensiWajib] = useState(false);
 
   // State untuk notifikasi admin - pegawai yang belum 100% memenuhi kompetensi wajib
   const [pegawaiBelumLengkap, setPegawaiBelumLengkap] = useState([]);
   const [isLoadingPegawaiStatus, setIsLoadingPegawaiStatus] = useState(false);
   const [allPegawaiData, setAllPegawaiData] = useState([]);
+
+  // State untuk master data (jabatan, fungsi, peran)
+  const [masterJabatan, setMasterJabatan] = useState([]);
+  const [masterFungsi, setMasterFungsi] = useState([]);
+  const [masterPeran, setMasterPeran] = useState([]);
 
   const COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899'];
 
@@ -143,6 +154,145 @@ const Home = () => {
       console.error('Error refreshing dashboard:', error);
     }
   }, [session]);
+
+  // Fungsi untuk mengambil master data (jabatan, fungsi, peran)
+  const fetchMasterData = useCallback(async () => {
+    try {
+      const token = session?.accessToken || localStorage.getItem('token');
+      
+      // Ambil master jabatan
+      const jabatanRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/jabatan`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const jabatanResult = await jabatanRes.json();
+      if (jabatanResult.success) {
+        setMasterJabatan(jabatanResult.data);
+      }
+      
+      // Ambil master fungsi
+      const fungsiRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/fungsi`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const fungsiResult = await fungsiRes.json();
+      if (fungsiResult.success) {
+        setMasterFungsi(fungsiResult.data);
+      }
+      
+      // Ambil master peran
+      const peranRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/peran`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const peranResult = await peranRes.json();
+      if (peranResult.success) {
+        setMasterPeran(peranResult.data);
+      }
+      
+      console.log('✅ Master data fetched:', {
+        jabatan: jabatanResult.data?.length,
+        fungsi: fungsiResult.data?.length,
+        peran: peranResult.data?.length
+      });
+    } catch (error) {
+      console.error('Error fetching master data:', error);
+    }
+  }, [session]);
+
+  // Fungsi untuk mendapatkan data pegawai berdasarkan NIP (untuk mendapatkan jabatan, fungsi, peran)
+  const fetchPegawaiByNip = useCallback(async (nip) => {
+    try {
+      const token = session?.accessToken || localStorage.getItem('token');
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/pegawai/nip/${nip}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const result = await response.json();
+      
+      if (result.success && result.data) {
+        return result.data;
+      }
+      return null;
+    } catch (error) {
+      console.error('Error fetching pegawai by NIP:', error);
+      return null;
+    }
+  }, [session]);
+
+  // Fungsi untuk memfilter kompetensi wajib berdasarkan jabatan, fungsi, dan peran user
+  const filterKompetensiWajibByUser = useCallback((kompetensiList, userJabatanId, userFungsiId, userPeranId) => {
+    if (!kompetensiList || kompetensiList.length === 0) {
+      return [];
+    }
+    
+    console.log('🔍 Filtering kompetensi wajib with:', {
+      jabatanId: userJabatanId,
+      fungsiId: userFungsiId,
+      peranId: userPeranId,
+      totalKompetensi: kompetensiList.length
+    });
+    
+    const filtered = kompetensiList.filter(kompetensi => {
+      // Parse target_jabatan, target_fungsi, target_peran (bisa berupa string JSON atau array)
+      let targetJabatan = [];
+      let targetFungsi = [];
+      let targetPeran = [];
+      
+      try {
+        if (kompetensi.target_jabatan) {
+          targetJabatan = typeof kompetensi.target_jabatan === 'string' 
+            ? JSON.parse(kompetensi.target_jabatan) 
+            : kompetensi.target_jabatan;
+        }
+        if (kompetensi.target_fungsi) {
+          targetFungsi = typeof kompetensi.target_fungsi === 'string' 
+            ? JSON.parse(kompetensi.target_fungsi) 
+            : kompetensi.target_fungsi;
+        }
+        if (kompetensi.target_peran) {
+          targetPeran = typeof kompetensi.target_peran === 'string' 
+            ? JSON.parse(kompetensi.target_peran) 
+            : kompetensi.target_peran;
+        }
+      } catch (e) {
+        console.warn('Error parsing target for kompetensi:', kompetensi.kode_kompetensi, e);
+      }
+      
+      // Jika tidak ada target yang ditentukan, kompetensi ini untuk semua (default)
+      const hasNoTarget = targetJabatan.length === 0 && targetFungsi.length === 0 && targetPeran.length === 0;
+      
+      if (hasNoTarget) {
+        return true; // Kompetensi untuk semua pegawai
+      }
+      
+      // Cek apakah user masuk ke dalam target
+      let matchesJabatan = true;
+      let matchesFungsi = true;
+      let matchesPeran = true;
+      
+      if (targetJabatan.length > 0) {
+        matchesJabatan = targetJabatan.includes(Number(userJabatanId)) || targetJabatan.includes(String(userJabatanId));
+      }
+      
+      if (targetFungsi.length > 0) {
+        matchesFungsi = targetFungsi.includes(Number(userFungsiId)) || targetFungsi.includes(String(userFungsiId));
+      }
+      
+      if (targetPeran.length > 0) {
+        matchesPeran = targetPeran.includes(Number(userPeranId)) || targetPeran.includes(String(userPeranId));
+      }
+      
+      // User harus memenuhi SEMUA target yang ditentukan (AND logic)
+      // Jika ada target yang tidak dipenuhi, kompetensi tidak relevan untuk user ini
+      const isRelevant = matchesJabatan && matchesFungsi && matchesPeran;
+      
+      if (isRelevant) {
+        console.log(`✅ Kompetensi ${kompetensi.kode_kompetensi} relevan untuk user ini`);
+      }
+      
+      return isRelevant;
+    });
+    
+    console.log(`📊 Filtered kompetensi wajib: ${filtered.length} dari ${kompetensiList.length} kompetensi`);
+    return filtered;
+  }, []);
 
   const refreshAdminNotifications = useCallback(async () => {
     if (!userInfo.nip) return;
@@ -198,14 +348,28 @@ const Home = () => {
       
       if (result.success && result.data) {
         setKompetensiWajibData(result.data);
-        console.log('📊 Kompetensi wajib refreshed:', result.data.length);
+        console.log('📊 Kompetensi wajib (semua) fetched:', result.data.length);
+        
+        // Filter kompetensi wajib berdasarkan jabatan/fungsi/peran user
+        if (userInfo.jabatanId || userInfo.fungsiId || userInfo.peranId) {
+          const filtered = filterKompetensiWajibByUser(
+            result.data,
+            userInfo.jabatanId,
+            userInfo.fungsiId,
+            userInfo.peranId
+          );
+          setKompetensiWajibFiltered(filtered);
+        } else {
+          // Jika belum ada data jabatan/fungsi/peran, tampilkan semua dulu
+          setKompetensiWajibFiltered(result.data);
+        }
       }
     } catch (error) {
       console.error('Error fetching kompetensi wajib:', error);
     } finally {
       setIsLoadingKompetensiWajib(false);
     }
-  }, [session]);
+  }, [session, userInfo.jabatanId, userInfo.fungsiId, userInfo.peranId, filterKompetensiWajibByUser]);
 
   // Fungsi untuk mengambil SEMUA data kompetensi (untuk admin)
   const fetchAllKompetensiData = useCallback(async () => {
@@ -298,13 +462,13 @@ const Home = () => {
     }
   }, [session]);
 
-  // Analisis kompetensi wajib pegawai
+  // Analisis kompetensi wajib pegawai (dengan filter jabatan/fungsi/peran masing-masing pegawai)
   const analyzePegawaiKompetensiWajib = useCallback(async (pegawaiList) => {
     try {
       const token = session?.accessToken || localStorage.getItem('token');
       const currentYear = new Date().getFullYear().toString();
       
-      // Ambil kompetensi wajib
+      // Ambil semua kompetensi wajib
       const kompetensiWajibResult = await fetchKompetensiWajib(session, { tahun: currentYear });
       
       if (!kompetensiWajibResult.success || !kompetensiWajibResult.data) {
@@ -313,18 +477,34 @@ const Home = () => {
         return;
       }
       
-      const kompetensiWajib = kompetensiWajibResult.data;
-      const totalKompetensiWajib = kompetensiWajib.length;
+      const semuaKompetensiWajib = kompetensiWajibResult.data;
       
-      if (totalKompetensiWajib === 0) {
-        setPegawaiBelumLengkap([]);
-        return;
-      }
-      
-      // Untuk setiap pegawai, hitung berapa kompetensi wajib yang sudah dipenuhi
+      // Untuk setiap pegawai, hitung kompetensi wajib yang relevan dengan jabatan/fungsi/perannya
       const pegawaiStatus = await Promise.all(pegawaiList.map(async (pegawai) => {
         try {
-          // Ambil kompetensi pegawai
+          // Filter kompetensi wajib berdasarkan jabatan/fungsi/peran pegawai ini
+          const kompetensiWajibRelevan = filterKompetensiWajibByUser(
+            semuaKompetensiWajib,
+            pegawai.jabatan_id,
+            pegawai.fungsi_id,
+            pegawai.peran_id
+          );
+          
+          const totalKompetensiWajib = kompetensiWajibRelevan.length;
+          
+          if (totalKompetensiWajib === 0) {
+            return {
+              ...pegawai,
+              totalKompetensiWajib: 0,
+              sudahDipenuhi: 0,
+              belumDipenuhi: 0,
+              persentase: 100,
+              isComplete: true,
+              kompetensiWajibList: []
+            };
+          }
+          
+          // Ambil kompetensi pegawai yang sudah dimiliki
           const kompetensiResponse = await fetch(
             `${process.env.NEXT_PUBLIC_API_URL}/userskompetensi/user/${pegawai.id}`,
             { headers: { 'Authorization': `Bearer ${token}` } }
@@ -338,10 +518,10 @@ const Home = () => {
           
           const kompetensiValidIds = new Set(kompetensiValid.map(k => k.id_kompetensi));
           
-          // Hitung kompetensi wajib yang sudah dipenuhi
-          const sudahDipenuhi = kompetensiWajib.filter(kw => kompetensiValidIds.has(kw.id_kompetensi)).length;
+          // Hitung kompetensi wajib yang sudah dipenuhi (hanya dari yang relevan)
+          const sudahDipenuhi = kompetensiWajibRelevan.filter(kw => kompetensiValidIds.has(kw.id_kompetensi)).length;
           const belumDipenuhi = totalKompetensiWajib - sudahDipenuhi;
-          const persentase = totalKompetensiWajib > 0 ? Math.round((sudahDipenuhi / totalKompetensiWajib) * 100) : 0;
+          const persentase = totalKompetensiWajib > 0 ? Math.round((sudahDipenuhi / totalKompetensiWajib) * 100) : 100;
           
           return {
             ...pegawai,
@@ -350,7 +530,7 @@ const Home = () => {
             belumDipenuhi,
             persentase,
             isComplete: sudahDipenuhi === totalKompetensiWajib,
-            kompetensiWajibList: kompetensiWajib.map(kw => ({
+            kompetensiWajibList: kompetensiWajibRelevan.map(kw => ({
               ...kw,
               sudahDipenuhi: kompetensiValidIds.has(kw.id_kompetensi)
             }))
@@ -359,9 +539,9 @@ const Home = () => {
           console.error(`Error for pegawai ${pegawai.id}:`, err);
           return {
             ...pegawai,
-            totalKompetensiWajib,
+            totalKompetensiWajib: 0,
             sudahDipenuhi: 0,
-            belumDipenuhi: totalKompetensiWajib,
+            belumDipenuhi: 0,
             persentase: 0,
             isComplete: false,
             kompetensiWajibList: []
@@ -369,18 +549,18 @@ const Home = () => {
         }
       }));
       
-      // Filter pegawai yang belum 100% memenuhi kompetensi wajib
-      const belumLengkap = pegawaiStatus.filter(p => !p.isComplete);
+      // Filter pegawai yang belum 100% memenuhi kompetensi wajib (dan memiliki kompetensi wajib > 0)
+      const belumLengkap = pegawaiStatus.filter(p => !p.isComplete && p.totalKompetensiWajib > 0);
       // Urutkan berdasarkan persentase terendah
       belumLengkap.sort((a, b) => a.persentase - b.persentase);
       
       setPegawaiBelumLengkap(belumLengkap);
-      console.log('📊 Pegawai belum lengkap kompetensi wajib:', belumLengkap.length);
+      console.log('📊 Pegawai belum lengkap kompetensi wajib (berdasarkan filter jabatan/fungsi/peran):', belumLengkap.length);
       
     } catch (error) {
       console.error('Error analyzing pegawai kompetensi:', error);
     }
-  }, [session]);
+  }, [session, filterKompetensiWajibByUser]);
 
   // Fungsi refresh semua data (untuk digunakan saat tab aktif kembali)
   const refreshAllData = useCallback(async () => {
@@ -391,7 +571,7 @@ const Home = () => {
     await refreshAdminNotifications();
   }, [refreshDashboardData, refreshUserKompetensiData, refreshKompetensiWajibUser, refreshAdminNotifications]);
 
-  const extractUserInfo = (session) => {
+  const extractUserInfo = async (session) => {
     try {
       const user = session.user;
       let tokenPayload = {};
@@ -423,6 +603,27 @@ const Home = () => {
       }
       
       let jabatan = 'Pegawai';
+      let jabatanId = null;
+      let fungsi = '';
+      let fungsiId = null;
+      let peran = '';
+      let peranId = null;
+      
+      // Ambil data pegawai lengkap dari API
+      if (nip !== '-') {
+        const pegawaiData = await fetchPegawaiByNip(nip);
+        if (pegawaiData) {
+          jabatan = pegawaiData.nama_jabatan || pegawaiData.jabatan || jabatan;
+          jabatanId = pegawaiData.jabatan_id;
+          fungsi = pegawaiData.nama_fungsi || '';
+          fungsiId = pegawaiData.fungsi_id;
+          peran = pegawaiData.nama_peran || '';
+          peranId = pegawaiData.peran_id;
+          console.log('📋 Pegawai data from API:', { jabatan, jabatanId, fungsi, fungsiId, peran, peranId });
+        }
+      }
+      
+      // Fallback ke token jika API tidak mengembalikan data
       if (tokenPayload.jabatan) jabatan = tokenPayload.jabatan;
       else if (user.jabatan) jabatan = user.jabatan;
       
@@ -460,13 +661,18 @@ const Home = () => {
         email,
         nip,
         jabatan,
+        jabatanId,
+        fungsi,
+        fungsiId,
+        peran,
+        peranId,
         role,
         roles: [...new Set(roles)],
         loginTime,
         department: 'Balai Besar Pengawasan Obat dan Makanan di Palangka Raya'
       });
       
-      console.log('✅ User Info extracted:', { nip, name, role });
+      console.log('✅ User Info extracted:', { nip, name, role, jabatanId, fungsiId, peranId });
       
     } catch (error) {
       console.error('Error extracting user info:', error);
@@ -493,9 +699,9 @@ const Home = () => {
     }
   };
 
-  // Hitung kompetensi wajib yang belum dipenuhi (setelah userKompetensi di-load)
+  // Hitung kompetensi wajib yang belum dipenuhi (setelah userKompetensi di-load) - MENGGUNAKAN KOMPETENSI YANG SUDAH DIFILTER
   useEffect(() => {
-    if (kompetensiWajibData.length > 0 && userKompetensi.length > 0) {
+    if (kompetensiWajibFiltered.length > 0 && userKompetensi.length > 0) {
       const validUserKompetensi = userKompetensi.filter(item => 
         item.status === 'Lulus' && item.hasil_verif === 'Valid'
       );
@@ -503,15 +709,15 @@ const Home = () => {
       
       const userKompetensiIds = new Set(validUserKompetensi.map(k => k.id_kompetensi));
       
-      const belumDipenuhi = kompetensiWajibData.filter(kw => !userKompetensiIds.has(kw.id_kompetensi));
+      const belumDipenuhi = kompetensiWajibFiltered.filter(kw => !userKompetensiIds.has(kw.id_kompetensi));
       setKompetensiWajibBelumDipenuhi(belumDipenuhi);
       
-      console.log('📊 Kompetensi wajib BELUM dipenuhi:', belumDipenuhi.length);
-    } else if (kompetensiWajibData.length > 0 && userKompetensi.length === 0) {
-      setKompetensiWajibBelumDipenuhi(kompetensiWajibData);
-      console.log('📊 Kompetensi wajib BELUM dipenuhi (user belum punya kompetensi):', kompetensiWajibData.length);
+      console.log('📊 Kompetensi wajib BELUM dipenuhi (setelah filter):', belumDipenuhi.length);
+    } else if (kompetensiWajibFiltered.length > 0 && userKompetensi.length === 0) {
+      setKompetensiWajibBelumDipenuhi(kompetensiWajibFiltered);
+      console.log('📊 Kompetensi wajib BELUM dipenuhi (user belum punya kompetensi):', kompetensiWajibFiltered.length);
     }
-  }, [kompetensiWajibData, userKompetensi]);
+  }, [kompetensiWajibFiltered, userKompetensi]);
 
   // useEffect untuk initial load
   useEffect(() => {
@@ -522,9 +728,13 @@ const Home = () => {
 
   useEffect(() => {
     if (session?.user) {
-      extractUserInfo(session);
-      fetchDashboardData();
-      refreshKompetensiWajibUser(); // pakai refresh function
+      // Ekstrak user info (async)
+      const initUser = async () => {
+        await extractUserInfo(session);
+        await fetchMasterData();
+        fetchDashboardData();
+      };
+      initUser();
     }
   }, [session]);
 
@@ -533,8 +743,9 @@ const Home = () => {
     if (userInfo.nip && userInfo.nip !== '-') {
       console.log('🔄 userInfo updated, fetching kompetensi for NIP:', userInfo.nip);
       refreshUserKompetensiData();
+      refreshKompetensiWajibUser();
     }
-  }, [userInfo.nip, refreshUserKompetensiData]);
+  }, [userInfo.nip, refreshUserKompetensiData, refreshKompetensiWajibUser]);
 
   // Untuk admin, ambil semua data setelah userInfo terisi
   useEffect(() => {
@@ -708,6 +919,10 @@ const Home = () => {
 
   const isAdmin = userInfo.role === 'admin' || userInfo.role === 'admin_tambun_raya' || userInfo.role === 'katim';
 
+  // Data yang digunakan untuk stat card user biasa (menggunakan kompetensi yang sudah difilter)
+  const kompetensiWajibTotal = kompetensiWajibFiltered.length;
+  const kompetensiSudahDipenuhi = kompetensiWajibTotal - kompetensiWajibBelumDipenuhi.length;
+
   return (
     <DashboardLayout>
       <style dangerouslySetInnerHTML={{ __html: blinkAnimation }} />
@@ -726,6 +941,13 @@ const Home = () => {
                 <p className="text-white/60 mt-2 text-base">
                   NIP: {userInfo.nip} | {userInfo.jabatan}
                 </p>
+                {(userInfo.fungsi || userInfo.peran) && (
+                  <p className="text-white/50 mt-1 text-sm">
+                    {userInfo.fungsi && <>Fungsi: {userInfo.fungsi}</>}
+                    {userInfo.fungsi && userInfo.peran && <> • </>}
+                    {userInfo.peran && <>Peran: {userInfo.peran}</>}
+                  </p>
+                )}
               </div>
               <div className="bg-white/20 rounded-2xl px-8 py-6 backdrop-blur-lg border border-white/30">
                 <p className="text-sm text-white/80">Login Terakhir</p>
@@ -758,7 +980,7 @@ const Home = () => {
                   </div>
                   <p className="text-sm text-white/90 mb-4 flex items-center">
                     <span className="inline-block w-2 h-2 bg-red-400 rounded-full mr-2 animate-pulse"></span>
-                    {pegawaiBelumLengkap.length} pegawai belum menyelesaikan 100% kompetensi wajib tahun {new Date().getFullYear()}
+                    {pegawaiBelumLengkap.length} pegawai belum menyelesaikan 100% kompetensi wajib yang relevan dengan jabatan/fungsinya tahun {new Date().getFullYear()}
                   </p>
 
                   {isLoadingPegawaiStatus ? (
@@ -854,7 +1076,7 @@ const Home = () => {
             </div>
           )}
 
-          {/* NOTIFIKASI KOMPETENSI WAJIB YANG HARUS DIPENUHI - UNTUK USER BIASA */}
+          {/* NOTIFIKASI KOMPETENSI WAJIB YANG HARUS DIPENUHI - UNTUK USER BIASA (SUDAH DIFILTER) */}
           {!isAdmin && kompetensiWajibBelumDipenuhi.length > 0 && (
             <div className="mb-8 bg-gradient-to-r from-red-500 to-orange-500 rounded-2xl shadow-xl overflow-hidden slide-in pulse-glow">
               <div className="px-8 py-6 flex items-start text-white">
@@ -872,7 +1094,8 @@ const Home = () => {
                   </p>
                   <p className="text-white/90 text-sm mb-3 flex items-center">
                     <span className="inline-block w-2 h-2 bg-red-400 rounded-full mr-2 animate-pulse"></span>
-                    Kompetensi berikut adalah kompetensi WAJIB untuk tahun {new Date().getFullYear()} yang belum Anda penuhi
+                    Berdasarkan jabatan <strong>{userInfo.jabatan}</strong>
+                    {userInfo.fungsi && <> dan fungsi <strong>{userInfo.fungsi}</strong></>}
                   </p>
                   <div className="space-y-2 max-h-64 overflow-y-auto pr-2">
                     {kompetensiWajibBelumDipenuhi.slice(0, 5).map((item, idx) => (
@@ -919,7 +1142,7 @@ const Home = () => {
           )}
 
           {/* NOTIFIKASI SEMUA KOMPETENSI WAJIB SUDAH TERPENUHI */}
-          {!isAdmin && kompetensiWajibData.length > 0 && kompetensiWajibBelumDipenuhi.length === 0 && (
+          {!isAdmin && kompetensiWajibFiltered.length > 0 && kompetensiWajibBelumDipenuhi.length === 0 && (
             <div className="mb-8 bg-gradient-to-r from-green-500 to-emerald-500 rounded-2xl shadow-xl overflow-hidden slide-in">
               <div className="px-8 py-6 flex items-center text-white">
                 <div className="flex-shrink-0 mr-6">
@@ -930,7 +1153,8 @@ const Home = () => {
                     Selamat! Semua Kompetensi Wajib Terpenuhi
                   </p>
                   <p className="text-white/90 text-sm">
-                    Anda telah memenuhi semua kompetensi wajib untuk tahun {new Date().getFullYear()}. 
+                    Anda telah memenuhi semua kompetensi wajib yang relevan dengan jabatan {userInfo.jabatan}
+                    {userInfo.fungsi && <> dan fungsi {userInfo.fungsi}</>} untuk tahun {new Date().getFullYear()}.
                     Pertahankan prestasi Anda!
                   </p>
                   <div className="mt-3">
@@ -1075,11 +1299,11 @@ const Home = () => {
                   {/* Statistik Ringkas */}
                   <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
                     <div className="bg-blue-50 rounded-lg p-4 text-center">
-                      <p className="text-2xl font-bold text-blue-600">{kompetensiWajibData.length}</p>
+                      <p className="text-2xl font-bold text-blue-600">{kompetensiWajibFiltered.length}</p>
                       <p className="text-xs text-gray-600">Kompetensi Wajib</p>
                     </div>
                     <div className="bg-green-50 rounded-lg p-4 text-center">
-                      <p className="text-2xl font-bold text-green-600">{kompetensiWajibData.length - kompetensiWajibBelumDipenuhi.length}</p>
+                      <p className="text-2xl font-bold text-green-600">{kompetensiSudahDipenuhi}</p>
                       <p className="text-xs text-gray-600">Sudah Dipenuhi</p>
                     </div>
                     <div className="bg-red-50 rounded-lg p-4 text-center">
@@ -1097,20 +1321,24 @@ const Home = () => {
                   </div>
 
                   {/* Progress Bar Kompetensi Wajib */}
-                  {kompetensiWajibData.length > 0 && (
+                  {kompetensiWajibFiltered.length > 0 && (
                     <div className="mb-6">
                       <div className="flex justify-between items-center mb-2">
                         <span className="text-sm font-medium text-gray-700">Progress Pemenuhan Kompetensi Wajib</span>
                         <span className="text-sm font-semibold text-gray-900">
-                          {Math.round(((kompetensiWajibData.length - kompetensiWajibBelumDipenuhi.length) / kompetensiWajibData.length) * 100)}%
+                          {kompetensiWajibFiltered.length > 0 ? Math.round((kompetensiSudahDipenuhi / kompetensiWajibFiltered.length) * 100) : 100}%
                         </span>
                       </div>
                       <div className="w-full bg-gray-200 rounded-full h-3">
                         <div 
                           className="bg-green-500 h-3 rounded-full transition-all duration-500" 
-                          style={{ width: `${((kompetensiWajibData.length - kompetensiWajibBelumDipenuhi.length) / kompetensiWajibData.length) * 100}%` }}
+                          style={{ width: `${kompetensiWajibFiltered.length > 0 ? (kompetensiSudahDipenuhi / kompetensiWajibFiltered.length) * 100 : 100}%` }}
                         ></div>
                       </div>
+                      <p className="text-xs text-gray-500 mt-2">
+                        Berdasarkan jabatan: <strong>{userInfo.jabatan}</strong>
+                        {userInfo.fungsi && <> • Fungsi: <strong>{userInfo.fungsi}</strong></>}
+                      </p>
                     </div>
                   )}
 
@@ -1268,19 +1496,19 @@ const Home = () => {
             </div>
           )}
 
-          {/* Stat Cards Grid - Untuk user biasa */}
+          {/* Stat Cards Grid - Untuk user biasa (menggunakan data yang sudah difilter) */}
           {!isAdmin && (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
               <StatCard
                 title="Kompetensi Wajib"
-                value={kompetensiWajibData.length}
+                value={kompetensiWajibFiltered.length}
                 icon="🎯"
                 color="bg-purple-100 text-purple-600"
-                subtitle={`${kompetensiWajibData.length - kompetensiWajibBelumDipenuhi.length} dipenuhi`}
+                subtitle={`${kompetensiSudahDipenuhi} dipenuhi`}
               />
               <StatCard
                 title="Sudah Dipenuhi"
-                value={kompetensiWajibData.length - kompetensiWajibBelumDipenuhi.length}
+                value={kompetensiSudahDipenuhi}
                 icon="✅"
                 color="bg-green-100 text-green-600"
                 subtitle="Dari kompetensi wajib"

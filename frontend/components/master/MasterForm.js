@@ -1878,7 +1878,7 @@ const MasterForm = () => {
                               color="textSecondary" 
                               sx={{ 
                                 display: 'block',
-                                maxWidth: 300,
+                                maxWidth: 350,
                                 overflow: 'hidden',
                                 textOverflow: 'ellipsis',
                                 whiteSpace: 'nowrap'

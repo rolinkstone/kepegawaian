@@ -3,63 +3,9 @@ const express = require('express');
 const router = express.Router();
 const db = require('../db');
 const { keycloakAuth, getUserId, getUsername } = require('../middleware/keycloakAuth');
+const { getUserNipFromToken, isAdminTambunRaya, isKatim } = require('../utils/keycloakHelpers');
 
 // ========== HELPER FUNCTIONS UNTUK QUERY FILTER BERDASARKAN ROLE ==========
-
-/**
- * Mendapatkan NIP dari token (preferred_username)
- */
-function getUserNipFromToken(user) {
-    if (!user) return null;
-    
-    // preferred_username dari token Keycloak berisi NIP
-    const nip = user.preferred_username || user.username;
-    
-    console.log(`🔍 Getting NIP from token:`, {
-        preferred_username: user.preferred_username,
-        username: user.username,
-        extractedNip: nip
-    });
-    
-    return nip;
-}
-
-/**
- * Helper function untuk mengecek apakah user adalah admin_tambun_raya
- */
-function isAdminTambunRaya(user) {
-    if (!user) return false;
-    
-    // Cek dari extractedRoles atau role property
-    const roles = user.extractedRoles || user.role || [];
-    const isAdmin = roles.includes('admin_tambun_raya') || 
-                    user.isAdminTambunRaya ||
-                    user.preferred_username === 'admin_tambun_raya'; // Fallback check
-    
-    console.log(`🔐 Checking admin_tambun_raya access for ${getUsername(user)}:`, {
-        roles: roles,
-        isAdminTambunRaya: isAdmin
-    });
-    
-    return isAdmin;
-}
-
-/**
- * Helper function untuk mengecek apakah user adalah katim
- */
-function isKatim(user) {
-    if (!user) return false;
-    
-    const roles = user.extractedRoles || user.role || [];
-    const isKatim = roles.includes('katim');
-    
-    console.log(`🔐 Checking katim access for ${getUsername(user)}:`, {
-        roles: roles,
-        isKatim: isKatim
-    });
-    
-    return isKatim;
-}
 
 /**
  * Build WHERE clause berdasarkan role user untuk GET / (mendapatkan semua data)
@@ -431,6 +377,84 @@ router.get('/:id', keycloakAuth, async (req, res) => {
         });
     } catch (error) {
         console.error('❌ Error fetching pegawai detail:', error);
+        res.status(500).json({ 
+            success: false,
+            message: 'Terjadi kesalahan server', 
+            error: error.message 
+        });
+    }
+});
+
+/**
+ * GET /api/pegawai/nip/:nip
+ * Mendapatkan detail pegawai berdasarkan NIP
+ */
+router.get('/nip/:nip', keycloakAuth, async (req, res) => {
+    const username = getUsername(req.user);
+    const { nip } = req.params;
+    
+    console.log(`📊 ${username} mengakses detail pegawai via NIP: ${nip}`);
+    
+    try {
+        const [rows] = await db.query(`
+            SELECT 
+                u.id,
+                u.nip,
+                u.nama,
+                u.email,
+                u.no_hp,
+                DATE_FORMAT(u.tanggal_bergabung, '%Y-%m-%d') as tanggal_bergabung,
+                u.is_active,
+                u.id_jabatan,
+                j.nama_jabatan,
+                u.id_jenjang,
+                jg.nama_jenjang,
+                jg.tingkat,
+                u.id_fungsi,
+                f.nama_fungsi,
+                u.id_peran,
+                (
+                    SELECT JSON_ARRAYAGG(
+                        JSON_OBJECT(
+                            'id', p.id,
+                            'nama_peran', p.nama_peran
+                        )
+                    )
+                    FROM kepegawaian.peran p
+                    WHERE FIND_IN_SET(p.id, u.id_peran)
+                ) as daftar_peran,
+                DATE_FORMAT(u.created_at, '%Y-%m-%d %H:%i:%s') as created_at
+            FROM kepegawaian.user u
+            LEFT JOIN kepegawaian.jabatan j ON u.id_jabatan = j.id
+            LEFT JOIN kepegawaian.jenjang jg ON u.id_jenjang = jg.id
+            LEFT JOIN kepegawaian.fungsi f ON u.id_fungsi = f.id
+            WHERE u.nip = ?
+        `, [nip]);
+        
+        if (rows.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: 'Pegawai dengan NIP tersebut tidak ditemukan'
+            });
+        }
+        
+        // Parse JSON daftar_peran jika ada
+        if (rows[0].daftar_peran) {
+            try {
+                rows[0].daftar_peran = JSON.parse(rows[0].daftar_peran);
+            } catch (e) {
+                rows[0].daftar_peran = [];
+            }
+        } else {
+            rows[0].daftar_peran = [];
+        }
+        
+        res.status(200).json({
+            success: true,
+            data: rows[0]
+        });
+    } catch (error) {
+        console.error('❌ Error fetching pegawai by NIP:', error);
         res.status(500).json({ 
             success: false,
             message: 'Terjadi kesalahan server', 

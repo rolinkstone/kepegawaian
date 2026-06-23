@@ -497,7 +497,6 @@ const LoginPage = () => {
       </div>
 
       {/* Modal Tentang TAMBUN RAYA */}
-      // Modal Tentang TAMBUN RAYA
 {showModal && (
   <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
     {/* Backdrop with blur */}

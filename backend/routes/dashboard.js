@@ -3,36 +3,7 @@ const express = require('express');
 const router = express.Router();
 const db = require('../db');
 const { keycloakAuth, getUserId, getUsername } = require('../middleware/keycloakAuth');
-
-// ========== HELPER FUNCTIONS ==========
-
-/**
- * Mendapatkan NIP dari token (preferred_username)
- */
-function getUserNipFromToken(user) {
-    if (!user) return null;
-    const nip = user.preferred_username || user.username;
-    console.log('🔍 getUserNipFromToken:', { preferred_username: user.preferred_username, username: user.username, nip });
-    return nip;
-}
-
-/**
- * Cek apakah user adalah admin_tambun_raya
- */
-function isAdminTambunRaya(user) {
-    if (!user) return false;
-    const roles = user.extractedRoles || user.role || [];
-    return roles.includes('admin_tambun_raya');
-}
-
-/**
- * Cek apakah user adalah katim
- */
-function isKatim(user) {
-    if (!user) return false;
-    const roles = user.extractedRoles || user.role || [];
-    return roles.includes('katim');
-}
+const { getUserNipFromToken, isAdminTambunRaya, isKatim } = require('../utils/keycloakHelpers');
 
 /**
  * GET /api/dashboard/stats

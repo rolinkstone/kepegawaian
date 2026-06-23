@@ -323,7 +323,7 @@ const KompetensiModal = ({
                     value={formData.id_fungsi}
                     onChange={handleChange}
                     label="Fungsi"
-                    disabled={loading || mode === 'edit'}
+                    disabled={loading}
                   >
                     <MenuItem value="">-- Pilih Fungsi --</MenuItem>
                     {fungsiList.map((f) => (
@@ -354,7 +354,7 @@ const KompetensiModal = ({
                     value={formData.id_peran}
                     onChange={handleChange}
                     label="Peran Default"
-                    disabled={loading || !formData.id_fungsi || mode === 'edit'}
+                    disabled={loading || !formData.id_fungsi}
                   >
                     <MenuItem value="">-- Pilih Peran Default --</MenuItem>
                     {filteredPeran.map((p) => (
