@@ -68,12 +68,9 @@ export default function DashboardLayout({ children }) {
   };
 
   const handleLogout = async () => {
+    setIsLoggingOut(true);
     try {
-      console.log("🚪 Logout: destroy NextAuth session, then redirect to Keycloak logout");
-
-      // Dapatkan keycloakIssuer dari env
-      const keycloakIssuer = process.env.NEXT_PUBLIC_KEYCLOAK_ISSUER;
-      const clientId = process.env.NEXT_PUBLIC_KEYCLOAK_CLIENT_ID || process.env.KEYCLOAK_CLIENT_ID || 'nextjs-local';
+      console.log("🚪 Logout: destroy NextAuth session + Keycloak SSO session");
 
       // Hancurkan NextAuth session dulu (tanpa redirect)
       await signOut({ redirect: false });
@@ -83,24 +80,28 @@ export default function DashboardLayout({ children }) {
       localStorage.removeItem('user');
       localStorage.removeItem('accessToken');
 
-      // Redirect ke Keycloak logout untuk menghancurkan SSO session
-      const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
-      let logoutUrl;
+      // Redirect ke Keycloak logout dengan id_token_hint untuk hancurkan SSO session
+      const idToken = session?.idToken;
+      const keycloakIssuer = process.env.NEXT_PUBLIC_KEYCLOAK_ISSUER;
+      const clientId = process.env.NEXT_PUBLIC_KEYCLOAK_CLIENT_ID || process.env.KEYCLOAK_CLIENT_ID || 'kepegawaian';
+      const origin = typeof window !== 'undefined' ? window.location.origin : '';
 
-      if (keycloakIssuer) {
-        // Logout dari Keycloak SSO (seperti Talawang)
-        logoutUrl = `${keycloakIssuer}/protocol/openid-connect/logout` +
-          `?client_id=${encodeURIComponent(clientId)}` +
-          `&post_logout_redirect_uri=${encodeURIComponent(baseUrl + '/login')}`;
+      if (idToken && keycloakIssuer) {
+        const keycloakLogoutUrl = `${keycloakIssuer}/protocol/openid-connect/logout` +
+          `?id_token_hint=${encodeURIComponent(idToken)}` +
+          `&post_logout_redirect_uri=${encodeURIComponent(origin + '/login')}` +
+          `&client_id=${encodeURIComponent(clientId)}`;
+        console.log("🚪 Redirecting to Keycloak logout with id_token_hint");
+        window.location.href = keycloakLogoutUrl;
       } else {
-        logoutUrl = '/login';
+        console.log("🚪 No idToken available, redirecting to login page");
+        window.location.href = '/login';
       }
-
-      console.log("🚪 Redirecting to Keycloak logout:", logoutUrl);
-      window.location.href = logoutUrl;
     } catch (err) {
       console.error("Logout error:", err);
       window.location.href = "/login";
+    } finally {
+      setIsLoggingOut(false);
     }
   };
 
