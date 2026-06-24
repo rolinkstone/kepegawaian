@@ -134,6 +134,22 @@ export const authOptions = {
     },
   },
 
+  events: {
+    async signOut({ token }) {
+      // Hancurkan Keycloak SSO session saat NextAuth logout
+      if (token?.idToken) {
+        const issuer = process.env.KEYCLOAK_ISSUER;
+        const clientId = process.env.KEYCLOAK_CLIENT_ID || 'kepegawaian';
+        const logoutUrl = `${issuer}/protocol/openid-connect/logout?id_token_hint=${token.idToken}&post_logout_redirect_uri=${process.env.NEXTAUTH_URL}/login&client_id=${clientId}`;
+        try {
+          await fetch(logoutUrl);
+        } catch (error) {
+          console.error('❌ Keycloak SSO logout error:', error);
+        }
+      }
+    },
+  },
+
   pages: {
     signIn: '/login',
     error: '/login',

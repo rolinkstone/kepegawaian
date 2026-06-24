@@ -531,7 +531,7 @@ useEffect(() => {
                 color: 'bg-green-100 text-green-800',
                 message: `Diverifikasi oleh ${item.verified_by_nama} pada ${new Date(item.verified_at).toLocaleDateString('id-ID')}`,
                 canEdit: false,
-                canDelete: false,
+                canDelete: true,
                 icon: '✓'
             };
         }
@@ -666,12 +666,31 @@ useEffect(() => {
     const handleDelete = (item) => {
         const verificationStatus = getVerificationStatus(item);
         
-        // Cek apakah data bisa dihapus
-        if (!verificationStatus.canDelete) {
+        // Jika data sudah Valid, beri konfirmasi ekstra
+        if (item.hasil_verif === 'Valid') {
             Swal.fire({
                 icon: 'warning',
-                title: 'Tidak Dapat Menghapus',
-                text: verificationStatus.message || 'Data yang sudah diverifikasi dengan hasil VALID tidak dapat dihapus'
+                title: 'Hapus Data Tervalidasi?',
+                html: `
+                    <div class="text-left">
+                        <p class="mb-2">Data ini sudah diverifikasi dengan hasil <strong>VALID</strong> oleh <strong>${item.verified_by_nama || 'Verifikator'}</strong>.</p>
+                        <p class="text-red-600 font-semibold">Apakah Anda yakin ingin menghapus data ini?</p>
+                        <p class="text-sm text-gray-500 mt-2">Data yang dihapus tidak dapat dikembalikan.</p>
+                    </div>
+                `,
+                showCancelButton: true,
+                confirmButtonText: 'Ya, Hapus!',
+                cancelButtonText: 'Batal',
+                confirmButtonColor: '#dc2626',
+                reverseButtons: true
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    setModalConfig({
+                        show: true,
+                        type: 'delete',
+                        data: item
+                    });
+                }
             });
             return;
         }
