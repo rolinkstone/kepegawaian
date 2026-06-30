@@ -11,12 +11,22 @@ const axios = require('axios');
 const https = require('https');
 const fs = require('fs');
 const rateLimit = require('express-rate-limit');
+const helmet = require('helmet');
 require('dotenv').config({ path: '.env.local' });
 
 const app = express();
 
 // Trust proxy untuk reverse proxy (Nginx, Docker, dll)
 app.set('trust proxy', 1);
+
+// ========== SECURITY HEADERS ==========
+// Hapus X-Powered-By Express
+app.disable('x-powered-by');
+
+app.use(helmet({
+    crossOriginResourcePolicy: { policy: 'cross-origin' }, // Izinkan upload file dari origin lain
+    contentSecurityPolicy: false // Nonaktifkan CSP karena sudah dihandle frontend (jika ada)
+}));
 
 // ========== CONFIGURATION ==========
 const PORT = process.env.PORT || 5001;
@@ -315,6 +325,9 @@ const enhancedAuth = async (req, res, next) => {
 
 app.use(enhancedAuth);
 
+// ========== DIRECTORY UNTUK DOKUMEN STATIS ==========
+const DOCS_DIR = path.join(__dirname, 'docs');
+
 // ========== ROUTE UNTUK FILE UPLOAD (DENGAN AUTH) ==========
 app.get('/api/uploads/:filename', enhancedAuth, async (req, res) => {
     try {
@@ -363,6 +376,46 @@ app.get('/api/uploads/:filename', enhancedAuth, async (req, res) => {
             success: false,
             error: 'Internal Server Error',
             message: 'Gagal mengakses file: ' + error.message
+        });
+    }
+});
+
+// ========== ROUTE UNTUK DOKUMEN STATIS (DENGAN AUTH) ==========
+app.get('/api/docs/:filename', enhancedAuth, async (req, res) => {
+    try {
+        const { filename } = req.params;
+        const filePath = path.join(DOCS_DIR, filename);
+        
+        console.log(`📁 User ${req.user?.username} mengakses dokumen: ${filename}`);
+        
+        if (!fs.existsSync(filePath)) {
+            return res.status(404).json({
+                success: false,
+                error: 'Not Found',
+                message: 'Dokumen tidak ditemukan'
+            });
+        }
+        
+        const ext = path.extname(filename).toLowerCase();
+        const contentTypes = {
+            '.pdf': 'application/pdf',
+            '.jpg': 'image/jpeg',
+            '.png': 'image/png'
+        };
+        
+        if (contentTypes[ext]) {
+            res.contentType(contentTypes[ext]);
+        }
+        
+        res.setHeader('Content-Disposition', `inline; filename="${filename}"`);
+        res.sendFile(filePath);
+        console.log(`✅ Dokumen berhasil dikirim ke ${req.user?.username}: ${filename}`);
+    } catch (error) {
+        console.error('❌ Error accessing document:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Internal Server Error',
+            message: 'Gagal mengakses dokumen: ' + error.message
         });
     }
 });

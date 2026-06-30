@@ -531,6 +531,8 @@ useEffect(() => {
 
     // ========== FUNGSI UNTUK MENDAPATKAN STATUS VERIFIKASI ==========
     const getVerificationStatus = (item) => {
+        const isAdminOrKatim = userRoles.isAdmin || userRoles.isKatim;
+
         if (!item.verified_by) {
             return {
                 type: 'pending',
@@ -538,7 +540,7 @@ useEffect(() => {
                 color: 'bg-yellow-100 text-yellow-800',
                 message: 'Menunggu verifikasi admin',
                 canEdit: true,
-                canDelete: true,
+                canDelete: isAdminOrKatim,
                 icon: '⏳'
             };
         }
@@ -550,7 +552,7 @@ useEffect(() => {
                 color: 'bg-green-100 text-green-800',
                 message: `Diverifikasi oleh ${item.verified_by_nama} pada ${new Date(item.verified_at).toLocaleDateString('id-ID')}`,
                 canEdit: false,
-                canDelete: true,
+                canDelete: isAdminOrKatim,
                 icon: '✓'
             };
         }
@@ -562,7 +564,7 @@ useEffect(() => {
                 color: 'bg-red-100 text-red-800',
                 message: `Ditolak oleh ${item.verified_by_nama}. ${item.keterangan ? 'Keterangan: ' + item.keterangan : ''}`,
                 canEdit: true,
-                canDelete: true,
+                canDelete: isAdminOrKatim,
                 icon: '✗'
             };
         }
@@ -574,7 +576,7 @@ useEffect(() => {
                 color: 'bg-orange-100 text-orange-800',
                 message: `Perlu revisi oleh ${item.verified_by_nama}. ${item.keterangan ? 'Keterangan: ' + item.keterangan : ''}`,
                 canEdit: true,
-                canDelete: true,
+                canDelete: isAdminOrKatim,
                 icon: '↻'
             };
         }
@@ -585,7 +587,7 @@ useEffect(() => {
             color: 'bg-gray-100 text-gray-800',
             message: '',
             canEdit: !item.verified_by,
-            canDelete: !item.verified_by,
+            canDelete: isAdminOrKatim,
             icon: '?'
         };
     };

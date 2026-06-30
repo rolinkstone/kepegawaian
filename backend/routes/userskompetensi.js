@@ -827,6 +827,17 @@ router.delete('/:id', keycloakAuth, async (req, res) => {
     const { id } = req.params;
 
     try {
+        const isAdmin = isAdminTambunRaya(req.user);
+        const isKatimRole = isKatim(req.user);
+
+        // Hanya admin/katim yang bisa menghapus
+        if (!isAdmin && !isKatimRole) {
+            return res.status(403).json({
+                success: false,
+                message: 'Hanya admin_tambun_raya atau katim yang dapat menghapus data kompetensi'
+            });
+        }
+
         // Ambil data untuk mendapatkan nama file
         const [data] = await db.query(
             'SELECT bukti FROM kepegawaian.user_kompetensi WHERE id = ?',

@@ -460,9 +460,11 @@ const LoginPage = () => {
                         </button>
                         <div className="h-6 w-px bg-gradient-to-b from-transparent via-gray-300 to-transparent"></div>
                         <a 
-                            href="/docs/panduan.pdf" 
+                            href={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'}/api/docs/panduan.pdf`}
                             download="Panduan-Aplikasi-SIPEG.pdf"
                             className="text-sm text-slate-600 hover:text-slate-800 transition-colors font-medium hover:underline"
+                            target="_blank"
+                            rel="noopener noreferrer"
                           >
                             📥 Download Panduan
                           </a>
