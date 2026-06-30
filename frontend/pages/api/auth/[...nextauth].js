@@ -196,77 +196,10 @@ export const authOptions = {
 
 };
 
-// Custom handler dengan proteksi tambahan
+// Hapus X-Powered-By dari response NextAuth
 const nextAuthHandler = NextAuth(authOptions);
 
-// Daftar domain yang diizinkan untuk callbackUrl
-const allowedDomains = [
-  process.env.NEXTAUTH_URL,
-  'http://localhost:3002',
-  'https://tambun-raya.bbpompky.id',
-  'https://auth.bbpompky.id',
-];
-
-function isTrustedOrigin(origin) {
-  if (!origin) return false;
-  return allowedDomains.some(o => o && origin.includes(o));
-}
-
-function validateCallbackUrl(url) {
-  if (!url) return true;
-  try {
-    const urlObj = new URL(url);
-    return allowedDomains.some(domain => {
-      if (!domain) return false;
-      try {
-        const domainObj = new URL(domain);
-        return urlObj.hostname === domainObj.hostname;
-      } catch {
-        return false;
-      }
-    });
-  } catch {
-    return false;
-  }
-}
-
 export default async function handler(req, res) {
-  const path = req.query.nextauth?.[0];
-
-  // Hapus X-Powered-By dari response
   res.removeHeader('X-Powered-By');
-
-  // Proteksi callbackUrl di endpoint signin
-  if (path === 'signin') {
-    const callbackUrl = req.body?.callbackUrl || req.query?.callbackUrl;
-    if (callbackUrl && !validateCallbackUrl(callbackUrl)) {
-      return res.status(400).json({ error: 'Invalid callbackUrl' });
-    }
-  }
-
-  // Proteksi callbackUrl di endpoint callback
-  if (path === 'callback') {
-    const callbackUrl = req.query?.callbackUrl;
-    if (callbackUrl && !validateCallbackUrl(callbackUrl)) {
-      return res.status(400).json({ error: 'Invalid callbackUrl' });
-    }
-  }
-
-  // Proteksi /api/auth/providers — hanya dari origin terpercaya & butuh state
-  if (path === 'providers') {
-    const origin = req.headers.origin || req.headers.referer || '';
-    if (!isTrustedOrigin(origin) && !req.query.state) {
-      return res.status(404).json({ error: 'Not found' });
-    }
-  }
-
-  // Proteksi /api/auth/csrf — hanya dari origin terpercaya
-  if (path === 'csrf') {
-    const origin = req.headers.origin || req.headers.referer || '';
-    if (!isTrustedOrigin(origin)) {
-      return res.status(403).json({ error: 'Forbidden' });
-    }
-  }
-
   return nextAuthHandler(req, res);
 }
