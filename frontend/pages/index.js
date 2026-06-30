@@ -6,6 +6,8 @@ import DashboardLayout from '../components/DashboardLayout';
 import Link from 'next/link';
 import { fetchDashboardStats } from '../components/dashboard/api/dashboardApi';
 import { fetchUserKompetensi } from '../components/userskompetensi/api/userKompetensiApi';
+import { fetchOptions } from '../components/userskompetensi/api/userKompetensiApi';
+import UserskompetensiForm from '../components/userskompetensi/UserskompetensiForm';
 import { fetchKompetensiWajib, fetchKompetensiWajibByTahun } from '../components/pelatihan/api/pelatihanApi';
 import {
   BarChart, Bar, PieChart, Pie, Cell,
@@ -138,6 +140,12 @@ const Home = () => {
   const [masterJabatan, setMasterJabatan] = useState([]);
   const [masterFungsi, setMasterFungsi] = useState([]);
   const [masterPeran, setMasterPeran] = useState([]);
+
+  // State untuk modal form tambah kompetensi
+  const [showForm, setShowForm] = useState(false);
+  const [formEditingData, setFormEditingData] = useState(null);
+  const [formOptions, setFormOptions] = useState(null);
+  const [formPreselectUserId, setFormPreselectUserId] = useState(null);
 
   const COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899'];
 
@@ -826,6 +834,63 @@ const Home = () => {
     return () => clearInterval(intervalId);
   }, [userInfo.role, refreshUserKompetensiData, refreshKompetensiWajibUser, refreshDashboardData, fetchAllKompetensiData, fetchAllPegawaiForAdmin]);
 
+  // Handler untuk membuka modal tambah kompetensi
+  const handleTambahKompetensi = useCallback(async () => {
+    let optionsData = formOptions;
+    if (!optionsData) {
+      try {
+        const result = await fetchOptions(session);
+        if (result.success) {
+          optionsData = result.data;
+          setFormOptions(result.data);
+        } else {
+          console.error('Gagal fetch options:', result.message);
+          optionsData = { users: [], kompetensi: [], status_options: ['Lulus', 'Tidak Lulus', 'Dalam Proses'] };
+          setFormOptions(optionsData);
+        }
+      } catch (error) {
+        console.error('Error fetch options:', error);
+        optionsData = { users: [], kompetensi: [], status_options: ['Lulus', 'Tidak Lulus', 'Dalam Proses'] };
+        setFormOptions(optionsData);
+      }
+    }
+    
+    // Cari user yang sedang login dari daftar users berdasarkan NIP
+    const normalizeNip = (nip) => String(nip || '').replace(/\s/g, '');
+    const nip = userInfo.nip;
+    const cleanNip = normalizeNip(nip);
+    let foundUserId = null;
+    if (cleanNip && nip !== '-' && optionsData?.users) {
+      const found = optionsData.users.find(u => normalizeNip(u.nip) === cleanNip) ||
+                    optionsData.users.find(u => normalizeNip(u.nip).includes(cleanNip) || cleanNip.includes(normalizeNip(u.nip)));
+      if (found) {
+        foundUserId = found.id;
+        console.log('✅ Preselect user ditemukan:', found.nama, '- ID:', found.id);
+      }
+    }
+    
+    setFormPreselectUserId(foundUserId);
+    setFormEditingData(null);
+    setShowForm(true);
+  }, [session, formOptions, userInfo.nip]);
+
+  // Handler untuk close modal & refresh data
+  const handleFormSuccess = useCallback(() => {
+    setShowForm(false);
+    setFormEditingData(null);
+    setFormPreselectUserId(null);
+    // Refresh data kompetensi user
+    refreshUserKompetensiData();
+    // Refresh data kompetensi wajib
+    refreshKompetensiWajibUser();
+  }, [refreshUserKompetensiData, refreshKompetensiWajibUser]);
+
+  const handleFormClose = useCallback(() => {
+    setShowForm(false);
+    setFormEditingData(null);
+    setFormPreselectUserId(null);
+  }, []);
+
   const getRoleColor = (role) => {
     switch (role) {
       case 'admin_tambun_raya': return 'from-purple-600 to-purple-800';
@@ -1123,12 +1188,12 @@ const Home = () => {
                     </p>
                   )}
                   <div className="mt-4 flex gap-3 flex-wrap">
-                    <Link 
-                      href="/users_kompetensi/tambah" 
+                    <button
+                      onClick={handleTambahKompetensi}
                       className="inline-block text-sm bg-white text-red-600 px-4 py-2 rounded-lg font-semibold hover:bg-red-50 transition-all duration-300 hover:scale-105 transform animate-pulse"
                     >
                       + Tambah/Upload Kompetensi
-                    </Link>
+                    </button>
                     <Link 
                       href="/pelatihan" 
                       className="inline-block text-sm bg-blue-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-blue-700 transition-all duration-300 hover:scale-105 transform"
@@ -1358,12 +1423,12 @@ const Home = () => {
                                 <p className="text-sm text-gray-700 mt-1">{item.nama_kompetensi || item.kompetensi_original}</p>
                                 <p className="text-xs text-gray-500 mt-1">Fungsi: {item.nama_fungsi || '-'}</p>
                               </div>
-                              <Link 
-                                href={`/users_kompetensi/tambah?kompetensi_id=${item.id_kompetensi}`}
+                              <button
+                                onClick={handleTambahKompetensi}
                                 className="px-3 py-1 bg-blue-600 text-white text-xs rounded-lg hover:bg-blue-700 transition-colors"
                               >
                                 + Tambah
-                              </Link>
+                              </button>
                             </div>
                           </div>
                         ))}
@@ -1424,12 +1489,12 @@ const Home = () => {
                       ) : (
                         <div className="text-center py-8 text-gray-500">
                           <p className="mb-2">Anda belum memiliki data kompetensi</p>
-                          <Link 
-                            href="/users_kompetensi/tambah"
+                          <button
+                            onClick={handleTambahKompetensi}
                             className="inline-block px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm"
                           >
                             Tambah Kompetensi
-                          </Link>
+                          </button>
                         </div>
                       )}
 
@@ -1729,6 +1794,20 @@ const Home = () => {
           )}
         </div>
       </div>
+
+      {/* Modal Tambah Kompetensi */}
+      {showForm && formOptions && (
+        <UserskompetensiForm
+          show={showForm}
+          onClose={handleFormClose}
+          onSuccess={handleFormSuccess}
+          editingData={formEditingData}
+          options={formOptions}
+          userRoles={{ isAdmin: isAdmin, isKatim: userInfo.role === 'katim' }}
+          session={session}
+          preselectUserId={formPreselectUserId}
+        />
+      )}
     </DashboardLayout>
   );
 };
