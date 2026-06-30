@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import Swal from 'sweetalert2';
 import { createUserKompetensi, updateUserKompetensi } from './api/userKompetensiApi';
 
-const UserskompetensiForm = ({ show, onClose, onSuccess, editingData, options, userRoles, session }) => {
+const UserskompetensiForm = ({ show, onClose, onSuccess, editingData, options, userRoles, session, preselectUserId }) => {
     const [formData, setFormData] = useState({
         id_user: '',
         id_kompetensi: '',
@@ -31,21 +31,48 @@ const UserskompetensiForm = ({ show, onClose, onSuccess, editingData, options, u
 
     const isAdmin = userRoles?.isAdmin || false;
 
+    // Helper untuk normalisasi NIP (hapus spasi)
+    const normalizeNip = (nip) => String(nip || '').replace(/\s/g, '');
+
     // Dapatkan data user saat ini dari session (untuk non-admin)
     useEffect(() => {
-        if (!isAdmin && session?.user && options.users) {
-            const userNip = session.user.preferred_username || 
-                           session.user.username || 
-                           session.user.email || 
-                           session.user.nip;
+        if (!isAdmin && options.users) {
+            let foundUser = null;
             
-            console.log('🔍 Session user:', session.user);
-            console.log('🔍 Mencari user dengan NIP:', userNip);
+            // Prioritas 1: pakai preselectUserId dari parent (paling akurat)
+            if (preselectUserId) {
+                foundUser = options.users.find(u => u.id?.toString() === preselectUserId.toString());
+                console.log('🔍 Mencari user dari preselectUserId:', preselectUserId, foundUser ? `✅ ${foundUser.nama}` : '❌ tidak ditemukan');
+            }
             
-            let foundUser = options.users.find(u => u.nip === userNip);
+            // Prioritas 2: cari dari session
+            if (!foundUser && session?.user) {
+                const userNip = session.user.nip ||
+                               session.user.username || 
+                               session.user.email || 
+                               session.user.nip_raw;
+                console.log('🔍 Mencari user dengan NIP:', userNip);
+                // Normalisasi NIP (hapus spasi) sebelum dibandingkan
+                const cleanNip = normalizeNip(userNip);
+                foundUser = options.users.find(u => normalizeNip(u.nip) === cleanNip);
+                if (!foundUser && cleanNip) {
+                    foundUser = options.users.find(u => 
+                        normalizeNip(u.nip).includes(cleanNip) || 
+                        cleanNip.includes(normalizeNip(u.nip))
+                    );
+                }
+            }
             
-            if (!foundUser && userNip) {
-                foundUser = options.users.find(u => u.nip?.includes(userNip) || userNip.includes(u.nip));
+            // Prioritas 3: cari dari session user name
+            if (!foundUser && session?.user?.name && options.users.length > 0) {
+                const userName = session.user.name.toLowerCase().trim();
+                foundUser = options.users.find(u => 
+                    u.nama?.toLowerCase().includes(userName) || 
+                    userName.includes(u.nama?.toLowerCase())
+                );
+                if (foundUser) {
+                    console.log('🔍 User ditemukan dari nama:', foundUser.nama);
+                }
             }
             
             if (foundUser) {
@@ -56,7 +83,7 @@ const UserskompetensiForm = ({ show, onClose, onSuccess, editingData, options, u
                 console.log('⚠️ Fallback ke user pertama:', options.users[0]);
             }
         }
-    }, [session, options.users, isAdmin]);
+    }, [session, options.users, isAdmin, preselectUserId]);
 
     // Filter users untuk dropdown (khusus admin)
     useEffect(() => {

@@ -23,6 +23,7 @@ const UserskompetensiContainer = () => {
     const [initialLoading, setInitialLoading] = useState(true);
     const [showForm, setShowForm] = useState(false);
     const [editingData, setEditingData] = useState(null);
+    const [preselectUserId, setPreselectUserId] = useState(null);
     const [modalConfig, setModalConfig] = useState({
         show: false,
         type: null,
@@ -198,7 +199,8 @@ const getUserNip = useCallback(() => {
         result: possibleNip
     });
     
-    return possibleNip;
+    // Normalisasi: hapus semua spasi
+    return possibleNip ? String(possibleNip).replace(/\s/g, '') : null;
 }, [session]);
 
 // ========== FETCH OPTIONS ==========
@@ -214,7 +216,11 @@ const fetchOptionsData = useCallback(async () => {
             if (!userRoles.isAdmin && !userRoles.isKatim) {
                 const userNip = getUserNip();
                 if (userNip) {
-                    usersData = usersData.filter(user => user.nip === userNip);
+                    const cleanNip = String(userNip).replace(/\s/g, '');
+                    usersData = usersData.filter(user => {
+                        const dbNip = String(user.nip || '').replace(/\s/g, '');
+                        return dbNip === cleanNip;
+                    });
                     console.log('📌 Filtered users for non-admin:', usersData);
                 } else {
                     console.warn('⚠️ userNip tidak ditemukan, tidak bisa memfilter users');
@@ -474,6 +480,19 @@ useEffect(() => {
     const handleAdd = () => {
         console.log('📌 Tambah button clicked');
         setEditingData(null);
+        
+        // Cari user yang sedang login dari options.users
+        const nip = getUserNip();
+        let foundId = null;
+        if (nip && options.users?.length > 0) {
+            const cleanNip = String(nip).replace(/\s/g, '');
+            const found = options.users.find(u => String(u.nip || '').replace(/\s/g, '') === cleanNip);
+            if (found) {
+                foundId = found.id;
+                console.log('✅ Preselect user ID:', foundId, found.nama);
+            }
+        }
+        setPreselectUserId(foundId);
         setShowForm(true);
     };
 
@@ -712,6 +731,7 @@ useEffect(() => {
 
     const handleFormSuccess = () => {
         setShowForm(false);
+        setPreselectUserId(null);
         fetchData(true);
     };
 
@@ -1131,12 +1151,13 @@ useEffect(() => {
             {showForm && (
                 <UserskompetensiForm
                     show={showForm}
-                    onClose={() => setShowForm(false)}
+                    onClose={() => { setShowForm(false); setPreselectUserId(null); }}
                     onSuccess={handleFormSuccess}
                     editingData={editingData}
                     options={options}
                     userRoles={userRoles}
                     session={session}
+                    preselectUserId={preselectUserId}
                 />
             )}
 
