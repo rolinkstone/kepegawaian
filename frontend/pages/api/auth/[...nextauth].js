@@ -134,32 +134,20 @@ export const authOptions = {
     },
 
     async redirect({ url, baseUrl }) {
-      // Validasi callbackUrl untuk mencegah open redirect
-      const allowedDomains = [
-        baseUrl,
-        process.env.NEXTAUTH_URL,
-        'http://localhost:3002',
-        'https://tambun-raya.bbpompky.id',
-        'https://auth.bbpompky.id',
-      ];
+      // Relative URL atau URL internal → aman
+      if (url.startsWith('/')) return url;
 
       try {
         const urlObj = new URL(url);
-        const isAllowed = allowedDomains.some(domain => {
-          if (!domain) return false;
-          try {
-            const domainObj = new URL(domain);
-            return urlObj.hostname === domainObj.hostname;
-          } catch {
-            return false;
-          }
-        });
-
-        if (isAllowed) return url;
+        // Redirect ke Keycloak (authorization) — selalu izinkan
+        if (urlObj.hostname === 'auth.bbpompky.id') return url;
+        // Redirect internal — izinkan jika hostname sama
+        const baseObj = new URL(baseUrl);
+        if (urlObj.hostname === baseObj.hostname) return url;
       } catch {
-        // URL tidak valid, redirect ke home
+        // URL tidak valid
       }
-
+      // Redirect mencurigakan → fallback ke baseUrl
       return baseUrl;
     },
   },
@@ -196,10 +184,54 @@ export const authOptions = {
 
 };
 
-// Hapus X-Powered-By dari response NextAuth
-const nextAuthHandler = NextAuth(authOptions);
+// Lazy initialization — hindari NextAuth() di module level (bisa error build cache)
+let nextAuthHandler;
 
 export default async function handler(req, res) {
+  if (!nextAuthHandler) {
+    nextAuthHandler = NextAuth(authOptions);
+  }
+  const path = req.query.nextauth?.[0];
+  const origin = req.headers.origin || req.headers.referer || '';
+
+  // Hapus X-Powered-By
   res.removeHeader('X-Powered-By');
+
+  // Proteksi /api/auth/providers
+  if (path === 'providers') {
+    if (origin) {
+      const allowed = [
+        process.env.NEXTAUTH_URL,
+        'http://localhost:3002',
+        'https://tambun-raya.bbpompky.id',
+        'https://auth.bbpompky.id',
+      ];
+      const isTrusted = allowed.some(d => d && origin.includes(d));
+      if (!isTrusted) return res.status(404).end();
+    } else {
+      // Akses langsung tanpa origin → 404
+      return res.status(404).end();
+    }
+  }
+
+  // Proteksi /api/auth/csrf — blokir jika:
+  // - Origin terisi dan tidak trusted (dari situs luar)
+  // - Origin kosong (akses langsung curl/browser)
+  if (path === 'csrf') {
+    if (origin) {
+      const allowed = [
+        process.env.NEXTAUTH_URL,
+        'http://localhost:3002',
+        'https://tambun-raya.bbpompky.id',
+        'https://auth.bbpompky.id',
+      ];
+      const isTrusted = allowed.some(d => d && origin.includes(d));
+      if (!isTrusted) return res.status(403).end();
+    } else {
+      // Origin kosong — tetap blokir (fetch dari app selalu sertakan origin)
+      return res.status(403).end();
+    }
+  }
+
   return nextAuthHandler(req, res);
 }

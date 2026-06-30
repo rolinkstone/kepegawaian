@@ -2,28 +2,6 @@
 import { withAuth } from "next-auth/middleware";
 import { NextResponse } from "next/server";
 
-// Rate limiting sederhana berbasis IP
-const rateLimitMap = new Map();
-
-function rateLimit(req, limit = 20, windowMs = 15 * 60 * 1000) {
-  const ip = req.headers['x-forwarded-for'] || req.headers['x-real-ip'] || req.ip || 'unknown';
-  const now = Date.now();
-  
-  if (!rateLimitMap.has(ip)) {
-    rateLimitMap.set(ip, []);
-  }
-  
-  const timestamps = rateLimitMap.get(ip).filter(t => now - t < windowMs);
-  
-  if (timestamps.length >= limit) {
-    return false;
-  }
-  
-  timestamps.push(now);
-  rateLimitMap.set(ip, timestamps);
-  return true;
-}
-
 export default withAuth(
   function middleware(req) {
     const token = req.nextauth.token;
@@ -55,21 +33,9 @@ export default withAuth(
           '/images',
         ];
         
-        // NextAuth endpoints yang WAJIB public untuk auth flow
-        const nextAuthPublic = [
-          '/api/auth/signin',
-          '/api/auth/callback',
-          '/api/auth/csrf',
-          '/api/auth/session',
-          '/api/auth/_log',
-          '/api/auth/error',
-          '/api/auth/verify-request',
-        ];
-        
         const isPublicPath = publicPaths.some(p => path.startsWith(p)) || path.includes('.');
-        const isNextAuthPublic = nextAuthPublic.some(p => path.startsWith(p));
         
-        if (isPublicPath || isNextAuthPublic) {
+        if (isPublicPath) {
           return true;
         }
         
@@ -94,10 +60,6 @@ export default withAuth(
 
 export const config = {
   matcher: [
-    /*
-     * Match all request paths except public/static files.
-     * Now also matches /api/auth/* for rate limiting & access control.
-     */
-    '/((?!_next/static|_next/image|favicon.ico|images).*)',
+    '/((?!api/auth|_next/static|_next/image|favicon.ico|images).*)',
   ],
 };
