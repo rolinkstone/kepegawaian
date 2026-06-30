@@ -32,22 +32,6 @@ export default withAuth(
     console.log("🛡️ Middleware - Path:", path);
     console.log("🛡️ Middleware - Token present:", !!token);
     
-    // Rate limiting untuk endpoint login
-    if (path.startsWith('/api/auth/callback') || path.startsWith('/api/auth/signin')) {
-      if (!rateLimit(req, 10, 15 * 60 * 1000)) {
-        return new NextResponse(
-          JSON.stringify({ success: false, message: 'Terlalu banyak percobaan login. Silakan coba lagi nanti.' }),
-          { status: 429, headers: { 'Content-Type': 'application/json' } }
-        );
-      }
-    }
-    
-    // Proteksi /api/auth/providers - hanya boleh diakses saat login flow
-    if (path === '/api/auth/providers' && token) {
-      // Jika sudah login, tetap izinkan
-      return NextResponse.next();
-    }
-    
     if (token) {
       // Role-based access control
       if (path.startsWith('/admin') && token.role !== 'admin') {
@@ -86,16 +70,6 @@ export default withAuth(
         const isNextAuthPublic = nextAuthPublic.some(p => path.startsWith(p));
         
         if (isPublicPath || isNextAuthPublic) {
-          return true;
-        }
-        
-        // /api/auth/providers - sudah diproteksi di handler NextAuth
-        if (path === '/api/auth/providers') {
-          return true;
-        }
-        
-        // /api/auth/csrf - sudah diproteksi di handler NextAuth
-        if (path === '/api/auth/csrf') {
           return true;
         }
         
