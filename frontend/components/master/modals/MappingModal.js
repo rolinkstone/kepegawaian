@@ -26,11 +26,14 @@ import {
   TableRow,
   Checkbox,
   FormControlLabel,
-  Snackbar
+  Snackbar,
+  DialogContentText,
+  Divider
 } from '@mui/material';
 import {
   Add as AddIcon,
-  Delete as DeleteIcon
+  Delete as DeleteIcon,
+  AutoAwesome as AutoAwesomeIcon
 } from '@mui/icons-material';
 
 import { masterService } from '../services/masterService';
@@ -56,6 +59,8 @@ const MappingModal = ({
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
   const [snackbarOpen, setSnackbarOpen] = useState(false);
+  const [confirmMapAll, setConfirmMapAll] = useState(false);
+  const [mapAllPreview, setMapAllPreview] = useState({ total: 0, baru: 0 });
 
   useEffect(() => {
     if (open && (kompetensiKode || data?.kode_kompetensi)) {
@@ -245,6 +250,86 @@ const MappingModal = ({
     }
   };
 
+  // ========== MAPPING KE SEMUA JABATAN & JENJANG ==========
+  const handlePreviewMapAll = () => {
+    // Hitung total kombinasi jabatan x jenjang
+    const totalKombinasi = jabatanList.length * jenjangList.length;
+    
+    // Hitung yang sudah ada (cek duplikat id_jabatan + id_jenjang)
+    const existingKeys = new Set(mapping.map(m => `${m.id_jabatan}-${m.id_jenjang}`));
+    const baru = totalKombinasi - existingKeys.size;
+    
+    setMapAllPreview({ total: totalKombinasi, baru });
+    setConfirmMapAll(true);
+  };
+
+  const handleConfirmMapAll = async () => {
+    setConfirmMapAll(false);
+    setLoading(true);
+    setError('');
+
+    try {
+      // Ambil id_peran dari kompetensi (default peran master)
+      const idPeran = kompetensi?.id_peran;
+      if (!idPeran) {
+        throw new Error('Peran default kompetensi tidak ditemukan');
+      }
+
+      // Set yang sudah ada
+      const existingKeys = new Set(mapping.map(m => `${m.id_jabatan}-${m.id_jenjang}`));
+      
+      // Generate semua kombinasi jabatan x jenjang
+      const allMapping = [];
+      
+      // Pertahankan mapping yang sudah ada
+      for (const m of mapping) {
+        allMapping.push({
+          id_jabatan: parseInt(m.id_jabatan),
+          id_jenjang: parseInt(m.id_jenjang),
+          id_peran: parseInt(idPeran),
+          is_mandatory: m.is_mandatory !== false
+        });
+      }
+      
+      // Tambahkan mapping baru yang belum ada
+      for (const jabatan of jabatanList) {
+        for (const jenjang of jenjangList) {
+          const key = `${jabatan.id}-${jenjang.id}`;
+          if (!existingKeys.has(key)) {
+            allMapping.push({
+              id_jabatan: parseInt(jabatan.id),
+              id_jenjang: parseInt(jenjang.id),
+              id_peran: parseInt(idPeran),
+              is_mandatory: true
+            });
+          }
+        }
+      }
+
+      // Update kompetensi dengan semua mapping (gunakan data dari state)
+      if (!kompetensi?.id) {
+        throw new Error('Data kompetensi tidak ditemukan');
+      }
+      
+      await masterService.updateKompetensi(kompetensi.id, {
+        kode_kompetensi: kompetensi.kode_kompetensi,
+        nama_kompetensi: kompetensi.nama_kompetensi,
+        deskripsi: kompetensi.deskripsi || '',
+        id_fungsi: kompetensi.id_fungsi,
+        id_peran: parseInt(idPeran),
+        mapping: allMapping
+      });
+
+      await fetchKompetensiDetail();
+      showSuccess(`Mapping otomatis berhasil! ${allMapping.length} mapping tersimpan.`);
+    } catch (error) {
+      console.error('Error mapping all:', error);
+      setError(error.response?.data?.message || 'Gagal mapping otomatis');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <>
       <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
@@ -381,6 +466,34 @@ const MappingModal = ({
                       </Button>
                     </Grid>
                   </Grid>
+                  
+                  <Divider sx={{ my: 2 }} />
+                  
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
+                    <Box sx={{ flex: 1 }}>
+                      <Typography variant="body2" color="textSecondary" sx={{ mb: 0.5 }}>
+                        Atau mapping otomatis ke semua jabatan & jenjang:
+                      </Typography>
+                      <Typography variant="caption" color="textSecondary">
+                        Peran akan mengikuti peran default kompetensi ({kompetensi?.peran || kompetensi?.nama_peran || '-'})
+                      </Typography>
+                    </Box>
+                    <Button
+                      variant="outlined"
+                      color="secondary"
+                      startIcon={<AutoAwesomeIcon />}
+                      onClick={handlePreviewMapAll}
+                      disabled={loading || !kompetensi?.id_peran}
+                      size="small"
+                      sx={{ 
+                        borderRadius: 2,
+                        textTransform: 'none',
+                        whiteSpace: 'nowrap'
+                      }}
+                    >
+                      Mapping ke Semua
+                    </Button>
+                  </Box>
                 </Paper>
               )}
 
@@ -503,6 +616,69 @@ const MappingModal = ({
           {successMessage}
         </Alert>
       </Snackbar>
+
+      {/* Dialog Konfirmasi Mapping ke Semua */}
+      <Dialog open={confirmMapAll} onClose={() => setConfirmMapAll(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <AutoAwesomeIcon color="secondary" />
+            <span>Mapping Otomatis</span>
+          </Box>
+        </DialogTitle>
+        <DialogContent dividers>
+          <DialogContentText>
+            Akan membuat mapping untuk <strong>semua kombinasi jabatan & jenjang</strong> 
+            dengan peran default <strong>{kompetensi?.peran || kompetensi?.nama_peran || '-'}</strong>.
+          </DialogContentText>
+          
+          <Box sx={{ mt: 3, p: 2, bgcolor: 'grey.50', borderRadius: 2 }}>
+            <Grid container spacing={2}>
+              <Grid item xs={4}>
+                <Typography variant="caption" color="textSecondary">Total Jabatan</Typography>
+                <Typography variant="body1" fontWeight="bold">{jabatanList.length}</Typography>
+              </Grid>
+              <Grid item xs={4}>
+                <Typography variant="caption" color="textSecondary">Total Jenjang</Typography>
+                <Typography variant="body1" fontWeight="bold">{jenjangList.length}</Typography>
+              </Grid>
+              <Grid item xs={4}>
+                <Typography variant="caption" color="textSecondary">Total Kombinasi</Typography>
+                <Typography variant="body1" fontWeight="bold">{mapAllPreview.total}</Typography>
+              </Grid>
+            </Grid>
+            
+            <Divider sx={{ my: 2 }} />
+            
+            <Alert severity={mapAllPreview.baru > 0 ? "info" : "success"} icon={false}>
+              <Typography variant="body2">
+                <strong>{mapAllPreview.baru}</strong> mapping baru akan ditambahkan
+                {mapAllPreview.baru < mapAllPreview.total && (
+                  <> • <strong>{mapAllPreview.total - mapAllPreview.baru}</strong> sudah ada</>
+                )}
+              </Typography>
+            </Alert>
+          </Box>
+          
+          <Typography variant="caption" color="textSecondary" sx={{ display: 'block', mt: 2 }}>
+            * Peran default kompetensi akan digunakan untuk semua mapping baru.
+            Mapping yang sudah ada tidak akan diubah.
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setConfirmMapAll(false)} disabled={loading}>
+            Batal
+          </Button>
+          <Button
+            onClick={handleConfirmMapAll}
+            variant="contained"
+            color="secondary"
+            startIcon={loading ? <CircularProgress size={16} /> : <AutoAwesomeIcon />}
+            disabled={loading || mapAllPreview.baru === 0}
+          >
+            {mapAllPreview.baru === 0 ? 'Semua Sudah Ada' : `Mapping ${mapAllPreview.baru} Baru`}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </>
   );
 };

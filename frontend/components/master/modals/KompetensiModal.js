@@ -26,7 +26,9 @@ import {
 } from '@mui/material';
 import {
   Add as AddIcon,
-  Delete as DeleteIcon
+  Delete as DeleteIcon,
+  AutoAwesome as AutoAwesomeIcon,
+  ClearAll as ClearAllIcon
 } from '@mui/icons-material';
 import { masterService } from '../services/masterService';
 
@@ -89,10 +91,13 @@ const KompetensiModal = ({
     }
   }, [open, mode, data]);
 
-  // Filter peran berdasarkan fungsi yang dipilih
+  // Filter peran berdasarkan fungsi yang dipilih (tampilkan juga peran lintas fungsi)
   useEffect(() => {
     if (formData.id_fungsi) {
-      const filtered = peranList.filter(p => p.id_fungsi === parseInt(formData.id_fungsi));
+      const filtered = peranList.filter(p => 
+        p.id_fungsi === parseInt(formData.id_fungsi) ||
+        p.is_lintas_fungsi === 1 || p.is_lintas_fungsi === true
+      );
       setFilteredPeran(filtered);
       setFilteredPeranMapping(filtered);
       
@@ -132,6 +137,49 @@ const KompetensiModal = ({
   const handleDeleteMapping = (index) => {
     const updated = mapping.filter((_, i) => i !== index);
     setMapping(updated);
+  };
+
+  // Mapping ke semua jabatan & jenjang
+  const handleMapAll = () => {
+    if (!formData.id_peran) {
+      setError('Pilih peran default terlebih dahulu');
+      return;
+    }
+
+    const existingKeys = new Set(mapping.map(m => `${m.id_jabatan}-${m.id_jenjang}`));
+    const newMapping = [...mapping];
+    let addedCount = 0;
+
+    for (const jabatan of jabatanList) {
+      for (const jenjang of jenjangList) {
+        const key = `${jabatan.id}-${jenjang.id}`;
+        if (!existingKeys.has(key)) {
+          newMapping.push({
+            id_jabatan: parseInt(jabatan.id),
+            id_jenjang: parseInt(jenjang.id),
+            id_peran: parseInt(formData.id_peran),
+            is_mandatory: true,
+            temporary: true
+          });
+          addedCount++;
+        }
+      }
+    }
+
+    setMapping(newMapping);
+    setSuccessMessage(`${addedCount} mapping baru ditambahkan!`);
+    setSnackbarOpen(true);
+  };
+
+  // Kosongkan semua mapping
+  const handleClearMapping = () => {
+    if (mapping.length === 0) return;
+    
+    if (window.confirm('Apakah Anda yakin ingin menghapus semua mapping?')) {
+      setMapping([]);
+      setSuccessMessage('Semua mapping berhasil dihapus');
+      setSnackbarOpen(true);
+    }
   };
 
   const validateMapping = () => {
@@ -411,19 +459,43 @@ const KompetensiModal = ({
 
             {/* Mapping Section */}
             <Box>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, flexWrap: 'wrap', gap: 1 }}>
                 <Typography variant="subtitle2" color="primary">
                   Mapping Kompetensi ke Jabatan, Jenjang & Peran
                 </Typography>
-                <Button
-                  startIcon={<AddIcon />}
-                  onClick={handleAddMapping}
-                  size="small"
-                  variant="outlined"
-                  disabled={loading || !formData.id_fungsi}
-                >
-                  Tambah Mapping
-                </Button>
+                <Box sx={{ display: 'flex', gap: 1 }}>
+                  <Button
+                    startIcon={<AutoAwesomeIcon />}
+                    onClick={handleMapAll}
+                    size="small"
+                    variant="outlined"
+                    color="secondary"
+                    disabled={loading || !formData.id_peran || !formData.id_fungsi}
+                    title="Mapping ke semua jabatan & jenjang"
+                  >
+                    Mapping ke Semua
+                  </Button>
+                  <Button
+                    startIcon={<ClearAllIcon />}
+                    onClick={handleClearMapping}
+                    size="small"
+                    variant="outlined"
+                    color="error"
+                    disabled={loading || mapping.length === 0}
+                    title="Hapus semua mapping"
+                  >
+                    Kosongkan
+                  </Button>
+                  <Button
+                    startIcon={<AddIcon />}
+                    onClick={handleAddMapping}
+                    size="small"
+                    variant="outlined"
+                    disabled={loading || !formData.id_fungsi}
+                  >
+                    Tambah Mapping
+                  </Button>
+                </Box>
               </Box>
 
               {!formData.id_fungsi && (

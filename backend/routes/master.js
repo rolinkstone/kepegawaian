@@ -400,6 +400,7 @@ router.get('/peran', keycloakAuth, async (req, res) => {
                 p.nama_peran,
                 p.id_fungsi,
                 f.nama_fungsi,
+                p.is_lintas_fungsi,
                 DATE_FORMAT(p.created_at, '%Y-%m-%d %H:%i:%s') as created_at
             FROM kepegawaian.peran p
             JOIN kepegawaian.fungsi f ON p.id_fungsi = f.id
@@ -408,11 +409,12 @@ router.get('/peran', keycloakAuth, async (req, res) => {
         const params = [];
         
         if (id_fungsi) {
-            query += ` WHERE p.id_fungsi = ?`;
+            // Tampilkan peran dari fungsi yg dipilih + peran lintas fungsi
+            query += ` WHERE (p.id_fungsi = ? OR p.is_lintas_fungsi = 1)`;
             params.push(id_fungsi);
         }
         
-        query += ` ORDER BY f.nama_fungsi, p.nama_peran ASC`;
+        query += ` ORDER BY p.is_lintas_fungsi DESC, f.nama_fungsi, p.nama_peran ASC`;
         
         const [rows] = await db.query(query, params);
         
@@ -450,6 +452,7 @@ router.get('/peran/:id', keycloakAuth, async (req, res) => {
                 p.nama_peran,
                 p.id_fungsi,
                 f.nama_fungsi,
+                p.is_lintas_fungsi,
                 DATE_FORMAT(p.created_at, '%Y-%m-%d %H:%i:%s') as created_at
             FROM kepegawaian.peran p
             JOIN kepegawaian.fungsi f ON p.id_fungsi = f.id
@@ -497,7 +500,7 @@ router.post('/peran', keycloakAuth, async (req, res) => {
         });
     }
     
-    const { id_fungsi, nama_peran } = req.body;
+    const { id_fungsi, nama_peran, is_lintas_fungsi } = req.body;
     
     if (!id_fungsi || !nama_peran) {
         return res.status(400).json({
@@ -517,12 +520,14 @@ router.post('/peran', keycloakAuth, async (req, res) => {
             });
         }
         
+        const lintasFungsi = is_lintas_fungsi ? 1 : 0;
+        
         const query = `
-            INSERT INTO kepegawaian.peran (id_fungsi, nama_peran)
-            VALUES (?, ?)
+            INSERT INTO kepegawaian.peran (id_fungsi, nama_peran, is_lintas_fungsi)
+            VALUES (?, ?, ?)
         `;
 
-        const [result] = await db.query(query, [id_fungsi, nama_peran]);
+        const [result] = await db.query(query, [id_fungsi, nama_peran, lintasFungsi]);
         
         res.status(201).json({
             success: true,
@@ -530,7 +535,8 @@ router.post('/peran', keycloakAuth, async (req, res) => {
             data: {
                 id: result.insertId,
                 id_fungsi,
-                nama_peran
+                nama_peran,
+                is_lintas_fungsi: lintasFungsi
             },
             timestamp: new Date().toISOString()
         });
@@ -570,7 +576,7 @@ router.put('/peran/:id', keycloakAuth, async (req, res) => {
         });
     }
     
-    const { id_fungsi, nama_peran } = req.body;
+    const { id_fungsi, nama_peran, is_lintas_fungsi } = req.body;
     
     if (!id_fungsi || !nama_peran) {
         return res.status(400).json({
@@ -580,13 +586,15 @@ router.put('/peran/:id', keycloakAuth, async (req, res) => {
     }
     
     try {
+        const lintasFungsi = is_lintas_fungsi ? 1 : 0;
+        
         const query = `
             UPDATE kepegawaian.peran
-            SET id_fungsi = ?, nama_peran = ?
+            SET id_fungsi = ?, nama_peran = ?, is_lintas_fungsi = ?
             WHERE id = ?
         `;
 
-        const [result] = await db.query(query, [id_fungsi, nama_peran, id]);
+        const [result] = await db.query(query, [id_fungsi, nama_peran, lintasFungsi, id]);
         
         if (result.affectedRows === 0) {
             return res.status(404).json({
@@ -601,7 +609,8 @@ router.put('/peran/:id', keycloakAuth, async (req, res) => {
             data: {
                 id: parseInt(id),
                 id_fungsi,
-                nama_peran
+                nama_peran,
+                is_lintas_fungsi: lintasFungsi
             },
             timestamp: new Date().toISOString()
         });
@@ -1265,7 +1274,8 @@ router.get('/kompetensi', keycloakAuth, async (req, res) => {
         const params = [];
         
         if (id_fungsi) {
-            query += ` AND mk.id_fungsi = ?`;
+            // Jika filter fungsi aktif, tampilkan juga kompetensi dari peran lintas fungsi
+            query += ` AND (mk.id_fungsi = ? OR p.is_lintas_fungsi = 1)`;
             params.push(id_fungsi);
         }
         
@@ -1875,7 +1885,8 @@ router.get('/mapping/kompetensi', keycloakAuth, async (req, res) => {
         const params = [];
         
         if (id_fungsi) {
-            baseQuery += ` AND mk.id_fungsi = ?`;
+            // Jika filter fungsi aktif, tampilkan juga kompetensi dari peran lintas fungsi
+            baseQuery += ` AND (mk.id_fungsi = ? OR p.is_lintas_fungsi = 1)`;
             params.push(id_fungsi);
         }
         
