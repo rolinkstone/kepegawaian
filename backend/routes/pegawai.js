@@ -1120,7 +1120,7 @@ router.get('/:id/analisis-kenaikan', keycloakAuth, async (req, res) => {
                 LEFT JOIN kepegawaian.user v ON uk.verified_by = v.id
                 WHERE km.id_jabatan = ? 
                     AND km.id_jenjang = ?
-                    AND mk.id_fungsi = ?
+                    AND (mk.id_fungsi = ? OR p.is_lintas_fungsi = 1)
                     AND km.id_peran IN (${userPeranIds.map(() => '?').join(',')})
                 ORDER BY p.nama_peran, mk.kode_kompetensi
             `;
@@ -1209,6 +1209,7 @@ router.get('/:id/analisis-kenaikan', keycloakAuth, async (req, res) => {
             console.log('🔍 Mode: Semua Peran (Lintas Fungsi)');
             
             // Query untuk kompetensi dari fungsi yang dipilih (tanpa filter peran) DENGAN INFORMASI VERIFIED_BY DAN HASIL_VERIF
+            // Query untuk kompetensi dari fungsi yang dipilih + kompetensi lintas fungsi
             const queryLain = `
                 SELECT 
                     mk.id,
@@ -1240,7 +1241,7 @@ router.get('/:id/analisis-kenaikan', keycloakAuth, async (req, res) => {
                 LEFT JOIN kepegawaian.user v ON uk.verified_by = v.id
                 WHERE km.id_jabatan = ? 
                     AND km.id_jenjang = ?
-                    AND mk.id_fungsi = ?
+                    AND (mk.id_fungsi = ? OR p.is_lintas_fungsi = 1)
                 ORDER BY p.nama_peran, mk.kode_kompetensi
             `;
             

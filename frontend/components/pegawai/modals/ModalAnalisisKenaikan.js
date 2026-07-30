@@ -120,9 +120,16 @@ const ModalAnalisisKenaikan = ({ visible, onCancel, selectedPegawai, options, se
       title: 'Nama Kompetensi',
       dataIndex: 'nama_kompetensi',
       key: 'nama',
-      width: 300,
-      render: (text) => (
-        <span style={{ fontSize: '12px' }}>{text || '-'}</span>
+      width: 350,
+      render: (text, record) => (
+        <div>
+          <div style={{ fontSize: '12px', fontWeight: 600 }}>{text || '-'}</div>
+          {record.deskripsi && (
+            <div style={{ fontSize: '11px', color: '#555', marginTop: 3, lineHeight: 1.4 }}>
+              {record.deskripsi}
+            </div>
+          )}
+        </div>
       )
     },
     {

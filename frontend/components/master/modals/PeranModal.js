@@ -16,14 +16,17 @@ import {
   Alert,
   Grid,
   Typography,
-  Snackbar
+  Snackbar,
+  FormControlLabel,
+  Switch
 } from '@mui/material';
 import { masterService } from '../services/masterService';
 
 const PeranModal = ({ open, onClose, onSuccess, mode, data, fungsiList }) => {
   const [formData, setFormData] = useState({
     id_fungsi: '',
-    nama_peran: ''
+    nama_peran: '',
+    is_lintas_fungsi: false
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -35,12 +38,14 @@ const PeranModal = ({ open, onClose, onSuccess, mode, data, fungsiList }) => {
       if (mode === 'edit' && data) {
         setFormData({
           id_fungsi: data.id_fungsi || '',
-          nama_peran: data.nama_peran || ''
+          nama_peran: data.nama_peran || '',
+          is_lintas_fungsi: data.is_lintas_fungsi === 1 || data.is_lintas_fungsi === true
         });
       } else {
         setFormData({
           id_fungsi: '',
-          nama_peran: ''
+          nama_peran: '',
+          is_lintas_fungsi: false
         });
       }
       setError('');
@@ -172,10 +177,32 @@ const PeranModal = ({ open, onClose, onSuccess, mode, data, fungsiList }) => {
                   helperText={error && !formData.nama_peran.trim() ? 'Nama peran wajib diisi' : ''}
                 />
               </Grid>
+              <Grid item xs={12}>
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={formData.is_lintas_fungsi}
+                      onChange={(e) => setFormData(prev => ({ ...prev, is_lintas_fungsi: e.target.checked }))}
+                      name="is_lintas_fungsi"
+                      color="primary"
+                      disabled={loading}
+                    />
+                  }
+                  label={
+                    <Box>
+                      <Typography variant="body2" sx={{ fontWeight: 600 }}>Lintas Fungsi</Typography>
+                      <Typography variant="caption" color="textSecondary">
+                        Jika diaktifkan, peran ini akan muncul di semua fungsi
+                      </Typography>
+                    </Box>
+                  }
+                />
+              </Grid>
             </Grid>
             
             <Typography variant="caption" color="textSecondary" sx={{ display: 'block', mt: 2 }}>
               Peran terikat dengan fungsi. Setiap fungsi dapat memiliki beberapa peran.
+              Centang "Lintas Fungsi" jika peran ini harus muncul di semua fungsi (misal: BMN).
             </Typography>
           </Box>
         </DialogContent>

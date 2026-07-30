@@ -242,12 +242,9 @@ const FilterSection = ({
                 onChange={(value) => setFilters({ ...filters, peran: value })}
                 showSearch
                 optionFilterProp="children"
-                disabled={!filters.fungsi}
-                notFoundContent="Pilih fungsi terlebih dahulu"
+                notFoundContent="Tidak ada data peran"
               >
-                {uniquePeran
-                  .filter(peran => !filters.fungsi || peran.includes(filters.fungsi))
-                  .map(peran => (
+                {uniquePeran.map(peran => (
                     <Option key={peran} value={peran}>{peran}</Option>
                   ))}
               </Select>

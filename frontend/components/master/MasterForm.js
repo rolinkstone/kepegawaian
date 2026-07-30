@@ -741,14 +741,22 @@ const MasterForm = () => {
 
   // ========== FILTER FUNCTIONS ==========
   const getFilteredPeran = () => {
-    return peran.filter(p => !filterFungsi || p.id_fungsi === parseInt(filterFungsi));
+    return peran.filter(p => 
+      !filterFungsi || 
+      p.id_fungsi === parseInt(filterFungsi) ||
+      p.is_lintas_fungsi === 1 || p.is_lintas_fungsi === true
+    );
   };
 
   // ========== FILTERED KOMPETENSI DENGAN MEMO ==========
   const getFilteredKompetensi = useMemo(() => {
     return kompetensi.filter(item => {
       let match = true;
-      if (filterFungsi) match = match && item.id_fungsi === parseInt(filterFungsi);
+      // Jika filter fungsi aktif, tetap tampilkan kompetensi dari peran lintas fungsi
+      if (filterFungsi) {
+        const isLintas = peran.find(p => p.id === item.id_peran)?.is_lintas_fungsi;
+        match = match && (item.id_fungsi === parseInt(filterFungsi) || isLintas === 1 || isLintas === true);
+      }
       if (filterPeran) match = match && item.id_peran === parseInt(filterPeran);
       if (searchKompetensi) {
         match = match && (
@@ -759,7 +767,7 @@ const MasterForm = () => {
       }
       return match;
     });
-  }, [kompetensi, filterFungsi, filterPeran, searchKompetensi]);
+  }, [kompetensi, filterFungsi, filterPeran, searchKompetensi, peran]);
 
   // ========== PAGINATED KOMPETENSI ==========
   const paginatedKompetensi = useMemo(() => {
@@ -1588,15 +1596,12 @@ const MasterForm = () => {
                   value={filterPeran}
                   label="Filter Peran"
                   onChange={(e) => setFilterPeran(e.target.value)}
-                  disabled={!filterFungsi}
                   sx={{ borderRadius: 2 }}
                 >
                   <MenuItem value="">
                     <em>Semua Peran</em>
                   </MenuItem>
-                  {peran
-                    .filter(p => !filterFungsi || p.id_fungsi === parseInt(filterFungsi))
-                    .map((p) => (
+                  {getFilteredPeran().map((p) => (
                       <MenuItem key={p.id} value={p.id}>
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                           <AssignmentIcon fontSize="small" sx={{ color: theme.palette.secondary.main }} />
