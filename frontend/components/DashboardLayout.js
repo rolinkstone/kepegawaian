@@ -5,7 +5,7 @@ import { useState, useEffect } from 'react';
 import { 
   FaHome, FaBox, FaUsers, FaShoppingCart, FaCog, FaSignOutAlt, 
   FaTruck, FaBalanceScale, FaDatabase,  FaBookOpen, FaCreditCard, FaBell, FaClipboardList, FaSearch,
-  FaTimesCircle, FaUserGraduate  
+  FaTimesCircle, FaUserGraduate
 } from 'react-icons/fa';
 
 import { useSession, signOut } from 'next-auth/react';
@@ -193,14 +193,16 @@ export default function DashboardLayout({ children }) {
     {
       title: 'Profil',
       items: [
-        
-         { 
-        href: '/pegawai', 
-        label: 'Profil Kompetensi', 
-        icon: <FaUserGraduate /> // atau <FaIdCard />
+        { 
+          href: '/pegawai', 
+          label: 'Profil Kompetensi', 
+          icon: <FaUserGraduate /> // atau <FaIdCard />
         },
-
-
+        {
+          href: '/pegawai/peran',
+          label: 'Pemenuhan per Peran',
+          icon: <FaUsers />
+        }
       ]
     },
 
@@ -286,8 +288,8 @@ export default function DashboardLayout({ children }) {
                     className={`
                       flex items-center py-3 px-3 rounded-lg
                       transition-all duration-200
-                      ${router.pathname === item.href 
-                        ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-lg' 
+                      ${router.pathname === item.href
+                        ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-lg'
                         : 'hover:bg-emerald-700/70 text-emerald-100'
                       }
                     `}
