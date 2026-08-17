@@ -439,6 +439,7 @@ const pelatihanRoutes = require('./routes/pelatihan');
 const keycloakRoutes = require('./routes/keycloak');
 const dashboardRoutes = require('./routes/dashboard');
 const kompetensiWajibRoutes = require('./routes/kompetensiWajib');
+const pegawaiPeranRoutes = require('./routes/pegawaiPeran');
 
 // ========== MOUNT ROUTES ==========
 app.use('/api/auth', authRoutes);
@@ -450,6 +451,7 @@ app.use('/api/pelatihan', pelatihanRoutes);
 app.use('/api/keycloak', keycloakRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/kompetensi-wajib', kompetensiWajibRoutes);
+app.use('/api/pegawai-peran', pegawaiPeranRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {
