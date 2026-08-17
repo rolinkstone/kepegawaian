@@ -349,33 +349,6 @@ const PeranPemenuhanContainer = ({ session }) => {
       render: (val) => <Text strong>{val}</Text>
     },
     {
-      title: 'Sudah Memenuhi',
-      dataIndex: 'sudah_memenuhi',
-      width: 140,
-      align: 'center',
-      render: (val) => <Tag color="success" icon={<CheckCircleOutlined />}>{val}</Tag>
-    },
-    {
-      title: 'Belum Memenuhi',
-      dataIndex: 'belum_memenuhi',
-      width: 140,
-      align: 'center',
-      render: (val) => <Tag color="error" icon={<CloseCircleOutlined />}>{val}</Tag>
-    },
-    {
-      title: 'Persentase',
-      dataIndex: 'persentase',
-      width: 180,
-      render: (val) => (
-        <Progress
-          percent={val}
-          size="small"
-          status={val >= 80 ? 'success' : val >= 50 ? 'active' : 'exception'}
-          format={(p) => `${p}%`}
-        />
-      )
-    },
-    {
       title: 'Aksi',
       key: 'aksi',
       width: 100,
@@ -493,26 +466,6 @@ const PeranPemenuhanContainer = ({ session }) => {
             icon={<TeamOutlined />}
             color="blue"
             subtitle="Pegawai yang memiliki peran"
-            loading={loading}
-          />
-        </Col>
-        <Col xs={24} sm={12} lg={6}>
-          <StatCard
-            title="Sudah Memenuhi"
-            value={rekapStatistik.total_sudah_memenuhi}
-            icon={<CheckCircleOutlined />}
-            color="green"
-            subtitle="Memenuhi seluruh kompetensi wajib"
-            loading={loading}
-          />
-        </Col>
-        <Col xs={24} sm={12} lg={6}>
-          <StatCard
-            title="Persentase"
-            value={rekapStatistik.persentase_keseluruhan + '%'}
-            icon={<ProfileOutlined />}
-            color="orange"
-            subtitle="Pemenuhan keseluruhan"
             loading={loading}
           />
         </Col>
