@@ -37,6 +37,7 @@ const UserskompetensiContainer = () => {
         id_user: '',
         id_kompetensi: '',
         fungsi_id: '',
+        hasil_verif: '',
         all: true
     });
 
@@ -443,6 +444,14 @@ useEffect(() => {
             result = result.filter(item => item.id_kompetensi === parseInt(filters.id_kompetensi));
         }
 
+        if (filters.hasil_verif) {
+            if (filters.hasil_verif === 'Belum Diverifikasi') {
+                result = result.filter(item => !item.verified_by && !item.hasil_verif);
+            } else {
+                result = result.filter(item => item.hasil_verif === filters.hasil_verif);
+            }
+        }
+
         setFilteredData(result);
         setPagination(prev => ({
             ...prev,
@@ -462,6 +471,7 @@ useEffect(() => {
             id_user: '',
             id_kompetensi: '',
             fungsi_id: '',
+            hasil_verif: '',
             all: true
         });
         Swal.fire({
