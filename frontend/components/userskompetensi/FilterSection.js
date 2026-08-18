@@ -46,6 +46,24 @@ const FilterSection = ({ filters, onFilterChange, onReset, options, userRoles })
                     </select>
                 </div>
 
+                {/* Filter Hasil Verifikasi - untuk semua user */}
+                <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Hasil Verifikasi
+                    </label>
+                    <select
+                        value={filters.hasil_verif || ''}
+                        onChange={(e) => onFilterChange('hasil_verif', e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                        <option value="">Semua Hasil Verifikasi</option>
+                        <option value="Belum Diverifikasi">Belum Diverifikasi</option>
+                        <option value="Valid">Valid</option>
+                        <option value="Tidak Valid">Tidak Valid</option>
+                        <option value="Perlu Revisi">Perlu Revisi</option>
+                    </select>
+                </div>
+
                 {/* Filter Pegawai - HANYA UNTUK ADMIN */}
                 {userRoles.isAdmin && (
                     <div>
