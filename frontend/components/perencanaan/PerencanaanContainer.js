@@ -3,7 +3,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import Swal from 'sweetalert2';
 import { FaUpload, FaFilePdf, FaEye, FaDownload, FaTrash, FaSpinner, FaSearch } from 'react-icons/fa';
 
-const UPLOAD_ROLES = ['admin', 'katim', 'kabag_tu'];
+const UPLOAD_ROLES = ['admin', 'admin_tambun_raya', 'katim', 'kabag_tu'];
 
 const PerencanaanContainer = ({ session, status }) => {
   const [documents, setDocuments] = useState([]);
@@ -17,7 +17,7 @@ const PerencanaanContainer = ({ session, status }) => {
   const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/api';
   const token = session?.accessToken || localStorage.getItem('token');
 
-  // Cek apakah user punya akses upload (admin, katim, kabag_tu)
+  // Cek apakah user punya akses upload (admin, admin_tambun_raya, katim, kabag_tu)
   const canUpload = useCallback(() => {
     if (!session?.user) return false;
     const roles = session.user.roles || (session.user.role ? [session.user.role] : []);

@@ -8,7 +8,7 @@ const db = require('../db');
 const { keycloakAuth, getUsername } = require('../middleware/keycloakAuth');
 
 // ========== ROLE YANG BOLEH UPLOAD ==========
-const UPLOAD_ROLES = ['admin', 'katim', 'kabag_tu'];
+const UPLOAD_ROLES = ['admin', 'admin_tambun_raya', 'katim', 'kabag_tu'];
 
 // ========== KONFIGURASI FOLDER & MULTER ==========
 const PERENCANAAN_DIR = path.join(__dirname, '../uploads/perencanaan');
@@ -104,7 +104,7 @@ router.post('/', keycloakAuth, upload.single('file'), async (req, res) => {
         console.log(`⛔ ${username} tidak punya akses upload perencanaan`);
         return res.status(403).json({
             success: false,
-            message: 'Anda tidak memiliki akses untuk mengunggah dokumen. Hanya admin, katim, dan kabag_tu yang dapat mengunggah.'
+            message: 'Anda tidak memiliki akses untuk mengunggah dokumen. Hanya admin, admin_tambun_raya, katim, dan kabag_tu yang dapat mengunggah.'
         });
     }
 
