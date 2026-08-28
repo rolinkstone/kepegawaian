@@ -5,7 +5,7 @@ import { useState, useEffect } from 'react';
 import { 
   FaHome, FaBox, FaUsers, FaShoppingCart, FaCog, FaSignOutAlt, 
   FaTruck, FaBalanceScale, FaDatabase,  FaBookOpen, FaCreditCard, FaBell, FaClipboardList, FaSearch,
-  FaTimesCircle, FaUserGraduate
+  FaTimesCircle, FaUserGraduate, FaFolderOpen
 } from 'react-icons/fa';
 
 import { useSession, signOut } from 'next-auth/react';
@@ -190,6 +190,16 @@ export default function DashboardLayout({ children }) {
   ] : [])
 ]
 },
+    {
+      title: 'Perencanaan',
+      items: [
+        {
+          href: '/perencanaan',
+          label: 'Perencanaan',
+          icon: <FaFolderOpen />
+        }
+      ]
+    },
     {
       title: 'Profil',
       items: [
