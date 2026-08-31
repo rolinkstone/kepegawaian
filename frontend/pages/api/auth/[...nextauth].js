@@ -38,9 +38,9 @@ export const authOptions = {
       profile(profile) {
         console.log("🔐 Profile for:", profile.preferred_username);
         
-        // Determine ALL roles — user bisa punya multiple roles (ppk + katim, dll)
+        // Determine ALL roles — user bisa punya multiple roles (ppk + katim, admin_tambun_raya + user, dll)
         const realmRoles = profile.realm_access?.roles || [];
-        const recognizedRoles = ['admin', 'ppk', 'kabalai', 'kabag_tu', 'katim', 'bendahara'];
+        const recognizedRoles = ['admin', 'admin_tambun_raya', 'ppk', 'kabalai', 'kabag_tu', 'katim', 'bendahara'];
         const roles = realmRoles.filter(r => recognizedRoles.includes(r));
         const primaryRole = roles.length > 0 ? roles[0] : 'user';
         
