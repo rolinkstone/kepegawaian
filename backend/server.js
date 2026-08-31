@@ -441,6 +441,7 @@ const dashboardRoutes = require('./routes/dashboard');
 const kompetensiWajibRoutes = require('./routes/kompetensiWajib');
 const pegawaiPeranRoutes = require('./routes/pegawaiPeran');
 const perencanaanRoutes = require('./routes/perencanaan');
+const kompetensiPegawaiRoutes = require('./routes/kompetensiPegawai');
 
 // ========== MOUNT ROUTES ==========
 app.use('/api/auth', authRoutes);
@@ -454,6 +455,7 @@ app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/kompetensi-wajib', kompetensiWajibRoutes);
 app.use('/api/pegawai-peran', pegawaiPeranRoutes);
 app.use('/api/perencanaan', perencanaanRoutes);
+app.use('/api/kompetensi-pegawai', kompetensiPegawaiRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {

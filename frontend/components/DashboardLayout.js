@@ -5,7 +5,7 @@ import { useState, useEffect } from 'react';
 import { 
   FaHome, FaBox, FaUsers, FaShoppingCart, FaCog, FaSignOutAlt, 
   FaTruck, FaBalanceScale, FaDatabase,  FaBookOpen, FaCreditCard, FaBell, FaClipboardList, FaSearch,
-  FaTimesCircle, FaUserGraduate, FaFolderOpen
+  FaTimesCircle, FaUserGraduate, FaFolderOpen, FaCertificate
 } from 'react-icons/fa';
 
 import { useSession, signOut } from 'next-auth/react';
@@ -212,6 +212,11 @@ export default function DashboardLayout({ children }) {
           href: '/pegawai/peran',
           label: 'Pemenuhan per Peran',
           icon: <FaUsers />
+        },
+        {
+          href: '/pegawai/kompetensi',
+          label: 'Pemenuhan per Kompetensi',
+          icon: <FaCertificate />
         }
       ]
     },
