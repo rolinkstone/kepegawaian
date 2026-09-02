@@ -384,9 +384,9 @@ useEffect(() => {
                                                     </div>
                                                     
                                                     {/* TOMBOL UNTUK PESERTA MENERIMA/MENOLAK UNDANGAN */}
-                                                    {/* Hanya tampil untuk user yang bersangkutan dan status masih Pending */}
-                                                    {!userRoles.isAdmin && !userRoles.isKatim && 
-                                                     peserta.user_nip === userNip && 
+                                                    {/* Tampil untuk baris peserta milik user yang login & status masih Pending,
+                                                        termasuk jika user tsb berperan katim/admin dan mengundang diri sendiri */}
+                                                    {peserta.user_nip === userNip && 
                                                      peserta.status_undangan === 'Pending' && (
                                                         <div className="mt-3 flex space-x-2">
                                                             <button

@@ -67,6 +67,31 @@ export default function DashboardLayout({ children }) {
     return false;
   };
 
+  // Cek apakah user memiliki salah satu dari role yang diberikan (exact match)
+  const userHasAnyRole = (...targets) => {
+    if (!session?.user) return false;
+
+    const targetSet = targets.map(t => String(t).trim().toLowerCase());
+    const has = (value) => {
+      if (!value) return false;
+      return targetSet.includes(String(value).trim().toLowerCase());
+    };
+
+    if (session.user.role && has(session.user.role)) return true;
+
+    if (Array.isArray(session.user.roles)) {
+      if (session.user.roles.some(has)) return true;
+    } else if (typeof session.user.roles === 'string') {
+      const arr = session.user.roles.split(',').map(s => s.trim());
+      if (arr.some(has)) return true;
+    }
+
+    return false;
+  };
+
+  // Menu Perencanaan: hanya untuk katim, kabag_tu, admin_tambun_raya
+  const canViewPerencanaan = userHasAnyRole('admin_tambun_raya', 'katim', 'kabag_tu');
+
   const handleLogout = async () => {
     setIsLoggingOut(true);
     try {
@@ -190,16 +215,18 @@ export default function DashboardLayout({ children }) {
   ] : [])
 ]
 },
-    {
-      title: 'Perencanaan',
-      items: [
-        {
-          href: '/perencanaan',
-          label: 'Perencanaan',
-          icon: <FaFolderOpen />
-        }
-      ]
-    },
+    ...(canViewPerencanaan ? [
+      {
+        title: 'Perencanaan',
+        items: [
+          {
+            href: '/perencanaan',
+            label: 'Perencanaan',
+            icon: <FaFolderOpen />
+          }
+        ]
+      }
+    ] : []),
     {
       title: 'Profil',
       items: [

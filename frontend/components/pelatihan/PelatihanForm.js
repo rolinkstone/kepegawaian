@@ -7,6 +7,7 @@ const PelatihanForm = ({ show, onClose, onSuccess, editingData, options, masterP
     const [formData, setFormData] = useState({
         id_pelatihan: '',
         nama_penyelenggara: '',
+        id_penyelenggara: '',
         tanggal_mulai: '',
         tanggal_selesai: '',
         waktu_mulai: '',
@@ -23,12 +24,19 @@ const PelatihanForm = ({ show, onClose, onSuccess, editingData, options, masterP
     const [errors, setErrors] = useState({});
     const [selectedPeserta, setSelectedPeserta] = useState([]);
 
+    // Admin sistem (admin_tambun_raya) yang akunnya bukan pegawai (NIP bukan 18 digit)
+    // tidak otomatis menjadi penyelenggara → wajib memilih penyelenggara (pegawai) saat membuat.
+    const isAdminSystem = userRoles?.isAdmin && !userRoles?.isKatim &&
+        !/^\d{18}$/.test(String(session?.user?.nip || ''));
+    const showPenyelenggaraPicker = !editingData && isAdminSystem;
+
     useEffect(() => {
         if (show) {
             if (editingData) {
                 setFormData({
                     id_pelatihan: editingData.id_pelatihan?.toString() || '',
                     nama_penyelenggara: editingData.nama_penyelenggara || '',
+                    id_penyelenggara: '',
                     tanggal_mulai: editingData.tanggal_mulai || '',
                     tanggal_selesai: editingData.tanggal_selesai || '',
                     waktu_mulai: editingData.waktu_mulai || '',
@@ -53,6 +61,7 @@ const PelatihanForm = ({ show, onClose, onSuccess, editingData, options, masterP
         setFormData({
             id_pelatihan: '',
             nama_penyelenggara: '',
+            id_penyelenggara: '',
             tanggal_mulai: '',
             tanggal_selesai: '',
             waktu_mulai: '',
@@ -115,6 +124,10 @@ const PelatihanForm = ({ show, onClose, onSuccess, editingData, options, masterP
             newErrors.tanggal_selesai = 'Tanggal selesai harus setelah tanggal mulai';
         }
         
+        if (showPenyelenggaraPicker && !formData.id_penyelenggara) {
+            newErrors.id_penyelenggara = 'Pilih penyelenggara';
+        }
+        
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
     };
@@ -137,7 +150,10 @@ const PelatihanForm = ({ show, onClose, onSuccess, editingData, options, masterP
             const dataToSend = {
                 ...formData,
                 kuota: formData.kuota ? parseInt(formData.kuota) : null,
-                peserta_ids: selectedPeserta
+                peserta_ids: selectedPeserta,
+                ...(showPenyelenggaraPicker
+                    ? { id_penyelenggara: formData.id_penyelenggara ? parseInt(formData.id_penyelenggara) : null }
+                    : {})
             };
 
             let response;
@@ -249,6 +265,38 @@ const PelatihanForm = ({ show, onClose, onSuccess, editingData, options, masterP
                                     disabled={loading}
                                 />
                             </div>
+
+                            {/* Penyelenggara (Pegawai) — khusus admin sistem yang bukan pegawai */}
+                            {showPenyelenggaraPicker && (
+                                <div className="col-span-2">
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                        Penyelenggara (Pegawai) <span className="text-red-500">*</span>
+                                    </label>
+                                    <select
+                                        name="id_penyelenggara"
+                                        value={formData.id_penyelenggara}
+                                        onChange={handleChange}
+                                        className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                                            errors.id_penyelenggara ? 'border-red-500' : 'border-gray-300'
+                                        }`}
+                                        disabled={loading}
+                                    >
+                                        <option value="">Pilih Pegawai Penyelenggara</option>
+                                        {options.users?.map(user => (
+                                            <option key={user.id} value={user.id}>
+                                                {user.nama} ({user.nip}) - {user.nama_fungsi || '-'}
+                                            </option>
+                                        ))}
+                                    </select>
+                                    {errors.id_penyelenggara && (
+                                        <p className="mt-1 text-sm text-red-600">{errors.id_penyelenggara}</p>
+                                    )}
+                                    <p className="text-xs text-gray-500 mt-1">
+                                        Akun admin Anda tidak terdaftar sebagai pegawai, sehingga harus memilih
+                                        pegawai yang bertindak sebagai penyelenggara jadwal ini.
+                                    </p>
+                                </div>
+                            )}
                         </div>
                     </div>
 

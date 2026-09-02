@@ -1332,8 +1332,9 @@ const Home = () => {
             </div>
           )}
 
-          {/* Welcome Message untuk User Biasa - Undangan Pelatihan */}
-          {!isAdmin && stats.pelatihan.undanganPending > 0 && (
+          {/* Pemberitahuan Undangan Pelatihan — untuk siapa pun yang punya undangan pending,
+              termasuk katim/admin yang mengundang diri sendiri sebagai peserta */}
+          {stats.pelatihan?.undanganPending > 0 && (
             <div className="mb-8 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-2xl shadow-xl overflow-hidden">
               <div className="px-8 py-6 flex items-center text-white">
                 <span className="text-4xl mr-6">📬</span>

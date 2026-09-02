@@ -12,6 +12,8 @@ const JadwalPelatihanList = ({
     onDelete, 
     onPublikasi, 
     onUndang, 
+    onMonitor,
+    onUbahStatus,
     userRoles,
     getStatusBadge,
     userNip
@@ -96,8 +98,8 @@ const JadwalPelatihanList = ({
                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                                         <div>{item.jumlah_peserta || 0} / {item.kuota || '∞'}</div>
                                         <div className="text-xs text-green-600">{item.jumlah_hadir || 0} hadir</div>
-                                        {/* Tampilkan status undangan user */}
-                                        {!userRoles.isAdmin && !userRoles.isKatim && item.status_undangan_saya && (
+                                        {/* Tampilkan status undangan milik user yang login (termasuk katim/admin yang mengundang diri sendiri) */}
+                                        {item.status_undangan_saya && (
                                             <div className="mt-1">
                                                 <span className={`px-2 py-0.5 text-xs rounded-full ${
                                                     item.status_undangan_saya === 'Diterima' ? 'bg-green-100 text-green-700' :
@@ -127,6 +129,48 @@ const JadwalPelatihanList = ({
                                                 </svg>
                                             </button>
                                             
+                                            {/* Pantau sertifikat peserta — muncul setelah pelatihan berstatus Selesai */}
+                                            {(userRoles.isKatim || userRoles.isAdmin) && item.status === 'Selesai' && (
+                                                <button
+                                                    onClick={() => onMonitor(item)}
+                                                    className="flex items-center gap-1 px-2 py-1 text-teal-700 bg-teal-50 border border-teal-200 rounded-md hover:bg-teal-100"
+                                                    title="Pantau sertifikat peserta (sudah/belum upload ke riwayat)"
+                                                >
+                                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+                                                    </svg>
+                                                    <span className="text-xs font-medium">Pantau</span>
+                                                </button>
+                                            )}
+
+                                            {/* Ubah status: Publik -> Mulai (Berlangsung) */}
+                                            {(userRoles.isKatim || userRoles.isAdmin) && item.status === 'Publik' && (
+                                                <button
+                                                    onClick={() => onUbahStatus(item, 'Berlangsung')}
+                                                    className="flex items-center gap-1 px-2 py-1 text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-md hover:bg-emerald-100"
+                                                    title="Mulai pelatihan (ubah status menjadi Berlangsung)"
+                                                >
+                                                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clipRule="evenodd" />
+                                                    </svg>
+                                                    <span className="text-xs font-medium">Mulai</span>
+                                                </button>
+                                            )}
+
+                                            {/* Ubah status: Berlangsung -> Selesai */}
+                                            {(userRoles.isKatim || userRoles.isAdmin) && item.status === 'Berlangsung' && (
+                                                <button
+                                                    onClick={() => onUbahStatus(item, 'Selesai')}
+                                                    className="flex items-center gap-1 px-2 py-1 text-purple-700 bg-purple-50 border border-purple-200 rounded-md hover:bg-purple-100"
+                                                    title="Tandai pelatihan selesai (ubah status menjadi Selesai)"
+                                                >
+                                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                    </svg>
+                                                    <span className="text-xs font-medium">Selesai</span>
+                                                </button>
+                                            )}
+
                                             {/* Untuk user biasa, hanya lihat detail (tanpa aksi edit/dll) */}
                                             {(userRoles.isKatim || userRoles.isAdmin) && item.status === 'Draft' && (
                                                 <>
@@ -164,11 +208,12 @@ const JadwalPelatihanList = ({
                                                 </button>
                                             )}
                                             
-                                            {(userRoles.isKatim || userRoles.isAdmin) && item.status === 'Draft' && (
+                                            {/* Hapus: admin boleh semua status; katim hanya Draft */}
+                                            {(userRoles.isAdmin || (userRoles.isKatim && item.status === 'Draft')) && (
                                                 <button
                                                     onClick={() => onDelete(item)}
                                                     className="text-red-600 hover:text-red-900"
-                                                    title="Hapus"
+                                                    title={userRoles.isAdmin ? 'Hapus jadwal (status apa pun)' : 'Hapus jadwal'}
                                                 >
                                                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />

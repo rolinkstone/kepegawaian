@@ -13,13 +13,15 @@ import KompetensiTerpenuhiModal from './modals/KompetensiTerpenuhiModal';
 import ConfirmModal from './modals/ConfirmModal';
 import JadwalPelatihanList from './JadwalPelatihanList';
 import MasterPelatihanList from './MasterPelatihanList';
+import MonitorSertifikatModal from './MonitorSertifikatModal';
 import { 
     fetchJadwalPelatihan, 
     fetchMasterPelatihan,
     fetchOptions, 
     deleteJadwalPelatihan,
     deleteMasterPelatihan,
-    publikasiJadwal 
+    publikasiJadwal,
+    ubahStatusJadwal 
 } from './api/pelatihanApi';
 
 const PelatihanContainer = () => {
@@ -425,6 +427,50 @@ const PelatihanContainer = () => {
         });
     };
 
+    const handleMonitorSertifikat = (item) => {
+        setSelectedJadwal(item);
+        setModalConfig({
+            show: true,
+            type: 'monitor',
+            data: item
+        });
+    };
+
+    const handleUbahStatus = async (item, status) => {
+        const result = await Swal.fire({
+            icon: 'question',
+            title: 'Ubah Status Jadwal',
+            text: `Ubah status jadwal "${item.nama_pelatihan}" menjadi ${status}?`,
+            showCancelButton: true,
+            confirmButtonText: `Ya, ${status}`,
+            cancelButtonText: 'Batal'
+        });
+
+        if (result.isConfirmed) {
+            try {
+                const response = await ubahStatusJadwal(session, item.id, status);
+                if (response.success) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Berhasil',
+                        text: response.message || 'Status jadwal berhasil diubah',
+                        timer: 1500,
+                        showConfirmButton: false
+                    });
+                    fetchData(false);
+                } else {
+                    throw new Error(response.message || 'Gagal mengubah status jadwal');
+                }
+            } catch (error) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: error.message
+                });
+            }
+        }
+    };
+
     const handlePublikasi = async (item) => {
         if (item.status !== 'Draft') {
             Swal.fire({
@@ -468,11 +514,12 @@ const PelatihanContainer = () => {
     };
 
     const handleDelete = (item) => {
-        if (item.status !== 'Draft') {
+        // Admin boleh menghapus jadwal status apa pun; katim hanya jadwal Draft
+        if (!userRoles.isAdmin && item.status !== 'Draft') {
             Swal.fire({
                 icon: 'warning',
                 title: 'Tidak Dapat Menghapus',
-                text: 'Hanya jadwal dengan status Draft yang dapat dihapus'
+                text: 'Hanya admin yang dapat menghapus jadwal yang sudah dipublikasikan/berjalan/selesai'
             });
             return;
         }
@@ -750,6 +797,8 @@ const PelatihanContainer = () => {
                     onDelete={handleDelete}
                     onPublikasi={handlePublikasi}
                     onUndang={handleUndangPeserta}
+                    onMonitor={handleMonitorSertifikat}
+                    onUbahStatus={handleUbahStatus}
                     userRoles={userRoles}
                     getStatusBadge={getStatusBadge}
                     userNip={getUserNip()}
@@ -836,13 +885,23 @@ const PelatihanContainer = () => {
                 }}
             />
 
+            {/* Monitor Sertifikat Modal */}
+            <MonitorSertifikatModal
+                show={modalConfig.show && modalConfig.type === 'monitor'}
+                onClose={handleCloseModal}
+                jadwal={modalConfig.data}
+                session={session}
+            />
+
             {/* Delete Modal */}
             <ConfirmModal
                 show={modalConfig.show && modalConfig.type === 'delete'}
                 onClose={handleCloseModal}
                 onConfirm={() => handleDeleteConfirm(modalConfig.data?.id)}
                 title="Hapus Jadwal"
-                message={`Apakah Anda yakin ingin menghapus jadwal "${modalConfig.data?.nama_pelatihan}"?`}
+                message={modalConfig.data?.status && modalConfig.data.status !== 'Draft'
+                    ? `Hapus jadwal "${modalConfig.data?.nama_pelatihan}"? Data peserta/kehadiran yang terkait juga akan ikut terhapus dan tidak dapat dibatalkan.`
+                    : `Apakah Anda yakin ingin menghapus jadwal "${modalConfig.data?.nama_pelatihan}"?`}
                 confirmText="Ya, Hapus"
                 cancelText="Batal"
                 type="danger"

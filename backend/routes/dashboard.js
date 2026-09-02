@@ -3,7 +3,7 @@ const express = require('express');
 const router = express.Router();
 const db = require('../db');
 const { keycloakAuth, getUserId, getUsername } = require('../middleware/keycloakAuth');
-const { getUserNipFromToken, isAdminTambunRaya, isKatim } = require('../utils/keycloakHelpers');
+const { getUserNipFromToken } = require('../utils/keycloakHelpers');
 
 /**
  * GET /api/dashboard/stats
@@ -123,9 +123,10 @@ router.get('/stats', keycloakAuth, async (req, res) => {
             WHERE is_active = 1
         `);
 
-        // 9. Undangan Pending untuk user biasa
+        // 9. Undangan Pending — berlaku untuk SEMUA role (katim/admin juga bisa
+        //    mengundang diri sendiri sebagai peserta, jadi perlu melihat & konfirmasi)
         let undanganPending = 0;
-        if (!isAdminTambunRaya(req.user) && !isKatim(req.user) && userId) {
+        if (userId) {
             const [pending] = await db.query(`
                 SELECT COUNT(*) as total
                 FROM kepegawaian.peserta_pelatihan pp
