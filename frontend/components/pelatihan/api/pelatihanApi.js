@@ -437,6 +437,42 @@ export const publikasiJadwal = async (session, id) => {
     }
 };
 
+/**
+ * PUT /api/pelatihan/jadwal/:id/status
+ * Mengubah status jadwal (mis. Berlangsung, Selesai, Dibatalkan)
+ */
+export const ubahStatusJadwal = async (session, id, status) => {
+    const token = getToken(session);
+
+    if (!token) {
+        return {
+            success: false,
+            message: 'Token tidak ditemukan'
+        };
+    }
+
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL;
+    const url = `${baseUrl}/pelatihan/jadwal/${id}/status`;
+
+    try {
+        const response = await fetch(url, {
+            method: 'PUT',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ status })
+        });
+
+        return await handleResponse(response);
+    } catch (error) {
+        return {
+            success: false,
+            message: error.message
+        };
+    }
+};
+
 // ========== PESERTA PELATIHAN API ==========
 
 /**
@@ -678,6 +714,51 @@ export const respondUndangan = async (session, id, status) => {
         return {
             success: false,
             message: error.message
+        };
+    }
+};
+
+// ========== MONITORING SERTIFIKAT ==========
+
+/**
+ * GET /api/pelatihan/monitor/sertifikat
+ * Monitoring peserta yang sudah/belum upload sertifikat ke Riwayat Pelatihan (user_kompetensi),
+ * berdasarkan kompetensi terkait pelatihan. Bisa difilter per nama pelatihan.
+ */
+export const fetchMonitorSertifikat = async (session, params = {}) => {
+    const token = getToken(session);
+
+    if (!token) {
+        return {
+            success: false,
+            message: 'Token tidak ditemukan',
+            data: []
+        };
+    }
+
+    const queryParams = new URLSearchParams();
+    if (params.status) queryParams.append('status', params.status);
+    if (params.search) queryParams.append('search', params.search);
+
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL;
+    const url = `${baseUrl}/pelatihan/monitor/sertifikat${queryParams.toString() ? `?${queryParams}` : ''}`;
+
+    try {
+        const response = await fetch(url, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
+        });
+
+        return await handleResponse(response);
+    } catch (error) {
+        console.error('Error fetching monitoring sertifikat:', error);
+        return {
+            success: false,
+            message: error.message,
+            data: []
         };
     }
 };

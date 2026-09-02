@@ -28,6 +28,24 @@ export async function getServerSideProps(context) {
     };
   }
 
+  // Halaman Perencanaan hanya untuk: katim, kabag_tu, admin_tambun_raya
+  const allowedRoles = ['katim', 'kabag_tu', 'admin_tambun_raya'];
+  const roles = [];
+  if (session.user?.role) roles.push(session.user.role);
+  if (Array.isArray(session.user?.roles)) roles.push(...session.user.roles);
+  else if (typeof session.user?.roles === 'string') roles.push(...session.user.roles.split(','));
+
+  const hasAccess = roles.some(r => allowedRoles.includes(String(r).trim().toLowerCase()));
+
+  if (!hasAccess) {
+    return {
+      redirect: {
+        destination: '/',
+        permanent: false,
+      },
+    };
+  }
+
   return {
     props: { session },
   };

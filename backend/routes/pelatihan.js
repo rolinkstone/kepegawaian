@@ -5,6 +5,48 @@ const db = require('../db');
 const { keycloakAuth, getUserId, getUsername } = require('../middleware/keycloakAuth');
 const { getUserNipFromToken, isAdminTambunRaya, isKatim } = require('../utils/keycloakHelpers');
 
+// ========== HELPER: NORMALISASI NIP & RESOLVE USER ==========
+// NIP di DB bisa tersimpan dengan spasi ('XXXXXXXX XXXXXX X XXX'), sedangkan
+// preferred_username di token Keycloak tanpa spasi. Normalisasi saat membandingkan.
+function normalizeNip(nip) {
+    return String(nip || '').replace(/\s/g, '');
+}
+
+/**
+ * Mencari baris user berdasarkan NIP dari token (dengan normalisasi spasi).
+ * Menerima executor query (db atau connection) yang punya metode .query.
+ * Mengembalikan array baris [{ id, nama, nip }] — kosong jika tidak ditemukan.
+ */
+async function findUserByNip(executor, userNip, username) {
+    const cleanNip = normalizeNip(userNip);
+    const run = async (sql, params) => {
+        const [rows] = await executor.query(sql, params);
+        return rows;
+    };
+
+    let rows = await run(
+        `SELECT id, nama, nip FROM kepegawaian.user WHERE REPLACE(nip, ' ', '') = ?`,
+        [cleanNip]
+    );
+
+    // Jika tidak ditemukan, coba cari berdasarkan username
+    if (rows.length === 0 && username) {
+        console.log('🔍 Mencari user berdasarkan username:', username);
+        rows = await run(
+            `SELECT id, nama, nip FROM kepegawaian.user WHERE REPLACE(nama, ' ', '') = ? OR REPLACE(nip, ' ', '') = ?`,
+            [username, username]
+        );
+    }
+
+    // Fallback: gunakan user pertama jika diizinkan via env (khusus testing)
+    if (rows.length === 0 && process.env.ALLOW_TESTING_FALLBACK === 'true') {
+        console.log('⚠️ TESTING FALLBACK: Menggunakan user pertama');
+        rows = await run('SELECT id, nama, nip FROM kepegawaian.user LIMIT 1');
+    }
+
+    return rows;
+}
+
 // ========== MASTER PELATIHAN ==========
 
 /**
@@ -145,35 +187,18 @@ router.post('/master', keycloakAuth, async (req, res) => {
     await connection.beginTransaction();
     
     try {
-        // CEK USER BERDASARKAN NIP
-        let [user] = await connection.query(
-            'SELECT id, nama, nip FROM kepegawaian.user WHERE nip = ?',
-            [userNip]
-        );
-        
-        // Jika tidak ditemukan, coba cari berdasarkan username
-        if (user.length === 0 && username) {
-            console.log('🔍 Mencari user berdasarkan username:', username);
-            [user] = await connection.query(
-                'SELECT id, nama, nip FROM kepegawaian.user WHERE nama LIKE ? OR nip LIKE ?',
-                [`%${username}%`, `%${username}%`]
-            );
-        }
-        
-        // Fallback: gunakan user pertama jika diizinkan via env
-        if (user.length === 0 && process.env.ALLOW_TESTING_FALLBACK === 'true') {
-            console.log('⚠️ TESTING FALLBACK: Menggunakan user pertama');
-            [user] = await connection.query(
-                'SELECT id, nama, nip FROM kepegawaian.user LIMIT 1'
-            );
-        }
-        
-        if (user.length === 0) {
+        // CEK USER BERDASARKAN NIP (normalisasi: NIP di DB bisa berformat dengan spasi)
+        const userRows = await findUserByNip(connection, userNip, username);
+
+        // Admin (admin_tambun_raya) bisa merupakan akun sistem yang tidak terdaftar
+        // sebagai pegawai di tabel user → tetap diizinkan, created_by diisi NULL (kolom nullable).
+        if (userRows.length === 0 && !isAdmin) {
             throw new Error('User tidak ditemukan dalam database');
         }
-        
-        const userId = user[0].id;
-        console.log('👤 User ditemukan:', user[0].nama, 'ID:', userId);
+
+        const userRecord = userRows.length > 0 ? userRows[0] : null;
+        const userId = userRecord ? userRecord.id : null;
+        console.log('👤 User ditemukan:', userRecord ? userRecord.nama : '(Admin — tidak terdaftar di tabel user)', 'ID:', userId);
         
         // Insert master pelatihan
         const [result] = await connection.query(`
@@ -199,7 +224,8 @@ router.post('/master', keycloakAuth, async (req, res) => {
         
         await connection.commit();
         
-        console.log(`✅ ${user[0].nama} (${isAdmin ? 'Admin' : 'Katim'}) menambah master pelatihan: ${kode_pelatihan}`);
+        const actorName = userRecord ? userRecord.nama : username;
+        console.log(`✅ ${actorName} (${isAdmin ? 'Admin' : 'Katim'}) menambah master pelatihan: ${kode_pelatihan}`);
         
         res.status(201).json({
             success: true,
@@ -357,10 +383,10 @@ router.get('/jadwal', keycloakAuth, async (req, res) => {
     console.log('📥 isKatim:', isKatimRole);
     
     try {
-        // Dapatkan ID user
+        // Dapatkan ID user (normalisasi NIP)
         const [user] = await db.query(
-            'SELECT id FROM kepegawaian.user WHERE nip = ?',
-            [userNip]
+            `SELECT id FROM kepegawaian.user WHERE REPLACE(nip, ' ', '') = ?`,
+            [normalizeNip(userNip)]
         );
         
         if (user.length === 0 && !isAdmin && !isKatimRole) {
@@ -470,10 +496,10 @@ router.get('/jadwal/:id', keycloakAuth, async (req, res) => {
     console.log(`📊 Mengakses detail jadwal ID: ${id} oleh user ${userNip}`);
     
     try {
-        // Dapatkan ID user
+        // Dapatkan ID user (normalisasi NIP)
         const [user] = await db.query(
-            'SELECT id FROM kepegawaian.user WHERE nip = ?',
-            [userNip]
+            `SELECT id FROM kepegawaian.user WHERE REPLACE(nip, ' ', '') = ?`,
+            [normalizeNip(userNip)]
         );
         
         if (user.length === 0 && !isAdmin && !isKatimRole) {
@@ -618,35 +644,45 @@ router.post('/jadwal', keycloakAuth, async (req, res) => {
     await connection.beginTransaction();
     
     try {
-        // CEK USER BERDASARKAN NIP
-        let [user] = await connection.query(
-            'SELECT id, nama, nip FROM kepegawaian.user WHERE nip = ?',
-            [userNip]
-        );
-        
-        // Jika tidak ditemukan, coba cari berdasarkan username
-        if (user.length === 0 && username) {
-            console.log('🔍 Mencari user berdasarkan username:', username);
-            [user] = await connection.query(
-                'SELECT id, nama, nip FROM kepegawaian.user WHERE nama LIKE ? OR nip LIKE ?',
-                [`%${username}%`, `%${username}%`]
+        // CEK USER BERDASARKAN NIP (normalisasi: NIP di DB bisa berformat dengan spasi)
+        const userRows = await findUserByNip(connection, userNip, username);
+
+        let penyelenggaraId;   // id_penyelenggara (FK ke tabel user, NOT NULL)
+        let penyelenggaraName = null;
+        let createdById = null; // created_by: nullable, diisi user bila pembuat terdaftar
+
+        if (userRows.length > 0) {
+            // Pembuat terdaftar sebagai pegawai → dialah penyelenggara jadwal.
+            penyelenggaraId = userRows[0].id;
+            penyelenggaraName = userRows[0].nama;
+            createdById = penyelenggaraId;
+            console.log('👤 User ditemukan:', penyelenggaraName, 'ID:', penyelenggaraId);
+        } else if (isAdmin) {
+            // Admin (admin_tambun_raya) yang akunnya bukan pegawai di database tetap boleh
+            // membuat jadwal, asalkan memilih penyelenggara (pegawai) yang terdaftar.
+            const chosenId = parseInt(req.body.id_penyelenggara, 10);
+            if (!chosenId) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Akun admin tidak terdaftar sebagai pegawai. Silakan pilih penyelenggara (pegawai) untuk jadwal ini.'
+                });
+            }
+            const [penyelenggara] = await connection.query(
+                'SELECT id, nama FROM kepegawaian.user WHERE id = ?',
+                [chosenId]
             );
-        }
-        
-        // Fallback: gunakan user pertama jika diizinkan via env
-        if (user.length === 0 && process.env.ALLOW_TESTING_FALLBACK === 'true') {
-            console.log('⚠️ TESTING FALLBACK: Menggunakan user pertama');
-            [user] = await connection.query(
-                'SELECT id, nama, nip FROM kepegawaian.user LIMIT 1'
-            );
-        }
-        
-        if (user.length === 0) {
+            if (penyelenggara.length === 0) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Penyelenggara yang dipilih tidak ditemukan. Silakan pilih penyelenggara yang valid.'
+                });
+            }
+            penyelenggaraId = penyelenggara[0].id;
+            penyelenggaraName = penyelenggara[0].nama;
+            console.log('👤 Admin (bukan pegawai) memilih penyelenggara:', penyelenggaraName, 'ID:', penyelenggaraId);
+        } else {
             throw new Error('User tidak ditemukan dalam database');
         }
-        
-        const userId = user[0].id;
-        console.log('👤 User ditemukan:', user[0].nama, 'ID:', userId);
         
         // Insert jadwal
         const [result] = await connection.query(`
@@ -655,9 +691,9 @@ router.post('/jadwal', keycloakAuth, async (req, res) => {
              waktu_mulai, waktu_selesai, lokasi, metode, kuota, deskripsi, status, created_by)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Draft', ?)
         `, [
-            id_pelatihan, userId, nama_penyelenggara || null, tanggal_mulai, tanggal_selesai,
+            id_pelatihan, penyelenggaraId, nama_penyelenggara || null, tanggal_mulai, tanggal_selesai,
             waktu_mulai || null, waktu_selesai || null, lokasi || null, metode || 'Offline', 
-            kuota || null, deskripsi || null, userId
+            kuota || null, deskripsi || null, createdById
         ]);
         
         const jadwalId = result.insertId;
@@ -668,7 +704,7 @@ router.post('/jadwal', keycloakAuth, async (req, res) => {
             console.log('📥 Inserting peserta_ids:', peserta_ids);
             
             const pesertaValues = peserta_ids.map(idPeserta => [
-                jadwalId, idPeserta, 'Pending', userId
+                jadwalId, idPeserta, 'Pending', createdById
             ]);
             
             await connection.query(
@@ -681,7 +717,7 @@ router.post('/jadwal', keycloakAuth, async (req, res) => {
         
         await connection.commit();
         
-        console.log(`✅ ${user[0].nama} berhasil membuat jadwal pelatihan ID: ${jadwalId}`);
+        console.log(`✅ ${penyelenggaraName} berhasil membuat jadwal pelatihan ID: ${jadwalId}`);
         
         res.status(201).json({
             success: true,
@@ -728,9 +764,9 @@ router.put('/jadwal/:id', keycloakAuth, async (req, res) => {
     } = req.body;
     
     try {
-        // Cek kepemilikan jadwal
+        // Cek kepemilikan jadwal (pembuat_nip dinormalisasi agar sebanding dengan token tanpa spasi)
         const [jadwal] = await db.query(`
-            SELECT jp.*, u.nip as pembuat_nip
+            SELECT jp.*, REPLACE(u.nip, ' ', '') as pembuat_nip
             FROM kepegawaian.jadwal_pelatihan jp
             JOIN kepegawaian.user u ON jp.created_by = u.id
             WHERE jp.id = ?
@@ -778,7 +814,8 @@ router.put('/jadwal/:id', keycloakAuth, async (req, res) => {
 
 /**
  * DELETE /api/pelatihan/jadwal/:id
- * Hapus jadwal pelatihan (hanya jika status masih Draft)
+ * Hapus jadwal pelatihan. Admin boleh menghapus jadwal status apa pun;
+ * selain admin (katim) hanya bisa menghapus jadwal Draft miliknya sendiri.
  */
 router.delete('/jadwal/:id', keycloakAuth, async (req, res) => {
     const { id } = req.params;
@@ -786,11 +823,11 @@ router.delete('/jadwal/:id', keycloakAuth, async (req, res) => {
     const isAdmin = isAdminTambunRaya(req.user);
     
     try {
-        // Cek jadwal
+        // Cek jadwal (LEFT JOIN karena created_by bisa NULL utk jadwal buatan akun admin sistem)
         const [jadwal] = await db.query(`
-            SELECT jp.*, u.nip as pembuat_nip
+            SELECT jp.*, REPLACE(u.nip, ' ', '') as pembuat_nip
             FROM kepegawaian.jadwal_pelatihan jp
-            JOIN kepegawaian.user u ON jp.created_by = u.id
+            LEFT JOIN kepegawaian.user u ON jp.created_by = u.id
             WHERE jp.id = ?
         `, [id]);
         
@@ -801,21 +838,22 @@ router.delete('/jadwal/:id', keycloakAuth, async (req, res) => {
             });
         }
         
-        // Hanya pembuat atau admin yang bisa hapus
-        if (jadwal[0].pembuat_nip !== userNip && !isAdmin) {
-            return res.status(403).json({
-                success: false,
-                message: 'Anda tidak memiliki izin untuk menghapus jadwal ini'
-            });
+        // Non-admin (katim): hanya pembuat dan hanya jadwal berstatus Draft
+        if (!isAdmin) {
+            if (jadwal[0].pembuat_nip !== userNip) {
+                return res.status(403).json({
+                    success: false,
+                    message: 'Anda tidak memiliki izin untuk menghapus jadwal ini'
+                });
+            }
+            if (jadwal[0].status !== 'Draft') {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Hanya jadwal dengan status Draft yang dapat dihapus'
+                });
+            }
         }
-        
-        // Hanya bisa hapus jika status Draft
-        if (jadwal[0].status !== 'Draft') {
-            return res.status(400).json({
-                success: false,
-                message: 'Hanya jadwal dengan status Draft yang dapat dihapus'
-            });
-        }
+        // Admin: boleh menghapus jadwal status apa pun
         
         await db.query('DELETE FROM kepegawaian.jadwal_pelatihan WHERE id = ?', [id]);
         
@@ -880,6 +918,84 @@ router.post('/jadwal/:id/publikasi', keycloakAuth, async (req, res) => {
     }
 });
 
+/**
+ * PUT /api/pelatihan/jadwal/:id/status
+ * Mengubah status jadwal (Berlangsung / Selesai / Dibatalkan) — khusus katim/admin.
+ * Transisi yang diizinkan:
+ *   Draft      → Publik, Dibatalkan
+ *   Publik     → Berlangsung, Dibatalkan
+ *   Berlangsung → Selesai, Dibatalkan
+ *   Selesai    → (terkunci)
+ */
+router.put('/jadwal/:id/status', keycloakAuth, async (req, res) => {
+    const isAdmin = isAdminTambunRaya(req.user);
+    const isKatimRole = isKatim(req.user);
+
+    if (!isAdmin && !isKatimRole) {
+        return res.status(403).json({
+            success: false,
+            message: 'Hanya katim dan admin yang dapat mengubah status jadwal'
+        });
+    }
+
+    const { id } = req.params;
+    const { status } = req.body;
+
+    const transitions = {
+        'Draft': ['Publik', 'Dibatalkan'],
+        'Publik': ['Berlangsung', 'Dibatalkan'],
+        'Berlangsung': ['Selesai', 'Dibatalkan'],
+        'Selesai': []
+    };
+
+    if (!status || !['Berlangsung', 'Selesai', 'Dibatalkan', 'Publik'].includes(status)) {
+        return res.status(400).json({
+            success: false,
+            message: 'Status tujuan tidak valid'
+        });
+    }
+
+    try {
+        const [jadwal] = await db.query(
+            'SELECT id, status FROM kepegawaian.jadwal_pelatihan WHERE id = ?',
+            [id]
+        );
+
+        if (jadwal.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: 'Jadwal tidak ditemukan'
+            });
+        }
+
+        const current = jadwal[0].status;
+        if (!(transitions[current] || []).includes(status)) {
+            return res.status(400).json({
+                success: false,
+                message: `Tidak dapat mengubah status dari "${current}" menjadi "${status}"`
+            });
+        }
+
+        await db.query(
+            'UPDATE kepegawaian.jadwal_pelatihan SET status = ? WHERE id = ?',
+            [status, id]
+        );
+
+        res.status(200).json({
+            success: true,
+            message: `Status jadwal berhasil diubah menjadi ${status}`,
+            data: { id: Number(id), status }
+        });
+    } catch (error) {
+        console.error('Error mengubah status jadwal:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Terjadi kesalahan server',
+            error: error.message
+        });
+    }
+});
+
 // ========== PESERTA PELATIHAN ==========
 
 /**
@@ -902,10 +1018,10 @@ router.post('/jadwal/:id/tambah-peserta', keycloakAuth, async (req, res) => {
     await connection.beginTransaction();
     
     try {
-        // Dapatkan ID user yang menambah
+        // Dapatkan ID user yang menambah (normalisasi NIP)
         const [user] = await connection.query(
-            'SELECT id FROM kepegawaian.user WHERE nip = ?',
-            [userNip]
+            `SELECT id FROM kepegawaian.user WHERE REPLACE(nip, ' ', '') = ?`,
+            [normalizeNip(userNip)]
         );
         
         if (user.length === 0) {
@@ -991,10 +1107,10 @@ router.post('/peserta/:id/kompetensi-terpenuhi', keycloakAuth, async (req, res) 
     await connection.beginTransaction();
     
     try {
-        // Dapatkan ID verifikator
+        // Dapatkan ID verifikator (normalisasi NIP)
         const [verifier] = await connection.query(
-            'SELECT id FROM kepegawaian.user WHERE nip = ?',
-            [userNip]
+            `SELECT id FROM kepegawaian.user WHERE REPLACE(nip, ' ', '') = ?`,
+            [normalizeNip(userNip)]
         );
         
         if (verifier.length === 0) {
@@ -1034,6 +1150,191 @@ router.post('/peserta/:id/kompetensi-terpenuhi', keycloakAuth, async (req, res) 
         });
     } finally {
         connection.release();
+    }
+});
+
+// ========== MONITORING SERTIFIKAT PESERTA ==========
+
+/**
+ * GET /api/pelatihan/monitor/sertifikat
+ * Monitoring peserta yang SUDAH/BELUM upload sertifikat ke Riwayat Pelatihan (user_kompetensi),
+ * berdasarkan kompetensi yang terkait dengan pelatihan (pelatihan_kompetensi dari master_pelatihan
+ * yang dipilih saat membuat jadwal). Bisa dimonitor per nama pelatihan.
+ *
+ * Default: jadwal berstatus 'Selesai' & peserta dengan undangan 'Diterima'.
+ * Query params: ?status=Selesai (opsional) & search= (cari nama/kode pelatihan / nama peserta)
+ */
+router.get('/monitor/sertifikat', keycloakAuth, async (req, res) => {
+    const isAdmin = isAdminTambunRaya(req.user);
+    const isKatimRole = isKatim(req.user);
+
+    // Hanya katim dan admin yang boleh melihat
+    if (!isAdmin && !isKatimRole) {
+        return res.status(403).json({
+            success: false,
+            message: 'Hanya katim dan admin yang dapat melihat monitoring sertifikat'
+        });
+    }
+
+    const { status = 'Selesai', search, jadwal_id } = req.query;
+
+    try {
+        let where = `jp.status = ? AND pp.status_undangan = 'Diterima'`;
+        const params = [status];
+        if (jadwal_id) {
+            where += ` AND jp.id = ?`;
+            params.push(jadwal_id);
+        }
+        if (search) {
+            where += ` AND (mp.nama_pelatihan LIKE ? OR mp.kode_pelatihan LIKE ? OR u.nama LIKE ?)`;
+            const s = `%${search}%`;
+            params.push(s, s, s);
+        }
+
+        const query = `
+            SELECT
+                jp.id as jadwal_id,
+                jp.status as jadwal_status,
+                jp.tanggal_mulai,
+                jp.tanggal_selesai,
+                jp.lokasi,
+                mp.id as id_pelatihan,
+                mp.kode_pelatihan,
+                mp.nama_pelatihan,
+                pp.id as peserta_id,
+                pp.id_user,
+                pp.status_undangan,
+                pp.status_kehadiran,
+                pp.nilai,
+                u.nama as user_nama,
+                u.nip as user_nip,
+                f.nama_fungsi,
+                jb.nama_jabatan,
+                uk.id as uk_id,
+                uk.id_kompetensi,
+                uk.tanggal_dipenuhi,
+                uk.bukti,
+                uk.nilai as uk_nilai,
+                uk.status as uk_status,
+                uk.hasil_verif,
+                uk.verified_at,
+                mk.kode_kompetensi,
+                mk.nama_kompetensi
+            FROM kepegawaian.peserta_pelatihan pp
+            JOIN kepegawaian.jadwal_pelatihan jp ON pp.id_jadwal = jp.id
+            JOIN kepegawaian.master_pelatihan mp ON jp.id_pelatihan = mp.id
+            JOIN kepegawaian.user u ON pp.id_user = u.id
+            LEFT JOIN kepegawaian.fungsi f ON u.id_fungsi = f.id
+            LEFT JOIN kepegawaian.jabatan jb ON u.id_jabatan = jb.id
+            LEFT JOIN kepegawaian.pelatihan_kompetensi pk ON pk.id_pelatihan = mp.id
+            LEFT JOIN kepegawaian.master_kompetensi mk ON pk.id_kompetensi = mk.id
+            LEFT JOIN kepegawaian.user_kompetensi uk ON uk.id_user = pp.id_user
+                AND uk.id_kompetensi = pk.id_kompetensi
+                AND uk.bukti IS NOT NULL AND uk.bukti <> ''
+            WHERE ${where}
+            ORDER BY mp.nama_pelatihan ASC, jp.tanggal_mulai DESC, u.nama ASC
+        `;
+
+        const [rows] = await db.query(query, params);
+
+        // Kelompokkan: jadwal -> peserta -> sertifikat[]
+        const jadwalMap = new Map();
+        let totalPeserta = 0;
+        let sudah = 0;
+        let belum = 0;
+
+        for (const r of rows) {
+            let jadwal = jadwalMap.get(r.jadwal_id);
+            if (!jadwal) {
+                jadwal = {
+                    jadwal_id: r.jadwal_id,
+                    status: r.jadwal_status,
+                    tanggal_mulai: r.tanggal_mulai,
+                    tanggal_selesai: r.tanggal_selesai,
+                    lokasi: r.lokasi,
+                    id_pelatihan: r.id_pelatihan,
+                    kode_pelatihan: r.kode_pelatihan,
+                    nama_pelatihan: r.nama_pelatihan,
+                    kompetensi_pelatihan: [],
+                    peserta: new Map()
+                };
+                jadwalMap.set(r.jadwal_id, jadwal);
+            }
+
+            // Kompetensi yang dicakup pelatihan ini (untuk info)
+            if (r.kode_kompetensi && !jadwal.kompetensi_pelatihan.some(k => k.kode === r.kode_kompetensi)) {
+                jadwal.kompetensi_pelatihan.push({
+                    kode: r.kode_kompetensi,
+                    nama: r.nama_kompetensi
+                });
+            }
+
+            let p = jadwal.peserta.get(r.peserta_id);
+            if (!p) {
+                totalPeserta++;
+                p = {
+                    peserta_id: r.peserta_id,
+                    id_user: r.id_user,
+                    user_nama: r.user_nama,
+                    user_nip: r.user_nip,
+                    nama_fungsi: r.nama_fungsi,
+                    nama_jabatan: r.nama_jabatan,
+                    status_undangan: r.status_undangan,
+                    status_kehadiran: r.status_kehadiran,
+                    sertifikat: []
+                };
+                jadwal.peserta.set(r.peserta_id, p);
+            }
+
+            if (r.uk_id && !p.sertifikat.some(s => s.uk_id === r.uk_id)) {
+                p.sertifikat.push({
+                    uk_id: r.uk_id,
+                    id_kompetensi: r.id_kompetensi,
+                    kode_kompetensi: r.kode_kompetensi,
+                    nama_kompetensi: r.nama_kompetensi,
+                    tanggal_dipenuhi: r.tanggal_dipenuhi,
+                    bukti: r.bukti,
+                    nilai: r.uk_nilai,
+                    status: r.uk_status,
+                    hasil_verif: r.hasil_verif,
+                    verified_at: r.verified_at
+                });
+            }
+        }
+
+        // Finalisasi grouping & hitung sudah/belum
+        const jadwalList = [];
+        for (const jadwal of jadwalMap.values()) {
+            const pesertaList = [];
+            for (const p of jadwal.peserta.values()) {
+                p.sudah_upload = p.sertifikat.length > 0;
+                if (p.sudah_upload) sudah++;
+                else belum++;
+                pesertaList.push(p);
+            }
+            jadwal.peserta = pesertaList;
+            jadwalList.push(jadwal);
+        }
+
+        res.status(200).json({
+            success: true,
+            data: {
+                ringkasan: {
+                    total_jadwal: jadwalList.length,
+                    total_peserta: totalPeserta,
+                    sudah_upload: sudah,
+                    belum_upload: belum
+                },
+                jadwal: jadwalList
+            }
+        });
+    } catch (error) {
+        console.error('❌ Error monitoring sertifikat:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Terjadi kesalahan server',
+            error: error.message
+        });
     }
 });
 
@@ -1125,10 +1426,10 @@ router.get('/undangan', keycloakAuth, async (req, res) => {
     const userNip = getUserNipFromToken(req.user);
     
     try {
-        // Dapatkan ID user
+        // Dapatkan ID user (normalisasi NIP)
         const [user] = await db.query(
-            'SELECT id FROM kepegawaian.user WHERE nip = ?',
-            [userNip]
+            `SELECT id FROM kepegawaian.user WHERE REPLACE(nip, ' ', '') = ?`,
+            [normalizeNip(userNip)]
         );
         
         if (user.length === 0) {
