@@ -1,0 +1,289 @@
+[dotenv@17.2.3] injecting env (9) from .env.local -- tip: 🗂️ backup and recover secrets: https://dotenvx.com/ops
+📁 Uploads directory: G:\reactjs\Kepegawaian Aktif\kepegawaian\backend\uploads
+[dotenv@17.2.3] injecting env (0) from .env.local -- tip: ⚙️  override existing env vars with { override: true }
+🔍 Loading environment variables from .env.local
+KEYCLOAK_SERVER_URL: ✓ SET
+KEYCLOAK_ADMIN_USERNAME: ✓ SET
+NODE_ENV: not set
+✅ Keycloak Configuration Loaded Successfully
+   Server: https://auth.bbpompky.id
+   Realm: master
+   Admin User: admin
+
+    ============================================
+    🚀 SERVER READY: http://localhost:5001
+    📁 Uploads directory: G:\reactjs\Kepegawaian Aktif\kepegawaian\backend\uploads
+    🔐 Auth enabled for protected routes
+    📝 Public routes: /api/login, /api/health
+    ============================================
+    
+✅ User authenticated: 198701042009121003 (/api/pelatihan/monitor/sertifikat)
+🔍 Extracting roles from user object...
+📌 Found roles in user.roles: [ 'pic_gudang', 'katim', 'pic_ruangan', 'user' ]
+✅ Final extracted roles: [ 'pic_gudang', 'katim', 'pic_ruangan', 'user' ]
+🔐 User 198701042009121003 mengakses GET /monitor/sertifikat {
+  roles: [ 'pic_gudang', 'katim', 'pic_ruangan', 'user' ],
+  user_id: 'ac9e97b2-3d2a-4b84-bea5-0ae528b72372',
+  isAdmin: false,
+  isPPK: false,
+  isKabalai: false,
+  isRegularUser: true
+}
+✅ User authenticated: 198701042009121003 (/api/pelatihan/options/all)
+🔍 Extracting roles from user object...
+📌 Found roles in user.roles: [ 'pic_gudang', 'katim', 'pic_ruangan', 'user' ]
+✅ Final extracted roles: [ 'pic_gudang', 'katim', 'pic_ruangan', 'user' ]
+🔐 User 198701042009121003 mengakses GET /options/all {
+  roles: [ 'pic_gudang', 'katim', 'pic_ruangan', 'user' ],
+  user_id: 'ac9e97b2-3d2a-4b84-bea5-0ae528b72372',
+  isAdmin: false,
+  isPPK: false,
+  isKabalai: false,
+  isRegularUser: true
+}
+✅ User authenticated: 198701042009121003 (/api/pelatihan/master)
+🔍 Extracting roles from user object...
+📌 Found roles in user.roles: [ 'pic_gudang', 'katim', 'pic_ruangan', 'user' ]
+✅ Final extracted roles: [ 'pic_gudang', 'katim', 'pic_ruangan', 'user' ]
+🔐 User 198701042009121003 mengakses GET /master {
+  roles: [ 'pic_gudang', 'katim', 'pic_ruangan', 'user' ],
+  user_id: 'ac9e97b2-3d2a-4b84-bea5-0ae528b72372',
+  isAdmin: false,
+  isPPK: false,
+  isKabalai: false,
+  isRegularUser: true
+}
+✅ User authenticated: 198701042009121003 (/api/pelatihan/jadwal)
+🔍 Extracting roles from user object...
+📌 Found roles in user.roles: [ 'pic_gudang', 'katim', 'pic_ruangan', 'user' ]
+✅ Final extracted roles: [ 'pic_gudang', 'katim', 'pic_ruangan', 'user' ]
+🔐 User 198701042009121003 mengakses GET /jadwal {
+  roles: [ 'pic_gudang', 'katim', 'pic_ruangan', 'user' ],
+  user_id: 'ac9e97b2-3d2a-4b84-bea5-0ae528b72372',
+  isAdmin: false,
+  isPPK: false,
+  isKabalai: false,
+  isRegularUser: true
+}
+📥 GET /jadwal - User NIP: 198701042009121003
+📥 isAdmin: false
+📥 isKatim: true
+👥 Katim: filter jadwal yang dibuat
+📝 Query: 
+            SELECT 
+                jp.*,
+                mp.kode_pelatihan,
+                mp.nama_pelatihan,
+                mp.durasi,
+                mp.jenis_pelatihan,
+                u.nama as penyelenggara_nama,
+                u.nip as penyelenggara_nip,
+                (
+                    SELECT COUNT(*) FROM kepegawaian.peserta_pelatihan 
+                    WHERE id_jadwal = jp.id
+                ) as jumlah_peserta,
+                (
+                    SELECT COUNT(*) FROM kepegawaian.peserta_pelatihan 
+                    WHERE id_jadwal = jp.id AND status_kehadiran = 'Hadir'
+                ) as jumlah_hadir,
+                (
+                    SELECT status_undangan FROM kepegawaian.peserta_pelatihan 
+                    WHERE id_jadwal = jp.id AND id_user = ?
+                ) as status_undangan_saya
+            FROM kepegawaian.jadwal_pelatihan jp
+            JOIN kepegawaian.master_pelatihan mp ON jp.id_pelatihan = mp.id
+            JOIN kepegawaian.user u ON jp.id_penyelenggara = u.id
+            WHERE 1=1
+         AND jp.id_penyelenggara = ? ORDER BY jp.tanggal_mulai DESC
+📝 Params: [ 67, 67 ]
+✅ Ditemukan 1 jadwal pelatihan untuk user 198701042009121003
+✅ User authenticated: 198309072008121001 (/api/pelatihan/monitor/sertifikat)
+🔍 Extracting roles from user object...
+📌 Found roles in user.roles: [ 'katim', 'user' ]
+✅ Final extracted roles: [ 'katim', 'user' ]
+🔐 User 198309072008121001 mengakses GET /monitor/sertifikat {
+  roles: [ 'katim', 'user' ],
+  user_id: 'test-sub-198309072008121001',
+  isAdmin: false,
+  isPPK: false,
+  isKabalai: false,
+  isRegularUser: true
+}
+✅ User authenticated: 198309072008121001 (/api/pelatihan/monitor/sertifikat)
+🔍 Extracting roles from user object...
+📌 Found roles in user.roles: [ 'katim', 'user' ]
+✅ Final extracted roles: [ 'katim', 'user' ]
+🔐 User 198309072008121001 mengakses GET /monitor/sertifikat {
+  roles: [ 'katim', 'user' ],
+  user_id: 'test-sub-198309072008121001',
+  isAdmin: false,
+  isPPK: false,
+  isKabalai: false,
+  isRegularUser: true
+}
+✅ User authenticated: 198701042009121003 (/api/pelatihan/options/all)
+🔍 Extracting roles from user object...
+📌 Found roles in user.roles: [ 'pic_gudang', 'katim', 'pic_ruangan', 'user' ]
+✅ Final extracted roles: [ 'pic_gudang', 'katim', 'pic_ruangan', 'user' ]
+🔐 User 198701042009121003 mengakses GET /options/all {
+  roles: [ 'pic_gudang', 'katim', 'pic_ruangan', 'user' ],
+  user_id: 'ac9e97b2-3d2a-4b84-bea5-0ae528b72372',
+  isAdmin: false,
+  isPPK: false,
+  isKabalai: false,
+  isRegularUser: true
+}
+✅ User authenticated: 198701042009121003 (/api/pelatihan/master)
+🔍 Extracting roles from user object...
+📌 Found roles in user.roles: [ 'pic_gudang', 'katim', 'pic_ruangan', 'user' ]
+✅ Final extracted roles: [ 'pic_gudang', 'katim', 'pic_ruangan', 'user' ]
+🔐 User 198701042009121003 mengakses GET /master {
+  roles: [ 'pic_gudang', 'katim', 'pic_ruangan', 'user' ],
+  user_id: 'ac9e97b2-3d2a-4b84-bea5-0ae528b72372',
+  isAdmin: false,
+  isPPK: false,
+  isKabalai: false,
+  isRegularUser: true
+}
+✅ User authenticated: 198701042009121003 (/api/pelatihan/jadwal)
+🔍 Extracting roles from user object...
+📌 Found roles in user.roles: [ 'pic_gudang', 'katim', 'pic_ruangan', 'user' ]
+✅ Final extracted roles: [ 'pic_gudang', 'katim', 'pic_ruangan', 'user' ]
+🔐 User 198701042009121003 mengakses GET /jadwal {
+  roles: [ 'pic_gudang', 'katim', 'pic_ruangan', 'user' ],
+  user_id: 'ac9e97b2-3d2a-4b84-bea5-0ae528b72372',
+  isAdmin: false,
+  isPPK: false,
+  isKabalai: false,
+  isRegularUser: true
+}
+📥 GET /jadwal - User NIP: 198701042009121003
+📥 isAdmin: false
+📥 isKatim: true
+👥 Katim: filter jadwal yang dibuat
+📝 Query: 
+            SELECT 
+                jp.*,
+                mp.kode_pelatihan,
+                mp.nama_pelatihan,
+                mp.durasi,
+                mp.jenis_pelatihan,
+                u.nama as penyelenggara_nama,
+                u.nip as penyelenggara_nip,
+                (
+                    SELECT COUNT(*) FROM kepegawaian.peserta_pelatihan 
+                    WHERE id_jadwal = jp.id
+                ) as jumlah_peserta,
+                (
+                    SELECT COUNT(*) FROM kepegawaian.peserta_pelatihan 
+                    WHERE id_jadwal = jp.id AND status_kehadiran = 'Hadir'
+                ) as jumlah_hadir,
+                (
+                    SELECT status_undangan FROM kepegawaian.peserta_pelatihan 
+                    WHERE id_jadwal = jp.id AND id_user = ?
+                ) as status_undangan_saya
+            FROM kepegawaian.jadwal_pelatihan jp
+            JOIN kepegawaian.master_pelatihan mp ON jp.id_pelatihan = mp.id
+            JOIN kepegawaian.user u ON jp.id_penyelenggara = u.id
+            WHERE 1=1
+         AND jp.id_penyelenggara = ? ORDER BY jp.tanggal_mulai DESC
+📝 Params: [ 67, 67 ]
+✅ Ditemukan 1 jadwal pelatihan untuk user 198701042009121003
+✅ User authenticated: 198701042009121003 (/api/pelatihan/monitor/sertifikat)
+🔍 Extracting roles from user object...
+📌 Found roles in user.roles: [ 'pic_gudang', 'katim', 'pic_ruangan', 'user' ]
+✅ Final extracted roles: [ 'pic_gudang', 'katim', 'pic_ruangan', 'user' ]
+🔐 User 198701042009121003 mengakses GET /monitor/sertifikat {
+  roles: [ 'pic_gudang', 'katim', 'pic_ruangan', 'user' ],
+  user_id: 'ac9e97b2-3d2a-4b84-bea5-0ae528b72372',
+  isAdmin: false,
+  isPPK: false,
+  isKabalai: false,
+  isRegularUser: true
+}
+✅ User authenticated: 198701042009121003 (/api/uploads/sertifikat-1788398101987-759909296.pdf)
+✅ User authenticated: 198701042009121003 (/api/uploads/sertifikat-1788398101987-759909296.pdf)
+📁 User 198701042009121003 mengakses file: sertifikat-1788398101987-759909296.pdf
+📁 Full path: G:\reactjs\Kepegawaian Aktif\kepegawaian\backend\uploads\sertifikat-1788398101987-759909296.pdf
+📁 File extension: .pdf
+✅ File berhasil dikirim ke 198701042009121003: sertifikat-1788398101987-759909296.pdf
+✅ User authenticated: 198701042009121003 (/api/pelatihan/monitor/sertifikat)
+🔍 Extracting roles from user object...
+📌 Found roles in user.roles: [ 'pic_gudang', 'katim', 'pic_ruangan', 'user' ]
+✅ Final extracted roles: [ 'pic_gudang', 'katim', 'pic_ruangan', 'user' ]
+🔐 User 198701042009121003 mengakses GET /monitor/sertifikat {
+  roles: [ 'pic_gudang', 'katim', 'pic_ruangan', 'user' ],
+  user_id: 'ac9e97b2-3d2a-4b84-bea5-0ae528b72372',
+  isAdmin: false,
+  isPPK: false,
+  isKabalai: false,
+  isRegularUser: true
+}
+✅ User authenticated: 198701042009121003 (/api/pelatihan/options/all)
+🔍 Extracting roles from user object...
+📌 Found roles in user.roles: [ 'pic_gudang', 'katim', 'pic_ruangan', 'user' ]
+✅ Final extracted roles: [ 'pic_gudang', 'katim', 'pic_ruangan', 'user' ]
+🔐 User 198701042009121003 mengakses GET /options/all {
+  roles: [ 'pic_gudang', 'katim', 'pic_ruangan', 'user' ],
+  user_id: 'ac9e97b2-3d2a-4b84-bea5-0ae528b72372',
+  isAdmin: false,
+  isPPK: false,
+  isKabalai: false,
+  isRegularUser: true
+}
+✅ User authenticated: 198701042009121003 (/api/pelatihan/master)
+🔍 Extracting roles from user object...
+📌 Found roles in user.roles: [ 'pic_gudang', 'katim', 'pic_ruangan', 'user' ]
+✅ Final extracted roles: [ 'pic_gudang', 'katim', 'pic_ruangan', 'user' ]
+🔐 User 198701042009121003 mengakses GET /master {
+  roles: [ 'pic_gudang', 'katim', 'pic_ruangan', 'user' ],
+  user_id: 'ac9e97b2-3d2a-4b84-bea5-0ae528b72372',
+  isAdmin: false,
+  isPPK: false,
+  isKabalai: false,
+  isRegularUser: true
+}
+✅ User authenticated: 198701042009121003 (/api/pelatihan/jadwal)
+🔍 Extracting roles from user object...
+📌 Found roles in user.roles: [ 'pic_gudang', 'katim', 'pic_ruangan', 'user' ]
+✅ Final extracted roles: [ 'pic_gudang', 'katim', 'pic_ruangan', 'user' ]
+🔐 User 198701042009121003 mengakses GET /jadwal {
+  roles: [ 'pic_gudang', 'katim', 'pic_ruangan', 'user' ],
+  user_id: 'ac9e97b2-3d2a-4b84-bea5-0ae528b72372',
+  isAdmin: false,
+  isPPK: false,
+  isKabalai: false,
+  isRegularUser: true
+}
+📥 GET /jadwal - User NIP: 198701042009121003
+📥 isAdmin: false
+📥 isKatim: true
+👥 Katim: filter jadwal yang dibuat
+📝 Query: 
+            SELECT 
+                jp.*,
+                mp.kode_pelatihan,
+                mp.nama_pelatihan,
+                mp.durasi,
+                mp.jenis_pelatihan,
+                u.nama as penyelenggara_nama,
+                u.nip as penyelenggara_nip,
+                (
+                    SELECT COUNT(*) FROM kepegawaian.peserta_pelatihan 
+                    WHERE id_jadwal = jp.id
+                ) as jumlah_peserta,
+                (
+                    SELECT COUNT(*) FROM kepegawaian.peserta_pelatihan 
+                    WHERE id_jadwal = jp.id AND status_kehadiran = 'Hadir'
+                ) as jumlah_hadir,
+                (
+                    SELECT status_undangan FROM kepegawaian.peserta_pelatihan 
+                    WHERE id_jadwal = jp.id AND id_user = ?
+                ) as status_undangan_saya
+            FROM kepegawaian.jadwal_pelatihan jp
+            JOIN kepegawaian.master_pelatihan mp ON jp.id_pelatihan = mp.id
+            JOIN kepegawaian.user u ON jp.id_penyelenggara = u.id
+            WHERE 1=1
+         AND jp.id_penyelenggara = ? ORDER BY jp.tanggal_mulai DESC
+📝 Params: [ 67, 67 ]
+✅ Ditemukan 1 jadwal pelatihan untuk user 198701042009121003
