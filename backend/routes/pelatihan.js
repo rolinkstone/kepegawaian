@@ -429,9 +429,11 @@ router.get('/jadwal', keycloakAuth, async (req, res) => {
         
         // FILTER BERDASARKAN ROLE
         if (!isAdmin && !isKatimRole) {
-            // User biasa: hanya melihat jadwal di mana mereka diundang
-            console.log('👤 User biasa: filter jadwal yang diundang');
-            query += ` AND EXISTS (
+            // User biasa: hanya melihat jadwal yang SUDAH DIPUBLIKASIKAN & mengundang mereka
+            // (jadwal Draft disembunyikan walau user sudah masuk daftar undangan)
+            console.log('👤 User biasa: filter jadwal yang diundang (non-Draft)');
+            query += ` AND jp.status <> 'Draft'
+                AND EXISTS (
                 SELECT 1 FROM kepegawaian.peserta_pelatihan 
                 WHERE id_jadwal = jp.id AND id_user = ?
             )`;
@@ -511,17 +513,19 @@ router.get('/jadwal/:id', keycloakAuth, async (req, res) => {
         
         const userId = user.length > 0 ? user[0].id : null;
         
-        // Cek akses: user biasa hanya bisa lihat jika diundang
+        // Cek akses: user biasa hanya bisa lihat jika diundang DAN jadwal sudah dipublikasikan
         if (!isAdmin && !isKatimRole) {
-            const [cekUndangan] = await db.query(
-                'SELECT id FROM kepegawaian.peserta_pelatihan WHERE id_jadwal = ? AND id_user = ?',
-                [id, userId]
-            );
+            const [cekUndangan] = await db.query(`
+                SELECT pp.id
+                FROM kepegawaian.peserta_pelatihan pp
+                JOIN kepegawaian.jadwal_pelatihan jp ON pp.id_jadwal = jp.id
+                WHERE pp.id_jadwal = ? AND pp.id_user = ? AND jp.status <> 'Draft'
+            `, [id, userId]);
             
             if (cekUndangan.length === 0) {
                 return res.status(403).json({
                     success: false,
-                    message: 'Anda tidak memiliki akses ke jadwal ini'
+                    message: 'Anda tidak memiliki akses ke jadwal ini (jadwal belum dipublikasikan atau Anda tidak diundang)'
                 });
             }
         }
@@ -1458,7 +1462,7 @@ router.get('/undangan', keycloakAuth, async (req, res) => {
             JOIN kepegawaian.jadwal_pelatihan jp ON pp.id_jadwal = jp.id
             JOIN kepegawaian.master_pelatihan mp ON jp.id_pelatihan = mp.id
             JOIN kepegawaian.user u ON jp.id_penyelenggara = u.id
-            WHERE pp.id_user = ?
+            WHERE pp.id_user = ? AND jp.status <> 'Draft'
             ORDER BY jp.tanggal_mulai DESC
         `;
         
@@ -1494,6 +1498,41 @@ router.put('/undangan/:id', keycloakAuth, async (req, res) => {
     }
     
     try {
+        const [peserta] = await db.query(`
+            SELECT pp.id_user, jp.status, jp.id as jadwal_id
+            FROM kepegawaian.peserta_pelatihan pp
+            JOIN kepegawaian.jadwal_pelatihan jp ON pp.id_jadwal = jp.id
+            WHERE pp.id = ?
+        `, [id]);
+
+        if (peserta.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: 'Undangan tidak ditemukan'
+            });
+        }
+
+        // Undangan pada jadwal Draft belum bisa dikonfirmasi (tunggu dipublikasikan)
+        if (peserta[0].status === 'Draft') {
+            return res.status(400).json({
+                success: false,
+                message: 'Undangan belum dapat dikonfirmasi karena jadwal masih berstatus Draft. Tunggu hingga jadwal dipublikasikan.'
+            });
+        }
+
+        // Hanya user yang diundang yang boleh merespon undangannya
+        const userNip = getUserNipFromToken(req.user);
+        const [user] = await db.query(
+            `SELECT id FROM kepegawaian.user WHERE REPLACE(nip, ' ', '') = ?`,
+            [normalizeNip(userNip)]
+        );
+        if (user.length === 0 || user[0].id !== peserta[0].id_user) {
+            return res.status(403).json({
+                success: false,
+                message: 'Anda tidak berhak merespon undangan ini'
+            });
+        }
+
         await db.query(
             'UPDATE kepegawaian.peserta_pelatihan SET status_undangan = ? WHERE id = ?',
             [status_undangan, id]

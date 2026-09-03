@@ -131,7 +131,7 @@ router.get('/stats', keycloakAuth, async (req, res) => {
                 SELECT COUNT(*) as total
                 FROM kepegawaian.peserta_pelatihan pp
                 JOIN kepegawaian.jadwal_pelatihan jp ON pp.id_jadwal = jp.id
-                WHERE pp.id_user = ? AND pp.status_undangan = 'Pending'
+                WHERE pp.id_user = ? AND pp.status_undangan = 'Pending' AND jp.status <> 'Draft'
             `, [userId]);
             undanganPending = pending[0]?.total || 0;
         }
