@@ -1241,11 +1241,10 @@ router.get('/monitor/sertifikat', keycloakAuth, async (req, res) => {
 
         const [rows] = await db.query(query, params);
 
-        // Kelompokkan: jadwal -> peserta -> sertifikat[]
+        // Kelompokkan: jadwal -> peserta -> kompetensi[] (status upload per kompetensi).
+        // Jika pelatihan punya >1 kompetensi terkait, masing-masing kompetensi dipantau sendiri.
         const jadwalMap = new Map();
         let totalPeserta = 0;
-        let sudah = 0;
-        let belum = 0;
 
         for (const r of rows) {
             let jadwal = jadwalMap.get(r.jadwal_id);
@@ -1285,35 +1284,47 @@ router.get('/monitor/sertifikat', keycloakAuth, async (req, res) => {
                     nama_jabatan: r.nama_jabatan,
                     status_undangan: r.status_undangan,
                     status_kehadiran: r.status_kehadiran,
-                    sertifikat: []
+                    kompetensi: []
                 };
                 jadwal.peserta.set(r.peserta_id, p);
             }
 
-            if (r.uk_id && !p.sertifikat.some(s => s.uk_id === r.uk_id)) {
-                p.sertifikat.push({
-                    uk_id: r.uk_id,
+            // Satu baris per kompetensi pelatihan — catat status upload utk kompetensi tsb
+            if (r.kode_kompetensi && !p.kompetensi.some(k => k.id_kompetensi === r.id_kompetensi)) {
+                p.kompetensi.push({
                     id_kompetensi: r.id_kompetensi,
-                    kode_kompetensi: r.kode_kompetensi,
-                    nama_kompetensi: r.nama_kompetensi,
-                    tanggal_dipenuhi: r.tanggal_dipenuhi,
-                    bukti: r.bukti,
-                    nilai: r.uk_nilai,
-                    status: r.uk_status,
-                    hasil_verif: r.hasil_verif,
-                    verified_at: r.verified_at
+                    kode: r.kode_kompetensi,
+                    nama: r.nama_kompetensi,
+                    sudah: !!r.uk_id,
+                    sertifikat: r.uk_id ? {
+                        uk_id: r.uk_id,
+                        tanggal_dipenuhi: r.tanggal_dipenuhi,
+                        bukti: r.bukti,
+                        nilai: r.uk_nilai,
+                        status: r.uk_status,
+                        hasil_verif: r.hasil_verif,
+                        verified_at: r.verified_at
+                    } : null
                 });
             }
         }
 
-        // Finalisasi grouping & hitung sudah/belum
+        // Finalisasi: hitung per peserta & ringkasan (level peserta & level kompetensi)
+        let totalKompetensi = 0;
+        let sudahKompetensi = 0;
+        let pesertaLengkap = 0;
+
         const jadwalList = [];
         for (const jadwal of jadwalMap.values()) {
             const pesertaList = [];
             for (const p of jadwal.peserta.values()) {
-                p.sudah_upload = p.sertifikat.length > 0;
-                if (p.sudah_upload) sudah++;
-                else belum++;
+                p.jumlah_kompetensi = p.kompetensi.length;
+                p.sudah_kompetensi = p.kompetensi.filter(k => k.sudah).length;
+                // Peserta dianggap "lengkap" bila SEMUA kompetensi terkait sudah di-upload sertifikatnya
+                p.sudah_upload = p.jumlah_kompetensi > 0 && p.sudah_kompetensi === p.jumlah_kompetensi;
+                totalKompetensi += p.jumlah_kompetensi;
+                sudahKompetensi += p.sudah_kompetensi;
+                if (p.sudah_upload) pesertaLengkap++;
                 pesertaList.push(p);
             }
             jadwal.peserta = pesertaList;
@@ -1326,8 +1337,13 @@ router.get('/monitor/sertifikat', keycloakAuth, async (req, res) => {
                 ringkasan: {
                     total_jadwal: jadwalList.length,
                     total_peserta: totalPeserta,
-                    sudah_upload: sudah,
-                    belum_upload: belum
+                    // Peserta yang sudah upload SEMUA kompetensi / belum lengkap
+                    sudah_upload: pesertaLengkap,
+                    belum_upload: totalPeserta - pesertaLengkap,
+                    // Level kompetensi (relevan jika 1 pelatihan punya banyak kompetensi)
+                    total_kompetensi: totalKompetensi,
+                    sudah_kompetensi: sudahKompetensi,
+                    belum_kompetensi: totalKompetensi - sudahKompetensi
                 },
                 jadwal: jadwalList
             }
