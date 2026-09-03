@@ -384,9 +384,11 @@ useEffect(() => {
                                                     </div>
                                                     
                                                     {/* TOMBOL UNTUK PESERTA MENERIMA/MENOLAK UNDANGAN */}
-                                                    {/* Tampil untuk baris peserta milik user yang login & status masih Pending,
-                                                        termasuk jika user tsb berperan katim/admin dan mengundang diri sendiri */}
-                                                    {peserta.user_nip === userNip && 
+                                                    {/* Hanya tampil setelah jadwal DIPUBLIKASIKAN (bukan Draft), untuk baris peserta
+                                                        milik user yang login & status masih Pending (termasuk katim/admin yang
+                                                        mengundang diri sendiri: tetap bisa melihat saat Draft, tapi belum bisa konfirmasi) */}
+                                                    {detailData?.status && detailData.status !== 'Draft' &&
+                                                     peserta.user_nip === userNip && 
                                                      peserta.status_undangan === 'Pending' && (
                                                         <div className="mt-3 flex space-x-2">
                                                             <button
