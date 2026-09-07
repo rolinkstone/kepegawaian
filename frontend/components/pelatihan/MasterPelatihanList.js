@@ -38,7 +38,7 @@ const MasterPelatihanList = ({ data, onEdit, onDelete, userRoles }) => {
                                         <div className="text-xs text-gray-500">{item.deskripsi?.substring(0, 50)}...</div>
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                        <span className="px-2 py-1 text-xs rounded-full bg-purple-100 text-purple-800">
+                                        <span className="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800">
                                             {item.jenis_pelatihan}
                                         </span>
                                     </td>
@@ -56,7 +56,7 @@ const MasterPelatihanList = ({ data, onEdit, onDelete, userRoles }) => {
                                         <div className="flex space-x-2">
                                             <button
                                                 onClick={() => onEdit(item)}
-                                                className="text-yellow-600 hover:text-yellow-900"
+                                                className="text-amber-600 hover:text-amber-900"
                                                 title="Edit"
                                             >
                                                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

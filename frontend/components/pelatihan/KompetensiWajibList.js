@@ -190,7 +190,7 @@ const KompetensiWajibList = ({ session, userRoles }) => {
     if (loading && !data.length && tahunOptions.length === 0) {
         return (
             <div className="flex justify-center items-center py-12">
-                <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-purple-600"></div>
+                <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600"></div>
                 <span className="ml-3 text-gray-500">Memuat data...</span>
             </div>
         );
@@ -209,7 +209,7 @@ const KompetensiWajibList = ({ session, userRoles }) => {
                 {userRoles?.isAdmin && (
                     <button
                         onClick={() => setShowForm(true)}
-                        className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 flex items-center shadow-lg transition-colors"
+                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center transition-colors"
                     >
                         <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
@@ -229,7 +229,7 @@ const KompetensiWajibList = ({ session, userRoles }) => {
                         <select
                             value={selectedTahun}
                             onChange={(e) => setSelectedTahun(e.target.value)}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                         >
                             {tahunOptions.map(tahun => (
                                 <option key={tahun} value={tahun}>{tahun}</option>
@@ -274,9 +274,9 @@ const KompetensiWajibList = ({ session, userRoles }) => {
 
             {/* Stats Summary */}
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mb-6">
-                <div className="bg-purple-50 rounded-lg p-4 border border-purple-100">
-                    <p className="text-sm text-purple-600">Total Kompetensi Wajib</p>
-                    <p className="text-2xl font-bold text-purple-700">{data.length}</p>
+                <div className="bg-blue-50 rounded-lg p-4 border border-blue-100">
+                    <p className="text-sm text-blue-600">Total Kompetensi Wajib</p>
+                    <p className="text-2xl font-bold text-blue-700">{data.length}</p>
                 </div>
                 <div className="bg-blue-50 rounded-lg p-4 border border-blue-100">
                     <p className="text-sm text-blue-600">Tahun Aktif</p>
@@ -295,7 +295,7 @@ const KompetensiWajibList = ({ session, userRoles }) => {
             {loading ? (
                 <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8">
                     <div className="flex justify-center items-center">
-                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
                         <span className="ml-3 text-gray-500">Memuat data...</span>
                     </div>
                 </div>
@@ -308,7 +308,7 @@ const KompetensiWajibList = ({ session, userRoles }) => {
                     {userRoles?.isAdmin && (
                         <button
                             onClick={() => setShowForm(true)}
-                            className="mt-4 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                            className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
                         >
                             + Tambah Kompetensi Wajib
                         </button>
@@ -334,7 +334,7 @@ const KompetensiWajibList = ({ session, userRoles }) => {
                                 <tr key={item.id} className="hover:bg-gray-50 transition-colors">
                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{index + 1}</td>
                                     <td className="px-6 py-4 whitespace-nowrap">
-                                        <span className="px-2 py-1 bg-purple-100 text-purple-800 text-xs font-medium rounded-full">
+                                        <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs font-medium rounded-full">
                                             {item.kode_kompetensi}
                                         </span>
                                     </td>

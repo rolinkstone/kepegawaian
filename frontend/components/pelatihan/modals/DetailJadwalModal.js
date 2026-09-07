@@ -155,17 +155,17 @@ useEffect(() => {
 
     const getStatusBadge = (status) => {
         const badges = {
-            'Pending': 'bg-yellow-100 text-yellow-800',
+            'Pending': 'bg-amber-100 text-amber-800',
             'Diterima': 'bg-green-100 text-green-800',
             'Ditolak': 'bg-red-100 text-red-800',
             'Hadir': 'bg-green-100 text-green-800',
             'Tidak Hadir': 'bg-red-100 text-red-800',
             'Izin': 'bg-blue-100 text-blue-800',
-            'Sakit': 'bg-orange-100 text-orange-800',
+            'Sakit': 'bg-amber-100 text-amber-800',
             'Draft': 'bg-gray-100 text-gray-800',
             'Publik': 'bg-blue-100 text-blue-800',
             'Berlangsung': 'bg-green-100 text-green-800',
-            'Selesai': 'bg-purple-100 text-purple-800'
+            'Selesai': 'bg-blue-100 text-blue-800'
         };
         return badges[status] || 'bg-gray-100 text-gray-800';
     };
@@ -342,7 +342,7 @@ useEffect(() => {
                                         <div className="flex justify-end">
                                             <button
                                                 onClick={onUndang}
-                                                className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
+                                                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
                                             >
                                                 Undang Peserta
                                             </button>
@@ -394,7 +394,7 @@ useEffect(() => {
                                                             <button
                                                                 onClick={() => handleRespondUndangan(peserta.id, 'Diterima')}
                                                                 disabled={respondingId === peserta.id}
-                                                                className="px-3 py-1 bg-green-600 text-white text-sm rounded hover:bg-green-700 disabled:opacity-50 flex items-center"
+                                                                className="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 disabled:opacity-50 flex items-center"
                                                             >
                                                                 {respondingId === peserta.id ? (
                                                                     <>
@@ -438,7 +438,7 @@ useEffect(() => {
                                                                     {detailData.status === 'Selesai' && (
                                                                         <button
                                                                             onClick={() => onKompetensi(peserta)}
-                                                                            className="px-3 py-1 bg-purple-600 text-white text-sm rounded hover:bg-purple-700"
+                                                                            className="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700"
                                                                         >
                                                                             Kompetensi Terpenuhi
                                                                         </button>
@@ -461,7 +461,7 @@ useEffect(() => {
                                                 <div className="mt-4">
                                                     <button
                                                         onClick={onUndang}
-                                                        className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
+                                                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
                                                     >
                                                         Undang Peserta Sekarang
                                                     </button>

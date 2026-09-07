@@ -85,11 +85,11 @@ const HistoriModal = ({
   // Status mapping termasuk status selesai
   const statusConfig = {
     draft: { label: 'Draft', color: 'bg-gray-200 text-gray-800' },
-    diajukan: { label: 'Diajukan', color: 'bg-yellow-200 text-yellow-800' },
+    diajukan: { label: 'Diajukan', color: 'bg-amber-200 text-amber-800' },
    diketahui: { label: 'Diketahui', color: 'bg-blue-200 text-blue-800' },
     dikembalikan: { label: 'Dikembalikan', color: 'bg-red-200 text-red-800' },
      disetujui: { label: 'Disetujui', color: 'bg-green-200 text-green-800' },
-    selesai: { label: 'Selesai (ST Terbit)', color: 'bg-purple-200 text-purple-800' }
+    selesai: { label: 'Selesai (ST Terbit)', color: 'bg-blue-200 text-blue-800' }
   };
 
   // Timeline items configuration
@@ -124,7 +124,7 @@ const HistoriModal = ({
         title: 'Diajukan ke PPK',
         date: item.tanggal_diajukan,
         icon: 'send',
-        iconColor: 'bg-yellow-200 text-yellow-600',
+        iconColor: 'bg-amber-200 text-amber-600',
         description: `Diajukan kepada: ${item.ppk_nama}`,
         note: item.catatan && currentStatus !== 'selesai' ? item.catatan : null
       });
@@ -204,7 +204,7 @@ const HistoriModal = ({
         title: currentStatus === 'selesai' ? 'Proses Selesai' : 'Surat Tugas Terbit',
         date: displayDate,
         icon: 'document',
-        iconColor: 'bg-purple-200 text-purple-600',
+        iconColor: 'bg-blue-200 text-blue-600',
         description: hasNoST ? `No. Surat Tugas: ${item.no_st}` : 'Surat Tugas (nomor belum diisi)',
         note: note,
         isComplete: currentStatus === 'selesai',
@@ -369,7 +369,7 @@ const HistoriModal = ({
                       <span>Tanggal: {formatDate(item.tgl_st)}</span>
                     </div>
                   ) : (
-                    <div className="text-xs text-yellow-600 flex items-center justify-end gap-1">
+                    <div className="text-xs text-amber-600 flex items-center justify-end gap-1">
                       {icons.warning}
                       <span>Tanggal ST belum diisi</span>
                     </div>
@@ -408,14 +408,14 @@ const HistoriModal = ({
                       
                       {/* Warning untuk ST */}
                       {timelineItem.showWarning && !timelineItem.hasValidTglST && (
-                        <div className="mt-3 flex items-start p-3 bg-yellow-50 border border-yellow-200 rounded-md">
+                        <div className="mt-3 flex items-start p-3 bg-amber-50 border border-amber-200 rounded-md">
                           {icons.warning}
                           <div className="ml-2">
-                            <span className="text-sm font-medium text-yellow-700">
+                            <span className="text-sm font-medium text-amber-700">
                               {item.tgl_st ? 'Format tanggal ST tidak valid' : 'Tanggal ST belum diisi'}
                             </span>
                             {timelineItem.isSelesaiStatus && (
-                              <div className="text-xs text-yellow-600 mt-1">
+                              <div className="text-xs text-amber-600 mt-1">
                                 Untuk status "Selesai", mohon lengkapi tanggal ST
                               </div>
                             )}
@@ -459,7 +459,7 @@ const HistoriModal = ({
                     </div>
                 ) : (
                     <div className="flex items-center">
-                        <div className="w-4 h-4 mr-2 text-yellow-500">
+                        <div className="w-4 h-4 mr-2 text-amber-500">
                             {icons.clock}
                         </div>
                         <span>Proses masih berlangsung</span>

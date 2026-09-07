@@ -126,7 +126,7 @@ const PesertaBelumMemenuhiModal = ({ show, onClose, kompetensi, session }) => {
         if (status === 'Lulus' && hasilVerif === 'Valid') {
             return 'bg-green-100 text-green-800';
         } else if (status === 'Lulus' && hasilVerif !== 'Valid') {
-            return 'bg-yellow-100 text-yellow-800';
+            return 'bg-amber-100 text-amber-800';
         } else if (status === 'Tidak Lulus') {
             return 'bg-red-100 text-red-800';
         }
@@ -162,7 +162,7 @@ const PesertaBelumMemenuhiModal = ({ show, onClose, kompetensi, session }) => {
                                             Pegawai yang Belum Memenuhi Kompetensi
                                         </h3>
                                         <p className="mt-1 text-sm text-gray-500">
-                                            Kompetensi: <span className="font-semibold text-purple-600">{kompetensi?.kode_kompetensi} - {kompetensi?.nama_kompetensi}</span>
+                                            Kompetensi: <span className="font-semibold text-blue-600">{kompetensi?.kode_kompetensi} - {kompetensi?.nama_kompetensi}</span>
                                         </p>
                                         {kompetensiInfo?.required_peran_nama && (
                                             <p className="text-xs text-blue-600 mt-1">
@@ -183,10 +183,10 @@ const PesertaBelumMemenuhiModal = ({ show, onClose, kompetensi, session }) => {
 
                                 {/* Stats Summary */}
                                 <div className="grid grid-cols-1 sm:grid-cols-5 gap-4 mb-6">
-                                    <div className="bg-purple-50 rounded-lg p-3 border border-purple-100">
-                                        <p className="text-xs text-purple-600">Pegawai dengan Peran Sesuai</p>
-                                        <p className="text-2xl font-bold text-purple-700">{stats.total_pegawai_dengan_peran || 0}</p>
-                                        <p className="text-xs text-purple-500 mt-1">Total pegawai</p>
+                                    <div className="bg-blue-50 rounded-lg p-3 border border-blue-100">
+                                        <p className="text-xs text-blue-600">Pegawai dengan Peran Sesuai</p>
+                                        <p className="text-2xl font-bold text-blue-700">{stats.total_pegawai_dengan_peran || 0}</p>
+                                        <p className="text-xs text-blue-500 mt-1">Total pegawai</p>
                                     </div>
                                     <div className="bg-green-50 rounded-lg p-3 border border-green-100">
                                         <p className="text-xs text-green-600">Sudah Memenuhi</p>
@@ -197,9 +197,9 @@ const PesertaBelumMemenuhiModal = ({ show, onClose, kompetensi, session }) => {
                                         <p className="text-xs text-red-600">Belum Memenuhi</p>
                                         <p className="text-2xl font-bold text-red-700">{stats.belum_memenuhi || 0}</p>
                                     </div>
-                                    <div className="bg-yellow-50 rounded-lg p-3 border border-yellow-100">
-                                        <p className="text-xs text-yellow-600">Menunggu Verifikasi</p>
-                                        <p className="text-2xl font-bold text-yellow-700">
+                                    <div className="bg-amber-50 rounded-lg p-3 border border-amber-100">
+                                        <p className="text-xs text-amber-600">Menunggu Verifikasi</p>
+                                        <p className="text-2xl font-bold text-amber-700">
                                             {pegawaiList.filter(p => p.kompetensi_detail?.status === 'Lulus' && p.kompetensi_detail?.hasil_verif !== 'Valid').length}
                                         </p>
                                     </div>
@@ -221,7 +221,7 @@ const PesertaBelumMemenuhiModal = ({ show, onClose, kompetensi, session }) => {
                                                 placeholder="Cari nama, NIP, fungsi, peran, atau jabatan..."
                                                 value={searchTerm}
                                                 onChange={(e) => setSearchTerm(e.target.value)}
-                                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                             />
                                         </div>
                                         
@@ -233,7 +233,7 @@ const PesertaBelumMemenuhiModal = ({ show, onClose, kompetensi, session }) => {
                                                 <select
                                                     value={selectedFungsi}
                                                     onChange={(e) => setSelectedFungsi(e.target.value)}
-                                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                                 >
                                                     <option value="">Semua Fungsi</option>
                                                     {fungsiOptions.map(fungsi => (
@@ -255,7 +255,7 @@ const PesertaBelumMemenuhiModal = ({ show, onClose, kompetensi, session }) => {
                                             </button>
                                             <button
                                                 onClick={fetchPegawaiBelumMemenuhi}
-                                                className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors flex items-center"
+                                                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center"
                                                 disabled={loading}
                                             >
                                                 <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -277,7 +277,7 @@ const PesertaBelumMemenuhiModal = ({ show, onClose, kompetensi, session }) => {
                                 {/* Table Section */}
                                 {loading ? (
                                     <div className="flex justify-center items-center py-12">
-                                        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-purple-600"></div>
+                                        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600"></div>
                                         <span className="ml-3 text-gray-500">Memuat data...</span>
                                     </div>
                                 ) : filteredList.length === 0 ? (
@@ -379,7 +379,7 @@ const PesertaBelumMemenuhiModal = ({ show, onClose, kompetensi, session }) => {
                         <button
                             type="button"
                             onClick={onClose}
-                            className="w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 sm:mt-0 sm:w-auto sm:text-sm"
+                            className="w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:mt-0 sm:w-auto sm:text-sm"
                         >
                             Tutup
                         </button>

@@ -427,7 +427,7 @@ const KegiatanForm = ({
             )}
             
             {fetchError && (
-                <div className="mb-4 p-3 bg-yellow-100 text-yellow-700 rounded-md border border-yellow-200">
+                <div className="mb-4 p-3 bg-amber-100 text-amber-700 rounded-md border border-amber-200">
                     <div className="flex items-center">
                         <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
                             <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
@@ -435,7 +435,7 @@ const KegiatanForm = ({
                         {fetchError}
                         <button 
                             onClick={fetchPegawaiSuggestions}
-                            className="ml-3 text-sm underline hover:text-yellow-800"
+                            className="ml-3 text-sm underline hover:text-amber-800"
                         >
                             Coba lagi
                         </button>
@@ -444,7 +444,7 @@ const KegiatanForm = ({
             )}
 
             {/* Jenis SPM Section - Paling Atas */}
-            <div className="mb-6 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg">
+            <div className="mb-6 p-4 bg-gradient-to-r from-blue-50 to-blue-50 border border-blue-200 rounded-lg">
                 <div className="mb-2">
                     <h4 className="text-lg font-semibold text-gray-800 flex items-center">
                         <svg className="w-5 h-5 mr-2 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
@@ -501,7 +501,7 @@ const KegiatanForm = ({
                             <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                         </svg>
                         <span className="font-medium text-blue-800">Jenis SPM yang dipilih:</span>
-                        <span className={`ml-2 px-3 py-1 rounded-full text-sm font-medium ${jenisSPM === 'LS' ? 'bg-blue-100 text-blue-800' : 'bg-purple-100 text-purple-800'}`}>
+                        <span className={`ml-2 px-3 py-1 rounded-full text-sm font-medium ${jenisSPM === 'LS' ? 'bg-blue-100 text-blue-800' : 'bg-blue-100 text-blue-800'}`}>
                             {jenisSPM === 'LS' ? 'LS (Langsung)' : 'KKP (Kartu Kredit Pemerintah)'}
                         </span>
                     </div>
@@ -520,7 +520,7 @@ const KegiatanForm = ({
                     </div>
                 </div>
                 {jenisSPM === 'KKP' && (
-                    <div className="mt-2 text-sm text-purple-700 flex items-center">
+                    <div className="mt-2 text-sm text-blue-700 flex items-center">
                         <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
                             <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                         </svg>
@@ -545,7 +545,7 @@ const KegiatanForm = ({
                                 value={formData.kegiatan}
                                 onChange={handleFormChange}
                                 required
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                                 placeholder="Contoh: Pengambilan sampling pangan segar"
                             />
                         </div>
@@ -565,7 +565,7 @@ const KegiatanForm = ({
                                     value={formData.mak}
                                     onChange={handleMakChange}
                                     placeholder={getMakPlaceholder()}
-                                    className="w-full px-3 py-2 pl-10 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 font-mono text-lg"
+                                    className="w-full px-3 py-2 pl-10 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-lg"
                                     required
                                     maxLength={29}
                                 />
@@ -630,7 +630,7 @@ const KegiatanForm = ({
                                 name="realisasi_anggaran_sebelumnya"
                                 value={formData.realisasi_anggaran_sebelumnya}
                                 onChange={handleFormChange}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                                 placeholder="0"
                             />
                         </div>
@@ -644,7 +644,7 @@ const KegiatanForm = ({
                                 name="target_output_tahun"
                                 value={formData.target_output_tahun}
                                 onChange={handleFormChange}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                                 placeholder="0"
                             />
                         </div>
@@ -658,7 +658,7 @@ const KegiatanForm = ({
                                 name="realisasi_output_sebelumnya"
                                 value={formData.realisasi_output_sebelumnya}
                                 onChange={handleFormChange}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                                 placeholder="0"
                             />
                         </div>
@@ -706,7 +706,7 @@ const KegiatanForm = ({
                                         }));
                                     }
                                 }}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 mb-2"
+                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 mb-2"
                             >
                                 <option value="">Pilih target output</option>
                                 <option value="sampling">Sampling</option>
@@ -732,7 +732,7 @@ const KegiatanForm = ({
                                             target_output_yg_akan_dicapai: e.target.value
                                         }));
                                     }}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 mt-2"
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 mt-2"
                                     placeholder="Ketik kegiatan lainnya..."
                                     autoFocus
                                 />
@@ -774,7 +774,7 @@ const KegiatanForm = ({
                                                 }));
                                             }
                                         }}
-                                        className="w-24 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                        className="w-24 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                                         placeholder="Jumlah"
                                     />
                                     <span className="text-gray-600">sampel</span>
@@ -817,7 +817,7 @@ const KegiatanForm = ({
                                                 }));
                                             }
                                         }}
-                                        className="w-24 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                        className="w-24 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                                         placeholder="Jumlah"
                                     />
                                     <span className="text-gray-600">sarana</span>
@@ -860,7 +860,7 @@ const KegiatanForm = ({
                                                 }));
                                             }
                                         }}
-                                        className="w-24 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                        className="w-24 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                                         placeholder="Jumlah"
                                     />
                                     <span className="text-gray-600">sarana</span>
@@ -903,7 +903,7 @@ const KegiatanForm = ({
                                                 }));
                                             }
                                         }}
-                                        className="w-24 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                        className="w-24 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                                         placeholder="Jumlah"
                                     />
                                     <span className="text-gray-600">iklan</span>
@@ -927,7 +927,7 @@ const KegiatanForm = ({
                                         <select
                                             value={selectedProvinsi}
                                             onChange={handleProvinsiChange}
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                                             disabled={loadingDaerah}
                                         >
                                             <option value="">Pilih Provinsi</option>
@@ -946,7 +946,7 @@ const KegiatanForm = ({
                                         <select
                                             value={selectedKabupaten}
                                             onChange={handleKabupatenChange}
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                                             disabled={!selectedProvinsi || loadingDaerah}
                                             required
                                         >
@@ -966,7 +966,7 @@ const KegiatanForm = ({
                                         <select
                                             value={selectedKecamatan}
                                             onChange={handleKecamatanChange}
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                                             disabled={!selectedKabupaten || loadingDaerah}
                                         >
                                             <option value="">Pilih Kecamatan</option>
@@ -1003,7 +1003,7 @@ const KegiatanForm = ({
                                                     name="kota_kab_kecamatan"
                                                     value={formData.kota_kab_kecamatan}
                                                     onChange={handleFormChange}
-                                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
+                                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                                                     placeholder="Ketik manual jika perlu"
                                                 />
                                             </div>
@@ -1023,7 +1023,7 @@ const KegiatanForm = ({
                                     name="rencana_tanggal_pelaksanaan"
                                     value={formData.rencana_tanggal_pelaksanaan}
                                     onChange={handleFormChange}
-                                    className="w-5/12 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                    className="w-5/12 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                                     title="Tanggal Awal"
                                 />
                                 <div className="mx-2 text-gray-500 font-medium text-sm">s/d</div>
@@ -1033,7 +1033,7 @@ const KegiatanForm = ({
                                     value={formData.rencana_tanggal_pelaksanaan_akhir}
                                     onChange={handleFormChange}
                                     min={formData.rencana_tanggal_pelaksanaan} // Validasi: tanggal akhir tidak boleh sebelum tanggal awal
-                                    className="w-5/12 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                    className="w-5/12 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                                     title="Tanggal Akhir"
                                 />
                             </div>
@@ -1076,7 +1076,7 @@ const KegiatanForm = ({
                                     )}
                                 </div>
                                 {isEditMode && (
-                                    <div className="mt-2 text-xs text-yellow-600">
+                                    <div className="mt-2 text-xs text-amber-600">
                                         <svg className="w-4 h-4 inline mr-1" fill="currentColor" viewBox="0 0 20 20">
                                             <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
                                         </svg>
@@ -1138,7 +1138,7 @@ const KegiatanForm = ({
                     </button>
                     <button
                         type="submit"
-                        className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+                        className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
                         disabled={formLoading || !formData.user_id}
                     >
                         {formLoading ? (

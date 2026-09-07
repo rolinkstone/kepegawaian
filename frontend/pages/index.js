@@ -15,44 +15,6 @@ import {
   AreaChart, Area, RadialBarChart, RadialBar
 } from 'recharts';
 
-// Tambahkan CSS untuk efek kedip
-const blinkAnimation = `
-  @keyframes blink {
-    0% { opacity: 1; transform: scale(1); }
-    50% { opacity: 0.5; transform: scale(1.02); text-shadow: 0 0 10px rgba(255,255,255,0.8); }
-    100% { opacity: 1; transform: scale(1); }
-  }
-  
-  @keyframes pulse-glow {
-    0% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7); }
-    70% { box-shadow: 0 0 0 10px rgba(59, 130, 246, 0); }
-    100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); }
-  }
-  
-  @keyframes slideInLeft {
-    from {
-      transform: translateX(-100%);
-      opacity: 0;
-    }
-    to {
-      transform: translateX(0);
-      opacity: 1;
-    }
-  }
-  
-  .blink-text {
-    animation: blink 1s ease-in-out infinite;
-  }
-  
-  .pulse-glow {
-    animation: pulse-glow 2s infinite;
-  }
-  
-  .slide-in {
-    animation: slideInLeft 0.5s ease-out;
-  }
-`;
-
 const Home = () => {
   const { data: session, status } = useSession();
   const router = useRouter();
@@ -891,15 +853,6 @@ const Home = () => {
     setFormPreselectUserId(null);
   }, []);
 
-  const getRoleColor = (role) => {
-    switch (role) {
-      case 'admin_tambun_raya': return 'from-purple-600 to-purple-800';
-      case 'admin': return 'from-red-600 to-red-800';
-      case 'katim': return 'from-blue-600 to-blue-800';
-      default: return 'from-gray-600 to-gray-800';
-    }
-  };
-
   const getRoleDisplay = (role) => {
     switch (role) {
       case 'admin_tambun_raya': return 'Admin Tambun Raya';
@@ -909,24 +862,15 @@ const Home = () => {
     }
   };
 
-  const getRoleIcon = (role) => {
-    switch (role) {
-      case 'admin_tambun_raya': return '👑';
-      case 'admin': return '⚡';
-      case 'katim': return '👥';
-      default: return '👤';
-    }
-  };
-
   const getStatusBadge = (status, hasilVerif) => {
     if (status === 'Lulus' && hasilVerif === 'Valid') {
       return 'bg-green-100 text-green-800';
     } else if (status === 'Tidak Lulus' || hasilVerif === 'Tidak Valid') {
       return 'bg-red-100 text-red-800';
     } else if (hasilVerif === 'Perlu Revisi') {
-      return 'bg-orange-100 text-orange-800';
+      return 'bg-amber-100 text-amber-800';
     } else {
-      return 'bg-yellow-100 text-yellow-800';
+      return 'bg-amber-100 text-amber-800';
     }
   };
 
@@ -946,22 +890,15 @@ const Home = () => {
 
   const getProgressColor = (persentase) => {
     if (persentase >= 80) return 'bg-green-500';
-    if (persentase >= 50) return 'bg-yellow-500';
+    if (persentase >= 50) return 'bg-amber-500';
     return 'bg-red-500';
   };
 
-  const StatCard = ({ title, value, icon, color, subtitle }) => (
-    <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-6 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
-      <div className="flex items-center justify-between">
-        <div>
-          <p className="text-sm font-medium text-gray-500 uppercase tracking-wider">{title}</p>
-          <p className="text-3xl font-bold text-gray-900 mt-2">{value}</p>
-          {subtitle && <p className="text-xs text-gray-500 mt-1">{subtitle}</p>}
-        </div>
-        <div className={`w-14 h-14 rounded-2xl flex items-center justify-center text-3xl ${color} shadow-lg`}>
-          {icon}
-        </div>
-      </div>
+  const StatCard = ({ title, value, subtitle }) => (
+    <div className="bg-white rounded-lg border border-gray-200 p-5">
+      <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">{title}</p>
+      <p className="text-3xl font-bold text-gray-900 mt-1">{value}</p>
+      {subtitle && <p className="text-xs text-gray-500 mt-0.5">{subtitle}</p>}
     </div>
   );
 
@@ -990,34 +927,33 @@ const Home = () => {
 
   return (
     <DashboardLayout>
-      <style dangerouslySetInnerHTML={{ __html: blinkAnimation }} />
       
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
-        {/* Hero Section */}
-        <div className={`bg-gradient-to-r ${getRoleColor(userInfo.role)} text-white w-full`}>
-          <div className="px-8 py-10 max-w-[1600px] mx-auto">
-            <div className="flex items-center justify-between">
-              <div>
-                <h1 className="text-4xl font-bold">Selamat Datang, {userInfo.name}!</h1>
-                <p className="text-white/80 mt-3 text-xl flex items-center">
-                  <span className="mr-3 text-2xl">{getRoleIcon(userInfo.role)}</span>
-                  {getRoleDisplay(userInfo.role)} • {userInfo.department}
+      <div className="min-h-screen bg-gray-50">
+        {/* Hero / Header Halaman */}
+        <div className="bg-white border border-gray-200 rounded-xl shadow-sm">
+          <div className="flex items-start justify-between gap-6 px-6 py-6">
+            <div className="min-w-0 flex-1">
+              <h1 className="text-2xl font-bold text-gray-900">Selamat Datang, {userInfo.name}!</h1>
+              <p className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-gray-600">
+                <span className="px-2.5 py-0.5 rounded-md bg-blue-50 text-blue-700 text-xs font-semibold">
+                  {getRoleDisplay(userInfo.role)}
+                </span>
+                <span>{userInfo.department}</span>
+              </p>
+              <p className="mt-1 text-sm text-gray-500">
+                NIP: {userInfo.nip}{userInfo.jabatan && <> | {userInfo.jabatan}</>}
+              </p>
+              {(userInfo.fungsi || userInfo.peran) && (
+                <p className="mt-0.5 text-sm text-gray-400">
+                  {userInfo.fungsi && <>Fungsi: {userInfo.fungsi}</>}
+                  {userInfo.fungsi && userInfo.peran && <> • </>}
+                  {userInfo.peran && <>Peran: {userInfo.peran}</>}
                 </p>
-                <p className="text-white/60 mt-2 text-base">
-                  NIP: {userInfo.nip} | {userInfo.jabatan}
-                </p>
-                {(userInfo.fungsi || userInfo.peran) && (
-                  <p className="text-white/50 mt-1 text-sm">
-                    {userInfo.fungsi && <>Fungsi: {userInfo.fungsi}</>}
-                    {userInfo.fungsi && userInfo.peran && <> • </>}
-                    {userInfo.peran && <>Peran: {userInfo.peran}</>}
-                  </p>
-                )}
-              </div>
-              <div className="bg-white/20 rounded-2xl px-8 py-6 backdrop-blur-lg border border-white/30">
-                <p className="text-sm text-white/80">Login Terakhir</p>
-                <p className="font-semibold text-lg mt-1">{userInfo.loginTime}</p>
-              </div>
+              )}
+            </div>
+            <div className="shrink-0 rounded-lg bg-gray-50 border border-gray-200 px-5 py-4">
+              <p className="text-xs text-gray-500">Login Terakhir</p>
+              <p className="mt-1 font-semibold text-gray-900">{userInfo.loginTime}</p>
             </div>
           </div>
         </div>
@@ -1027,50 +963,44 @@ const Home = () => {
 
           {/* NOTIFIKASI UNTUK ADMIN: PEGAWAI YANG BELUM 100% MEMENUHI KOMPETENSI WAJIB */}
           {isAdmin && pegawaiBelumLengkap.length > 0 && (
-            <div className="mb-8 bg-gradient-to-r from-orange-500 to-red-500 rounded-2xl shadow-xl overflow-hidden slide-in pulse-glow">
-              <div className="px-8 py-6 flex items-start text-white">
-                <div className="flex-shrink-0 mr-6">
-                  <span className="text-5xl animate-bounce inline-block">📊</span>
-                </div>
-                <div className="flex-1">
-                  <div className="flex items-center justify-between flex-wrap mb-3">
-                    <p className="font-bold text-2xl flex items-center gap-3">
-                      <span className="blink-text bg-red-600 px-4 py-2 rounded-lg shadow-lg">
-                        ⚠️ PEGAWAI YANG BELUM 100% MEMENUHI KOMPETENSI WAJIB
-                      </span>
-                      <span className="bg-yellow-400 text-yellow-900 text-sm px-3 py-1 rounded-full animate-pulse font-bold">
-                        {pegawaiBelumLengkap.length} pegawai
-                      </span>
-                    </p>
+            <div className="mb-6 rounded-xl border border-red-200 bg-red-50">
+              <div className="px-5 py-4">
+                <div>
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <h2 className="text-base font-semibold text-red-800">
+                      Pegawai yang belum 100% memenuhi kompetensi wajib
+                    </h2>
+                    <span className="rounded-full bg-red-100 px-3 py-1 text-xs font-semibold text-red-700">
+                      {pegawaiBelumLengkap.length} pegawai
+                    </span>
                   </div>
-                  <p className="text-sm text-white/90 mb-4 flex items-center">
-                    <span className="inline-block w-2 h-2 bg-red-400 rounded-full mr-2 animate-pulse"></span>
+                  <p className="mt-1 text-sm text-red-700/80">
                     {pegawaiBelumLengkap.length} pegawai belum menyelesaikan 100% kompetensi wajib yang relevan dengan jabatan/fungsinya tahun {new Date().getFullYear()}
                   </p>
 
                   {isLoadingPegawaiStatus ? (
-                    <div className="flex items-center justify-center py-8">
-                      <div className="animate-spin rounded-full h-8 w-8 border-2 border-white border-t-transparent"></div>
-                      <span className="ml-3">Memuat data...</span>
+                    <div className="flex items-center justify-center py-6">
+                      <div className="animate-spin rounded-full h-8 w-8 border-2 border-red-200 border-t-red-600"></div>
+                      <span className="ml-3 text-sm text-red-700">Memuat data...</span>
                     </div>
                   ) : (
                     <>
-                      <div className="space-y-3 max-h-96 overflow-y-auto pr-2">
+                      <div className="space-y-2 max-h-96 overflow-y-auto pr-2">
                         {pegawaiBelumLengkap.slice(0, 5).map((pegawai, idx) => (
-                          <div key={pegawai.nip || idx} className="bg-white/10 rounded-lg p-4 hover:bg-white/20 transition-all duration-300 hover:scale-105 transform cursor-pointer">
-                            <div className="flex justify-between items-center mb-2 flex-wrap gap-2">
-                              <div>
-                                <span className="font-bold text-white text-lg">{pegawai.nama}</span>
-                                <span className="text-xs text-white/70 ml-2">NIP: {pegawai.nip}</span>
+                          <div key={pegawai.nip || idx} className="bg-white rounded-lg border border-red-100 p-4">
+                            <div className="flex justify-between items-start mb-3 flex-wrap gap-2">
+                              <div className="min-w-0">
+                                <span className="font-semibold text-gray-900">{pegawai.nama}</span>
+                                <span className="text-xs text-gray-500 ml-2">NIP: {pegawai.nip}</span>
                                 {pegawai.nama_fungsi && (
-                                  <span className="text-xs text-white/70 ml-2">• {pegawai.nama_fungsi}</span>
+                                  <span className="text-xs text-gray-500 ml-2">• {pegawai.nama_fungsi}</span>
                                 )}
                               </div>
                               <div className="flex items-center gap-2">
-                                <span className="text-xs bg-blue-400 text-white px-2 py-1 rounded-full font-bold">
+                                <span className="text-xs bg-blue-50 text-blue-700 px-2 py-0.5 rounded-full font-semibold">
                                   {pegawai.persentase}%
                                 </span>
-                                <span className="text-xs bg-yellow-400 text-yellow-900 px-2 py-1 rounded-full">
+                                <span className="text-xs bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full">
                                   {pegawai.sudahDipenuhi}/{pegawai.totalKompetensiWajib}
                                 </span>
                               </div>
@@ -1078,9 +1008,9 @@ const Home = () => {
                             
                             {/* Progress Bar */}
                             <div className="mb-3">
-                              <div className="w-full bg-white/30 rounded-full h-2">
+                              <div className="w-full bg-gray-200 rounded-full h-2">
                                 <div 
-                                  className={`${getProgressColor(pegawai.persentase)} h-2 rounded-full transition-all duration-500`} 
+                                  className={`${getProgressColor(pegawai.persentase)} h-2 rounded-full`} 
                                   style={{ width: `${pegawai.persentase}%` }}
                                 ></div>
                               </div>
@@ -1089,47 +1019,46 @@ const Home = () => {
                             {/* Daftar kompetensi wajib yang belum dipenuhi */}
                             <div className="space-y-1 mt-2">
                               {pegawai.kompetensiWajibList?.filter(k => !k.sudahDipenuhi).slice(0, 3).map((kom, kidx) => (
-                                <div key={kidx} className="text-sm text-white/80 flex items-center gap-2">
-                                  <span className="text-red-300">⚠️</span>
-                                  <span className="font-mono text-xs bg-black/20 px-1.5 py-0.5 rounded">
+                                <div key={kidx} className="text-sm text-gray-600 flex items-center gap-2">
+                                  <span className="font-mono text-xs bg-red-50 text-red-700 px-1.5 py-0.5 rounded">
                                     {kom.kode_kompetensi}
                                   </span>
                                   <span className="text-xs">{kom.nama_kompetensi?.substring(0, 50)}</span>
                                 </div>
                               ))}
                               {pegawai.kompetensiWajibList?.filter(k => !k.sudahDipenuhi).length > 3 && (
-                                <p className="text-xs text-white/60">
+                                <p className="text-xs text-gray-400">
                                   +{pegawai.kompetensiWajibList.filter(k => !k.sudahDipenuhi).length - 3} kompetensi lainnya
                                 </p>
                               )}
                             </div>
                             
-                            <div className="mt-3 flex gap-3">
+                            <div className="mt-3 flex gap-4">
                               <Link 
                                 href={`/users_kompetensi?nip=${pegawai.nip}`} 
-                                className="text-xs text-white underline hover:no-underline hover:text-yellow-200 transition-colors"
+                                className="text-xs text-blue-600 hover:text-blue-800 font-medium"
                               >
                                 Lihat semua kompetensi →
                               </Link>
                               <Link 
                                 href={`/pelatihan`} 
-                                className="text-xs text-yellow-200 underline hover:no-underline hover:text-yellow-100 transition-colors"
+                                className="text-xs text-blue-600 hover:text-blue-800 font-medium"
                               >
-                                📚 Rekomendasi Pelatihan
+                                Rekomendasi Pelatihan
                               </Link>
                             </div>
                           </div>
                         ))}
                       </div>
                       {pegawaiBelumLengkap.length > 5 && (
-                        <p className="text-xs text-white/80 mt-2 text-center">
+                        <p className="text-xs text-gray-500 mt-2 text-center">
                           +{pegawaiBelumLengkap.length - 5} pegawai lainnya
                         </p>
                       )}
-                      <div className="mt-4 pt-3 border-t border-white/20 text-right">
+                      <div className="mt-4 pt-3 border-t border-red-100 text-right">
                         <Link 
                           href="/users_kompetensi" 
-                          className="text-sm bg-white/20 px-4 py-2 rounded-lg hover:bg-white/30 transition-all duration-300 hover:scale-105 transform inline-block"
+                          className="inline-block bg-white text-red-700 border border-red-200 px-4 py-2 rounded-md text-sm font-medium hover:bg-red-50 transition-colors"
                         >
                           Kelola Semua Pegawai →
                         </Link>
@@ -1143,62 +1072,58 @@ const Home = () => {
 
           {/* NOTIFIKASI KOMPETENSI WAJIB YANG HARUS DIPENUHI - UNTUK USER BIASA (SUDAH DIFILTER) */}
           {!isAdmin && kompetensiWajibBelumDipenuhi.length > 0 && (
-            <div className="mb-8 bg-gradient-to-r from-red-500 to-orange-500 rounded-2xl shadow-xl overflow-hidden slide-in pulse-glow">
-              <div className="px-8 py-6 flex items-start text-white">
-                <div className="flex-shrink-0 mr-6">
-                  <span className="text-5xl animate-bounce inline-block">⚠️</span>
-                </div>
-                <div className="flex-1">
-                  <p className="font-bold text-2xl mb-3 flex items-center flex-wrap gap-3">
-                    <span className="blink-text bg-red-600 px-4 py-2 rounded-lg shadow-lg">
-                      🎯 KOMPETENSI WAJIB YANG HARUS ANDA PENUHI
-                    </span>
-                    <span className="bg-yellow-400 text-yellow-900 text-sm px-3 py-1 rounded-full animate-pulse font-bold">
+            <div className="mb-6 rounded-xl border border-amber-200 bg-amber-50">
+              <div className="px-5 py-4">
+                <div>
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <h2 className="text-base font-semibold text-amber-900">
+                      Kompetensi wajib yang harus Anda penuhi
+                    </h2>
+                    <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-800">
                       {kompetensiWajibBelumDipenuhi.length} kompetensi
                     </span>
-                  </p>
-                  <p className="text-white/90 text-sm mb-3 flex items-center">
-                    <span className="inline-block w-2 h-2 bg-red-400 rounded-full mr-2 animate-pulse"></span>
+                  </div>
+                  <p className="mt-1 text-sm text-amber-800/80">
                     Berdasarkan jabatan <strong>{userInfo.jabatan}</strong>
                     {userInfo.fungsi && <> dan fungsi <strong>{userInfo.fungsi}</strong></>}
                   </p>
-                  <div className="space-y-2 max-h-64 overflow-y-auto pr-2">
+                  <div className="space-y-2 max-h-64 overflow-y-auto pr-2 mt-3">
                     {kompetensiWajibBelumDipenuhi.slice(0, 5).map((item, idx) => (
-                      <div key={item.id || idx} className="bg-white/10 rounded-lg px-4 py-3 hover:bg-white/20 transition-all duration-300 hover:scale-105 transform">
+                      <div key={item.id || idx} className="bg-white rounded-lg border border-amber-100 px-4 py-3">
                         <div className="flex items-center justify-between flex-wrap gap-2">
-                          <div className="flex-1">
-                            <span className="font-semibold text-sm bg-white/20 px-2 py-1 rounded">
+                          <div className="flex-1 min-w-0">
+                            <span className="font-semibold text-xs bg-amber-100 text-amber-900 px-2 py-0.5 rounded">
                               {item.kode_kompetensi}
                             </span>
-                            <span className="ml-2 text-sm">{item.nama_kompetensi || item.kompetensi_original}</span>
+                            <span className="ml-2 text-sm text-gray-700">{item.nama_kompetensi || item.kompetensi_original}</span>
                           </div>
-                          <span className="text-xs bg-red-400 text-white px-2 py-1 rounded-full animate-pulse font-bold">
+                          <span className="text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded-full font-semibold">
                             WAJIB
                           </span>
                         </div>
-                        <p className="text-xs text-white/70 mt-1 ml-1">
+                        <p className="text-xs text-gray-500 mt-1 ml-1">
                           Fungsi: {item.nama_fungsi || '-'}
                         </p>
                       </div>
                     ))}
                   </div>
                   {kompetensiWajibBelumDipenuhi.length > 5 && (
-                    <p className="text-xs text-white/80 mt-2">
+                    <p className="text-xs text-gray-500 mt-2">
                       +{kompetensiWajibBelumDipenuhi.length - 5} kompetensi wajib lainnya
                     </p>
                   )}
                   <div className="mt-4 flex gap-3 flex-wrap">
                     <button
                       onClick={handleTambahKompetensi}
-                      className="inline-block text-sm bg-white text-red-600 px-4 py-2 rounded-lg font-semibold hover:bg-red-50 transition-all duration-300 hover:scale-105 transform animate-pulse"
+                      className="inline-block text-sm bg-blue-600 text-white px-4 py-2 rounded-md font-medium hover:bg-blue-700 transition-colors"
                     >
                       + Tambah/Upload Kompetensi
                     </button>
                     <Link 
                       href="/pelatihan" 
-                      className="inline-block text-sm bg-blue-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-blue-700 transition-all duration-300 hover:scale-105 transform"
+                      className="inline-block text-sm text-blue-600 border border-blue-200 bg-white px-4 py-2 rounded-md font-medium hover:bg-blue-50 transition-colors"
                     >
-                      📚 Cari Pelatihan
+                      Cari Pelatihan
                     </Link>
                   </div>
                 </div>
@@ -1208,28 +1133,24 @@ const Home = () => {
 
           {/* NOTIFIKASI SEMUA KOMPETENSI WAJIB SUDAH TERPENUHI */}
           {!isAdmin && kompetensiWajibFiltered.length > 0 && kompetensiWajibBelumDipenuhi.length === 0 && (
-            <div className="mb-8 bg-gradient-to-r from-green-500 to-emerald-500 rounded-2xl shadow-xl overflow-hidden slide-in">
-              <div className="px-8 py-6 flex items-center text-white">
-                <div className="flex-shrink-0 mr-6">
-                  <span className="text-5xl animate-bounce inline-block">🎉</span>
-                </div>
-                <div className="flex-1">
-                  <p className="font-bold text-2xl mb-2">
-                    Selamat! Semua Kompetensi Wajib Terpenuhi
-                  </p>
-                  <p className="text-white/90 text-sm">
-                    Anda telah memenuhi semua kompetensi wajib yang relevan dengan jabatan {userInfo.jabatan}
-                    {userInfo.fungsi && <> dan fungsi {userInfo.fungsi}</>} untuk tahun {new Date().getFullYear()}.
-                    Pertahankan prestasi Anda!
-                  </p>
-                  <div className="mt-3">
-                    <Link 
-                      href="/users_kompetensi" 
-                      className="inline-block text-sm bg-white/20 px-4 py-2 rounded-lg hover:bg-white/30 transition-all"
-                    >
-                      Lihat Semua Kompetensi →
-                    </Link>
+            <div className="mb-6 rounded-xl border border-green-200 bg-green-50">
+              <div className="px-5 py-4">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div className="min-w-0 flex-1">
+                    <h2 className="text-base font-semibold text-green-800">
+                      Selamat! Semua Kompetensi Wajib Terpenuhi
+                    </h2>
+                    <p className="mt-1 text-sm text-green-700/80">
+                      Anda telah memenuhi semua kompetensi wajib yang relevan dengan jabatan {userInfo.jabatan}
+                      {userInfo.fungsi && <> dan fungsi {userInfo.fungsi}</>} untuk tahun {new Date().getFullYear()}.
+                    </p>
                   </div>
+                  <Link 
+                    href="/users_kompetensi" 
+                    className="shrink-0 inline-block text-sm bg-white text-green-700 border border-green-200 px-4 py-2 rounded-md font-medium hover:bg-green-100/50 transition-colors"
+                  >
+                    Lihat Semua Kompetensi →
+                  </Link>
                 </div>
               </div>
             </div>
@@ -1237,90 +1158,84 @@ const Home = () => {
 
           {/* NOTIFIKASI UNTUK ADMIN: KOMPETENSI YANG HARUS DIVERIFIKASI */}
           {isAdmin && usersWithUnverifiedKompetensi.length > 0 && (
-            <div className="mb-8 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-2xl shadow-xl overflow-hidden slide-in">
-              <div className="px-8 py-6 flex items-start text-white">
-                <div className="flex-shrink-0 mr-6">
-                  <span className="text-5xl animate-bounce inline-block">🔔</span>
-                </div>
-                <div className="flex-1">
-                  <div className="flex items-center justify-between flex-wrap mb-3">
-                    <p className="font-bold text-2xl flex items-center gap-3">
-                      <span className="blink-text bg-blue-600 px-4 py-2 rounded-lg shadow-lg">
-                        ⚠️ KOMPETENSI YANG HARUS DIVERIFIKASI
-                      </span>
-                      <span className="bg-yellow-400 text-yellow-900 text-sm px-3 py-1 rounded-full animate-pulse font-bold">
-                        {usersWithUnverifiedKompetensi.reduce((sum, u) => sum + u.unverifiedKompetensi.length, 0)} kompetensi
-                      </span>
-                    </p>
+            <div className="mb-6 rounded-xl border border-blue-200 bg-blue-50">
+              <div className="px-5 py-4">
+                <div>
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <h2 className="text-base font-semibold text-blue-900">
+                      Kompetensi yang harus diverifikasi
+                    </h2>
+                    <span className="rounded-full bg-blue-100 px-3 py-1 text-xs font-semibold text-blue-800">
+                      {usersWithUnverifiedKompetensi.reduce((sum, u) => sum + u.unverifiedKompetensi.length, 0)} kompetensi
+                    </span>
                   </div>
-                  <p className="text-sm text-white/90 mb-4 flex items-center">
-                    <span className="inline-block w-2 h-2 bg-blue-400 rounded-full mr-2 animate-pulse"></span>
-                    Berikut adalah daftar kompetensi yang <strong className="mx-1">BELUM DIVERIFIKASI</strong> dan perlu segera diverifikasi
+                  <p className="mt-1 text-sm text-blue-800/80">
+                    Berikut adalah daftar kompetensi yang <strong>belum diverifikasi</strong> dan perlu segera diverifikasi.
                   </p>
 
                   {isLoadingAdminNotification ? (
-                    <div className="flex items-center justify-center py-8">
-                      <div className="animate-spin rounded-full h-8 w-8 border-2 border-white border-t-transparent"></div>
-                      <span className="ml-3">Memuat data...</span>
+                    <div className="flex items-center justify-center py-6">
+                      <div className="animate-spin rounded-full h-8 w-8 border-2 border-blue-200 border-t-blue-600"></div>
+                      <span className="ml-3 text-sm text-blue-800">Memuat data...</span>
                     </div>
                   ) : (
                     <>
-                      <div className="space-y-3 max-h-96 overflow-y-auto pr-2">
+                      <div className="space-y-2 max-h-96 overflow-y-auto pr-2">
                         {usersWithUnverifiedKompetensi.map((user, idx) => (
-                          <div key={user.nip || idx} className="bg-white/10 rounded-lg p-4 hover:bg-white/20 transition-all duration-300 hover:scale-105 transform cursor-pointer">
-                            <div className="flex justify-between items-center mb-2 flex-wrap gap-2">
-                              <div>
-                                <span className="font-bold text-white text-lg">{user.nama}</span>
-                                <span className="text-xs text-white/70 ml-2">NIP: {user.nip}</span>
+                          <div key={user.nip || idx} className="bg-white rounded-lg border border-blue-100 p-4">
+                            <div className="flex justify-between items-start mb-2 flex-wrap gap-2">
+                              <div className="min-w-0">
+                                <span className="font-semibold text-gray-900">{user.nama}</span>
+                                <span className="text-xs text-gray-500 ml-2">NIP: {user.nip}</span>
                                 {user.jabatan !== '-' && (
-                                  <span className="text-xs text-white/70 ml-2">• {user.jabatan}</span>
+                                  <span className="text-xs text-gray-500 ml-2">• {user.jabatan}</span>
                                 )}
                               </div>
-                              <span className="text-xs bg-yellow-400 text-yellow-900 px-2 py-1 rounded-full animate-pulse font-bold">
+                              <span className="text-xs bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full font-semibold">
                                 {user.unverifiedKompetensi.length} kompetensi
                               </span>
                             </div>
                             <div className="space-y-1.5">
                               {user.unverifiedKompetensi.slice(0, 3).map((kom, kidx) => (
-                                <div key={kidx} className="text-sm text-white/80 flex justify-between items-center flex-wrap gap-2">
-                                  <div className="flex-1">
-                                    <span className="font-mono text-xs bg-black/20 px-1.5 py-0.5 rounded">
+                                <div key={kidx} className="text-sm text-gray-700 flex justify-between items-center flex-wrap gap-2">
+                                  <div className="flex-1 min-w-0">
+                                    <span className="font-mono text-xs bg-blue-50 text-blue-800 px-1.5 py-0.5 rounded">
                                       {kom.kode}
                                     </span>
                                     <span className="ml-2">{kom.nama}</span>
                                   </div>
-                                  <span className="text-xs bg-yellow-300 text-yellow-800 px-2 py-0.5 rounded-full animate-pulse">
-                                    ⏳ Menunggu
+                                  <span className="text-xs bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full">
+                                    Menunggu
                                   </span>
                                 </div>
                               ))}
                               {user.unverifiedKompetensi.length > 3 && (
-                                <p className="text-xs text-white/60">
+                                <p className="text-xs text-gray-400">
                                   +{user.unverifiedKompetensi.length - 3} kompetensi lainnya
                                 </p>
                               )}
                             </div>
-                            <div className="mt-3 flex gap-3">
+                            <div className="mt-3 flex gap-4">
                               <Link 
                                 href={`/users_kompetensi?nip=${user.nip}`} 
-                                className="text-xs text-white underline hover:no-underline hover:text-yellow-200 transition-colors"
+                                className="text-xs text-blue-600 hover:text-blue-800 font-medium"
                               >
                                 Lihat semua kompetensi user →
                               </Link>
                               <Link 
                                 href={`/users_kompetensi/verifikasi?nip=${user.nip}`} 
-                                className="text-xs text-yellow-200 underline hover:no-underline hover:text-yellow-100 transition-colors animate-pulse"
+                                className="text-xs text-blue-600 hover:text-blue-800 font-medium"
                               >
-                                ⚡ Verifikasi sekarang →
+                                Verifikasi sekarang →
                               </Link>
                             </div>
                           </div>
                         ))}
                       </div>
-                      <div className="mt-4 pt-3 border-t border-white/20 text-right">
+                      <div className="mt-4 pt-3 border-t border-blue-100 text-right">
                         <Link 
                           href="/users_kompetensi" 
-                          className="text-sm bg-white/20 px-4 py-2 rounded-lg hover:bg-white/30 transition-all duration-300 hover:scale-105 transform inline-block"
+                          className="inline-block bg-white text-blue-700 border border-blue-200 px-4 py-2 rounded-md text-sm font-medium hover:bg-blue-50 transition-colors"
                         >
                           Kelola Semua Verifikasi →
                         </Link>
@@ -1335,17 +1250,14 @@ const Home = () => {
           {/* Pemberitahuan Undangan Pelatihan — untuk siapa pun yang punya undangan pending,
               termasuk katim/admin yang mengundang diri sendiri sebagai peserta */}
           {stats.pelatihan?.undanganPending > 0 && (
-            <div className="mb-8 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-2xl shadow-xl overflow-hidden">
-              <div className="px-8 py-6 flex items-center text-white">
-                <span className="text-4xl mr-6">📬</span>
-                <div className="flex-1">
-                  <p className="font-bold text-xl">
-                    Anda memiliki {stats.pelatihan.undanganPending} undangan pelatihan yang perlu dikonfirmasi
-                  </p>
-                  <Link href="/pelatihan" className="text-white/90 hover:text-white underline mt-2 inline-block text-lg">
-                    Lihat undangan sekarang →
-                  </Link>
-                </div>
+            <div className="mb-6 rounded-xl border border-blue-200 bg-blue-50">
+              <div className="px-5 py-4 flex flex-wrap items-center justify-between gap-3">
+                <p className="min-w-0 text-sm font-medium text-blue-900">
+                  Anda memiliki {stats.pelatihan.undanganPending} undangan pelatihan yang perlu dikonfirmasi
+                </p>
+                <Link href="/pelatihan" className="shrink-0 text-sm font-medium text-blue-700 hover:text-blue-900">
+                  Lihat undangan sekarang →
+                </Link>
               </div>
             </div>
           )}
@@ -1353,35 +1265,37 @@ const Home = () => {
           {/* Profile Kompetensi Section - Hanya untuk user biasa */}
           {!isAdmin && (
             <div className="mb-8">
-              <div className="bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100">
-                <div className="bg-gradient-to-r from-blue-600 to-blue-800 px-6 py-4">
-                  <h2 className="text-xl font-bold text-white flex items-center">
-                    <span className="mr-2">🎓</span> 
-                    Profil Kompetensi Anda
-                  </h2>
+              <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between gap-3">
+                  <h2 className="text-base font-semibold text-gray-900">Profil Kompetensi Anda</h2>
+                  {kompetensiWajibFiltered.length > 0 && (
+                    <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700">
+                      {Math.round((kompetensiSudahDipenuhi / kompetensiWajibFiltered.length) * 100)}% terpenuhi
+                    </span>
+                  )}
                 </div>
                 
                 <div className="p-6">
                   {/* Statistik Ringkas */}
-                  <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
-                    <div className="bg-blue-50 rounded-lg p-4 text-center">
-                      <p className="text-2xl font-bold text-blue-600">{kompetensiWajibFiltered.length}</p>
+                  <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6">
+                    <div className="rounded-lg border border-blue-100 bg-blue-50 p-4 text-center">
+                      <p className="text-2xl font-bold text-blue-700">{kompetensiWajibFiltered.length}</p>
                       <p className="text-xs text-gray-600">Kompetensi Wajib</p>
                     </div>
-                    <div className="bg-green-50 rounded-lg p-4 text-center">
-                      <p className="text-2xl font-bold text-green-600">{kompetensiSudahDipenuhi}</p>
+                    <div className="rounded-lg border border-green-100 bg-green-50 p-4 text-center">
+                      <p className="text-2xl font-bold text-green-700">{kompetensiSudahDipenuhi}</p>
                       <p className="text-xs text-gray-600">Sudah Dipenuhi</p>
                     </div>
-                    <div className="bg-red-50 rounded-lg p-4 text-center">
-                      <p className="text-2xl font-bold text-red-600">{kompetensiWajibBelumDipenuhi.length}</p>
+                    <div className="rounded-lg border border-red-100 bg-red-50 p-4 text-center">
+                      <p className="text-2xl font-bold text-red-700">{kompetensiWajibBelumDipenuhi.length}</p>
                       <p className="text-xs text-gray-600">Belum Dipenuhi</p>
                     </div>
-                    <div className="bg-yellow-50 rounded-lg p-4 text-center">
-                      <p className="text-2xl font-bold text-yellow-600">{userKompetensiStats.dalamProses}</p>
+                    <div className="rounded-lg border border-amber-100 bg-amber-50 p-4 text-center">
+                      <p className="text-2xl font-bold text-amber-700">{userKompetensiStats.dalamProses}</p>
                       <p className="text-xs text-gray-600">Dalam Proses</p>
                     </div>
-                    <div className="bg-purple-50 rounded-lg p-4 text-center">
-                      <p className="text-2xl font-bold text-purple-600">{userKompetensiStats.total}</p>
+                    <div className="rounded-lg border border-blue-100 bg-blue-50 p-4 text-center">
+                      <p className="text-2xl font-bold text-blue-700">{userKompetensiStats.total}</p>
                       <p className="text-xs text-gray-600">Total Kompetensi</p>
                     </div>
                   </div>
@@ -1472,7 +1386,7 @@ const Home = () => {
                                   )}
                                 </div>
                                 {item.hasil_verif === 'Perlu Revisi' && item.catatan && (
-                                  <p className="text-xs text-orange-600 mt-2">📝 Catatan: {item.catatan}</p>
+                                  <p className="text-xs text-amber-700 mt-2">Catatan: {item.catatan}</p>
                                 )}
                               </div>
                               <Link 
@@ -1530,67 +1444,51 @@ const Home = () => {
 
           {/* Stat Cards Grid - Hanya untuk admin */}
           {isAdmin && (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
               <StatCard
                 title="Total Pegawai"
                 value={allPegawaiData.length}
-                icon="👥"
-                color="bg-blue-100 text-blue-600"
                 subtitle="Seluruh pegawai aktif"
               />
               <StatCard
                 title="Belum 100% Kompetensi Wajib"
                 value={pegawaiBelumLengkap.length}
-                icon="⚠️"
-                color="bg-red-100 text-red-600"
                 subtitle="Perlu pendampingan"
               />
               <StatCard
                 title="Menunggu Verifikasi"
                 value={usersWithUnverifiedKompetensi.reduce((sum, u) => sum + u.unverifiedKompetensi.length, 0)}
-                icon="⏳"
-                color="bg-yellow-100 text-yellow-600"
                 subtitle="Perlu segera diverifikasi"
               />
               <StatCard
                 title="Jadwal Pelatihan"
                 value={stats.pelatihan.totalJadwal}
-                icon="📅"
-                color="bg-purple-100 text-purple-600"
-                subtitle={`${stats.pelatihan.berlangsung} Berlangsung`}
+                subtitle={`${stats.pelatihan.berlangsung} berlangsung`}
               />
             </div>
           )}
 
           {/* Stat Cards Grid - Untuk user biasa (menggunakan data yang sudah difilter) */}
           {!isAdmin && (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
               <StatCard
                 title="Kompetensi Wajib"
                 value={kompetensiWajibFiltered.length}
-                icon="🎯"
-                color="bg-purple-100 text-purple-600"
                 subtitle={`${kompetensiSudahDipenuhi} dipenuhi`}
               />
               <StatCard
                 title="Sudah Dipenuhi"
                 value={kompetensiSudahDipenuhi}
-                icon="✅"
-                color="bg-green-100 text-green-600"
                 subtitle="Dari kompetensi wajib"
               />
               <StatCard
                 title="Belum Dipenuhi"
                 value={kompetensiWajibBelumDipenuhi.length}
-                icon="⚠️"
-                color="bg-red-100 text-red-600"
                 subtitle="Perlu segera dipenuhi"
               />
               <StatCard
                 title="Undangan Pelatihan"
                 value={stats.pelatihan.undanganPending || 0}
-                icon="📬"
-                color="bg-orange-100 text-orange-600"
                 subtitle="Menunggu konfirmasi"
               />
             </div>
@@ -1600,11 +1498,8 @@ const Home = () => {
           {!isAdmin && (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
               {/* Kompetensi Status Chart */}
-              <div className="bg-white rounded-2xl shadow-xl p-6 border border-gray-100">
-                <h3 className="text-xl font-bold text-gray-800 mb-6 flex items-center">
-                  <span className="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center text-blue-600 mr-3 text-lg">📊</span>
-                  Status Kompetensi
-                </h3>
+              <div className="bg-white rounded-xl border border-gray-200 p-5">
+                <h3 className="text-base font-semibold text-gray-900 mb-4">Status Kompetensi</h3>
                 <div className="h-80">
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
@@ -1640,11 +1535,8 @@ const Home = () => {
               </div>
 
               {/* Pelatihan by Month Chart */}
-              <div className="bg-white rounded-2xl shadow-xl p-6 border border-gray-100">
-                <h3 className="text-xl font-bold text-gray-800 mb-6 flex items-center">
-                  <span className="w-10 h-10 bg-purple-100 rounded-xl flex items-center justify-center text-purple-600 mr-3 text-lg">📈</span>
-                  Tren Pelatihan per Bulan
-                </h3>
+              <div className="bg-white rounded-xl border border-gray-200 p-5">
+                <h3 className="text-base font-semibold text-gray-900 mb-4">Tren Pelatihan per Bulan</h3>
                 <div className="h-80">
                   <ResponsiveContainer width="100%" height="100%">
                     <AreaChart data={stats.pelatihan.byBulan}>
@@ -1697,11 +1589,8 @@ const Home = () => {
           {!isAdmin && (
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
               {/* Master Pelatihan by Jenis */}
-              <div className="bg-white rounded-2xl shadow-xl p-6 border border-gray-100">
-                <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center">
-                  <span className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center text-green-600 mr-2">📚</span>
-                  Master Pelatihan
-                </h3>
+              <div className="bg-white rounded-xl border border-gray-200 p-5">
+                <h3 className="text-base font-semibold text-gray-900 mb-4">Master Pelatihan per Jenis</h3>
                 <div className="h-64">
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={stats.masterPelatihan.byJenis} layout="vertical">
@@ -1716,18 +1605,15 @@ const Home = () => {
                           border: 'none'
                         }} 
                       />
-                      <Bar dataKey="value" fill="#10B981" radius={[0, 4, 4, 0]} />
+                      <Bar dataKey="value" fill="#2563EB" radius={[0, 4, 4, 0]} />
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
               </div>
 
               {/* Kompetensi by Fungsi */}
-              <div className="bg-white rounded-2xl shadow-xl p-6 border border-gray-100">
-                <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center">
-                  <span className="w-8 h-8 bg-indigo-100 rounded-lg flex items-center justify-center text-indigo-600 mr-2">🏢</span>
-                  Kompetensi per Fungsi
-                </h3>
+              <div className="bg-white rounded-xl border border-gray-200 p-5">
+                <h3 className="text-base font-semibold text-gray-900 mb-4">Kompetensi per Fungsi</h3>
                 <div className="h-64">
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={stats.kompetensi.byFungsi}>
@@ -1742,18 +1628,15 @@ const Home = () => {
                           border: 'none'
                         }} 
                       />
-                      <Bar dataKey="value" fill="#8B5CF6" radius={[4, 4, 0, 0]} />
+                      <Bar dataKey="value" fill="#2563EB" radius={[4, 4, 0, 0]} />
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
               </div>
 
               {/* Pelatihan Status Radial */}
-              <div className="bg-white rounded-2xl shadow-xl p-6 border border-gray-100">
-                <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center">
-                  <span className="w-8 h-8 bg-orange-100 rounded-lg flex items-center justify-center text-orange-600 mr-2">⚡</span>
-                  Status Pelatihan
-                </h3>
+              <div className="bg-white rounded-xl border border-gray-200 p-5">
+                <h3 className="text-base font-semibold text-gray-900 mb-4">Status Pelatihan</h3>
                 <div className="h-64">
                   <ResponsiveContainer width="100%" height="100%">
                     <RadialBarChart 

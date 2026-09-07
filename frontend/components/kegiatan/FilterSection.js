@@ -45,7 +45,7 @@ const FilterSection = ({
                     <select
                         value={filterStatus}
                         onChange={(e) => setFilterStatus(e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                     >
                         <option value="">Semua Status</option>
                         <option value="draft">Draft</option>
@@ -65,7 +65,7 @@ const FilterSection = ({
                     <select
                         value={filterJenisSpm}
                         onChange={(e) => setFilterJenisSpm(e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                     >
                         <option value="">Semua Jenis</option>
                         <option value="LS">LS (Langsung)</option>
@@ -83,7 +83,7 @@ const FilterSection = ({
                         type="date"
                         value={filterDateFrom}
                         onChange={(e) => setFilterDateFrom(e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
                 </div>
                 
@@ -96,7 +96,7 @@ const FilterSection = ({
                         type="date"
                         value={filterDateTo}
                         onChange={(e) => setFilterDateTo(e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
                 </div>
                 
@@ -110,7 +110,7 @@ const FilterSection = ({
                         value={filterMak}
                         onChange={(e) => setFilterMak(e.target.value)}
                         placeholder="Contoh: 052.01.01.0001"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
                 </div>
                 
@@ -124,7 +124,7 @@ const FilterSection = ({
                         value={filterLokasi}
                         onChange={(e) => setFilterLokasi(e.target.value)}
                         placeholder="Contoh: Jakarta, Bandung, dll"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
                 </div>
                 
@@ -136,7 +136,7 @@ const FilterSection = ({
                     <input
                         type="text"
                         placeholder="Cari berdasarkan kegiatan, no ST, dll..."
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                         onChange={(e) => {
                             // Implementasi search cepat jika diperlukan
                         }}
@@ -153,11 +153,11 @@ const FilterSection = ({
                 {/* Tampilkan filter aktif */}
                 <div className="flex flex-wrap gap-2">
                     {filterStatus && (
-                        <span className="px-2 py-1 bg-indigo-100 text-indigo-800 text-xs rounded-full flex items-center gap-1">
+                        <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full flex items-center gap-1">
                             Status: {filterStatus}
                             <button 
                                 onClick={() => setFilterStatus('')}
-                                className="text-indigo-600 hover:text-indigo-800"
+                                className="text-blue-600 hover:text-blue-800"
                             >
                                 ×
                             </button>

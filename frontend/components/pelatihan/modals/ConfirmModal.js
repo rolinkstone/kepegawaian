@@ -15,7 +15,7 @@ const ConfirmModal = ({ show, onClose, onConfirm, title, message, confirmText = 
     const buttonColors = {
         primary: 'bg-blue-600 hover:bg-blue-700',
         danger: 'bg-red-600 hover:bg-red-700',
-        warning: 'bg-yellow-600 hover:bg-yellow-700'
+        warning: 'bg-amber-600 hover:bg-amber-700'
     };
 
     return (

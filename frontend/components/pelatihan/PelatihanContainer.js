@@ -636,7 +636,7 @@ const PelatihanContainer = () => {
             'Draft': 'bg-gray-100 text-gray-800',
             'Publik': 'bg-blue-100 text-blue-800',
             'Berlangsung': 'bg-green-100 text-green-800',
-            'Selesai': 'bg-purple-100 text-purple-800',
+            'Selesai': 'bg-blue-100 text-blue-800',
             'Dibatalkan': 'bg-red-100 text-red-800'
         };
         return badges[status] || 'bg-gray-100 text-gray-800';
@@ -662,7 +662,7 @@ const PelatihanContainer = () => {
                     {/* Role Info */}
                     <div className="flex gap-2 mt-2">
                         {userRoles.isAdmin && (
-                            <span className="px-2 py-1 bg-purple-100 text-purple-800 text-xs rounded-full">
+                            <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
                                 Admin (dapat mengelola master & kompetensi wajib)
                             </span>
                         )}
@@ -688,9 +688,9 @@ const PelatihanContainer = () => {
                                 <p className="text-sm text-green-600">Publik</p>
                                 <p className="text-xl font-bold text-green-700">{stats.publik}</p>
                             </div>
-                            <div className="bg-purple-50 p-3 rounded-lg">
-                                <p className="text-sm text-purple-600">Selesai</p>
-                                <p className="text-xl font-bold text-purple-700">{stats.selesai}</p>
+                            <div className="bg-blue-50 p-3 rounded-lg">
+                                <p className="text-sm text-blue-600">Selesai</p>
+                                <p className="text-xl font-bold text-blue-700">{stats.selesai}</p>
                             </div>
                         </div>
                     )}
@@ -701,7 +701,7 @@ const PelatihanContainer = () => {
                     {activeTab === 'master' && (userRoles.isKatim || userRoles.isAdmin) && (
                         <button
                             onClick={handleAddMaster}
-                            className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 flex items-center shadow-lg"
+                            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center"
                         >
                             <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
@@ -713,7 +713,7 @@ const PelatihanContainer = () => {
                     {activeTab === 'jadwal' && (userRoles.isKatim || userRoles.isAdmin) && (
                         <button
                             onClick={handleAdd}
-                            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center shadow-lg"
+                            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center"
                         >
                             <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
@@ -762,7 +762,7 @@ const PelatihanContainer = () => {
                             onClick={() => setActiveTab('master')}
                             className={`py-2 px-4 font-medium text-sm transition-colors ${
                                 activeTab === 'master'
-                                    ? 'border-b-2 border-purple-500 text-purple-600'
+                                    ? 'border-b-2 border-blue-500 text-blue-600'
                                     : 'text-gray-500 hover:text-gray-700'
                             }`}
                         >

@@ -58,7 +58,7 @@ const Status2Modal = ({ show, onClose, item, onSave, isLoading }) => {
 
     return (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-            <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+            <div className="relative top-20 mx-auto p-5 border w-96 shadow-md rounded-md bg-white">
                 <div className="mt-3">
                     <div className="flex justify-between items-center mb-4">
                         <h3 className="text-lg font-medium text-gray-900">
@@ -95,7 +95,7 @@ const Status2Modal = ({ show, onClose, item, onSave, isLoading }) => {
                                 name="status_2"
                                 value={formData.status_2}
                                 onChange={handleSelectChange}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white"
+                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
                                 required
                             >
                                 {status2Options.map((option) => (
@@ -118,7 +118,7 @@ const Status2Modal = ({ show, onClose, item, onSave, isLoading }) => {
                                 value={formData.catatan_status_2}
                                 onChange={handleChange}
                                 rows="3"
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                                 placeholder="Tambahkan catatan atau penjelasan untuk status 2 ini..."
                             />
                             <p className="mt-1 text-xs text-gray-500">
@@ -137,7 +137,7 @@ const Status2Modal = ({ show, onClose, item, onSave, isLoading }) => {
                             </button>
                             <button
                                 type="submit"
-                                className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 disabled:opacity-50 transition duration-150 ease-in-out flex items-center"
+                                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 transition duration-150 ease-in-out flex items-center"
                                 disabled={isLoading}
                             >
                                 {isLoading ? (

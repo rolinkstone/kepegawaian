@@ -104,7 +104,7 @@ const JadwalPelatihanList = ({
                                                 <span className={`px-2 py-0.5 text-xs rounded-full ${
                                                     item.status_undangan_saya === 'Diterima' ? 'bg-green-100 text-green-700' :
                                                     item.status_undangan_saya === 'Ditolak' ? 'bg-red-100 text-red-700' :
-                                                    'bg-yellow-100 text-yellow-700'
+                                                    'bg-amber-100 text-amber-700'
                                                 }`}>
                                                     Undangan: {item.status_undangan_saya}
                                                 </span>
@@ -133,7 +133,7 @@ const JadwalPelatihanList = ({
                                             {(userRoles.isKatim || userRoles.isAdmin) && item.status === 'Selesai' && (
                                                 <button
                                                     onClick={() => onMonitor(item)}
-                                                    className="flex items-center gap-1 px-2 py-1 text-teal-700 bg-teal-50 border border-teal-200 rounded-md hover:bg-teal-100"
+                                                    className="flex items-center gap-1 px-2 py-1 text-blue-700 bg-blue-50 border border-blue-200 rounded-md hover:bg-blue-100"
                                                     title="Pantau sertifikat peserta (sudah/belum upload ke riwayat)"
                                                 >
                                                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -147,7 +147,7 @@ const JadwalPelatihanList = ({
                                             {(userRoles.isKatim || userRoles.isAdmin) && item.status === 'Publik' && (
                                                 <button
                                                     onClick={() => onUbahStatus(item, 'Berlangsung')}
-                                                    className="flex items-center gap-1 px-2 py-1 text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-md hover:bg-emerald-100"
+                                                    className="flex items-center gap-1 px-2 py-1 text-blue-700 bg-blue-50 border border-blue-200 rounded-md hover:bg-blue-100"
                                                     title="Mulai pelatihan (ubah status menjadi Berlangsung)"
                                                 >
                                                     <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
@@ -161,7 +161,7 @@ const JadwalPelatihanList = ({
                                             {(userRoles.isKatim || userRoles.isAdmin) && item.status === 'Berlangsung' && (
                                                 <button
                                                     onClick={() => onUbahStatus(item, 'Selesai')}
-                                                    className="flex items-center gap-1 px-2 py-1 text-purple-700 bg-purple-50 border border-purple-200 rounded-md hover:bg-purple-100"
+                                                    className="flex items-center gap-1 px-2 py-1 text-blue-700 bg-blue-50 border border-blue-200 rounded-md hover:bg-blue-100"
                                                     title="Tandai pelatihan selesai (ubah status menjadi Selesai)"
                                                 >
                                                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -176,7 +176,7 @@ const JadwalPelatihanList = ({
                                                 <>
                                                     <button
                                                         onClick={() => onEdit(item)}
-                                                        className="text-yellow-600 hover:text-yellow-900"
+                                                        className="text-amber-600 hover:text-amber-900"
                                                         title="Edit"
                                                     >
                                                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -199,7 +199,7 @@ const JadwalPelatihanList = ({
                                             {(userRoles.isKatim || userRoles.isAdmin) && (item.status === 'Draft' || item.status === 'Publik') && (
                                                 <button
                                                     onClick={() => onUndang(item)}
-                                                    className="text-indigo-600 hover:text-indigo-900"
+                                                    className="text-blue-600 hover:text-blue-900"
                                                     title="Undang Peserta"
                                                 >
                                                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

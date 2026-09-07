@@ -56,7 +56,7 @@ export default function SearchKegiatanPage() {
         const getStatusConfig = () => {
             if (hasCompleteST) {
                 return {
-                    color: 'bg-gradient-to-r from-emerald-50 to-green-50 text-emerald-700 border border-emerald-200',
+                    color: 'bg-gradient-to-r from-blue-50 to-green-50 text-blue-700 border border-blue-200',
                     label: 'Selesai',
                     icon: '✓'
                 };
@@ -69,27 +69,27 @@ export default function SearchKegiatanPage() {
                     icon: '📝'
                 },
                 diajukan: {
-                    color: 'bg-gradient-to-r from-amber-50 to-yellow-50 text-amber-700 border border-amber-200',
+                    color: 'bg-gradient-to-r from-amber-50 to-amber-50 text-amber-700 border border-amber-200',
                     label: 'Diajukan',
                     icon: '⬆️'
                 },
                 disetujui: {
-                    color: 'bg-gradient-to-r from-blue-50 to-sky-50 text-blue-700 border border-blue-200',
+                    color: 'bg-gradient-to-r from-blue-50 to-blue-50 text-blue-700 border border-blue-200',
                     label: 'Disetujui',
                     icon: '✅'
                 },
                 diketahui: {
-                    color: 'bg-gradient-to-r from-indigo-50 to-purple-50 text-indigo-700 border border-indigo-200',
+                    color: 'bg-gradient-to-r from-blue-50 to-blue-50 text-blue-700 border border-blue-200',
                     label: 'Diketahui',
                     icon: '👁️'
                 },
                 dikembalikan: {
-                    color: 'bg-gradient-to-r from-rose-50 to-red-50 text-rose-700 border border-rose-200',
+                    color: 'bg-gradient-to-r from-red-50 to-red-50 text-red-700 border border-red-200',
                     label: 'Dikembalikan',
                     icon: '↩️'
                 },
                 selesai: {
-                    color: 'bg-gradient-to-r from-emerald-50 to-green-50 text-emerald-700 border border-emerald-200',
+                    color: 'bg-gradient-to-r from-blue-50 to-green-50 text-blue-700 border border-blue-200',
                     label: 'Selesai',
                     icon: '✓'
                 },
@@ -334,10 +334,10 @@ export default function SearchKegiatanPage() {
                 {/* Notification Toast */}
                 {notification.show && (
                     <div className={`fixed top-6 right-6 z-50 px-6 py-4 rounded-xl shadow-xl transform transition-all duration-300 ${
-                        notification.type === 'error' ? 'bg-gradient-to-r from-rose-500 to-red-500 text-white' :
-                        notification.type === 'warning' ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white' :
-                        notification.type === 'success' ? 'bg-gradient-to-r from-emerald-500 to-green-500 text-white' :
-                        'bg-gradient-to-r from-blue-500 to-indigo-500 text-white'
+                        notification.type === 'error' ? 'bg-gradient-to-r from-red-500 to-red-500 text-white' :
+                        notification.type === 'warning' ? 'bg-gradient-to-r from-amber-500 to-amber-500 text-white' :
+                        notification.type === 'success' ? 'bg-gradient-to-r from-green-500 to-green-500 text-white' :
+                        'bg-gradient-to-r from-blue-500 to-blue-500 text-white'
                     }`}>
                         <div className="flex items-center">
                             {notification.type === 'error' ? (
@@ -366,7 +366,7 @@ export default function SearchKegiatanPage() {
                 <div className="w-full">
                     {/* Search Container */}
                     <div className="px-8 py-8">
-                        <div className="bg-white rounded-2xl shadow-lg p-8 mb-8 border border-gray-100">
+                        <div className="bg-white rounded-2xl shadow-md p-8 mb-8 border border-gray-100">
                             <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6 mb-8">
                                 <div>
                                     <h2 className="text-2xl font-bold text-gray-900 mb-2">Cari Data Kegiatan</h2>
@@ -384,13 +384,13 @@ export default function SearchKegiatanPage() {
                                             <div className="text-lg font-bold text-gray-700">{stats.draft}</div>
                                             <div className="text-xs text-gray-600 font-medium">Draft</div>
                                         </div>
-                                        <div className="bg-gradient-to-br from-emerald-50 to-green-100 p-3 rounded-lg">
-                                            <div className="text-lg font-bold text-emerald-700">{stats.approved}</div>
-                                            <div className="text-xs text-emerald-600 font-medium">Disetujui</div>
+                                        <div className="bg-gradient-to-br from-blue-50 to-green-100 p-3 rounded-lg">
+                                            <div className="text-lg font-bold text-blue-700">{stats.approved}</div>
+                                            <div className="text-xs text-blue-600 font-medium">Disetujui</div>
                                         </div>
-                                        <div className="bg-gradient-to-br from-purple-50 to-purple-100 p-3 rounded-lg">
-                                            <div className="text-lg font-bold text-purple-700">{stats.completed}</div>
-                                            <div className="text-xs text-purple-600 font-medium">Selesai</div>
+                                        <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-3 rounded-lg">
+                                            <div className="text-lg font-bold text-blue-700">{stats.completed}</div>
+                                            <div className="text-xs text-blue-600 font-medium">Selesai</div>
                                         </div>
                                         <div className="bg-gradient-to-br from-gray-200 to-gray-300 p-3 rounded-lg">
                                             <div className="text-lg font-bold text-gray-800">{stats.canceled}</div>
@@ -429,7 +429,7 @@ export default function SearchKegiatanPage() {
                                         <button
                                             type="submit"
                                             disabled={isSearching || !searchTerm.trim()}
-                                            className="px-6 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-medium rounded-lg hover:from-blue-700 hover:to-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex items-center"
+                                            className="px-6 py-2.5 bg-gradient-to-r from-blue-600 to-blue-600 text-white font-medium rounded-lg hover:from-blue-700 hover:to-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex items-center"
                                         >
                                             {isSearching ? (
                                                 <>
@@ -485,7 +485,7 @@ export default function SearchKegiatanPage() {
                                     </div>
 
                                     {/* Results Table - RAPIH */}
-                                    <div className="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-200">
+                                    <div className="bg-white rounded-xl shadow-md overflow-hidden border border-gray-200">
                                         <div className="overflow-x-auto">
                                             <table className="w-full">
                                                 <thead>
@@ -607,7 +607,7 @@ export default function SearchKegiatanPage() {
                                 </>
                             ) : searchTerm && !isSearching ? (
                                 // Empty State
-                                <div className="bg-white rounded-xl shadow-lg p-12 text-center border border-gray-200">
+                                <div className="bg-white rounded-xl shadow-md p-12 text-center border border-gray-200">
                                     <svg className="w-16 h-16 mx-auto text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                                     </svg>
@@ -622,7 +622,7 @@ export default function SearchKegiatanPage() {
                                 </div>
                             ) : !searchTerm && !isSearching ? (
                                 // Initial State
-                                <div className="bg-white rounded-xl shadow-lg p-12 text-center border border-gray-200">
+                                <div className="bg-white rounded-xl shadow-md p-12 text-center border border-gray-200">
                                     <svg className="w-16 h-16 mx-auto text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                                     </svg>

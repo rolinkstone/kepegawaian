@@ -238,14 +238,14 @@ const KirimPPKModal = ({
                             </label>
                             {loadingPpkList ? (
                                 <div className="flex items-center justify-center py-4">
-                                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+                                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
                                     <span className="ml-2 text-sm text-gray-600">Memuat daftar PPK...</span>
                                 </div>
                             ) : (
                                 <select
                                     value={selectedPpkId}
                                     onChange={handleSelectPpk}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                                     required
                                 >
                                     <option value="">-- Pilih PPK --</option>
@@ -286,7 +286,7 @@ const KirimPPKModal = ({
                                 value={catatan}
                                 onChange={(e) => setCatatan(e.target.value)}
                                 rows={3}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                                 placeholder="Tambahkan catatan untuk PPK..."
                             />
                             <p className="mt-1 text-xs text-gray-500">
@@ -295,12 +295,12 @@ const KirimPPKModal = ({
                         </div>
                         
                         {/* Warning */}
-                        <div className="bg-yellow-50 border border-yellow-200 rounded-md p-3">
+                        <div className="bg-amber-50 border border-amber-200 rounded-md p-3">
                             <div className="flex items-start">
-                                <svg className="h-5 w-5 text-yellow-400 mt-0.5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                <svg className="h-5 w-5 text-amber-400 mt-0.5 mr-2" fill="currentColor" viewBox="0 0 20 20">
                                     <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
                                 </svg>
-                                <div className="text-sm text-yellow-700">
+                                <div className="text-sm text-amber-700">
                                     <p className="font-medium">Perhatian!</p>
                                     <p>Setelah dikirim ke PPK, data tidak dapat diubah atau dihapus oleh Anda.</p>
                                 </div>
@@ -322,7 +322,7 @@ const KirimPPKModal = ({
                             type="button"
                             onClick={handleSubmit}
                             disabled={!selectedPpkId || loading}
-                            className="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500"
+                            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                         >
                             {loading ? (
                                 <>

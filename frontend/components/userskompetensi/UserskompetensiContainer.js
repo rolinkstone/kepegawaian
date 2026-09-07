@@ -547,7 +547,7 @@ useEffect(() => {
             return {
                 type: 'pending',
                 label: 'Belum Diverifikasi',
-                color: 'bg-yellow-100 text-yellow-800',
+                color: 'bg-amber-100 text-amber-800',
                 message: 'Menunggu verifikasi admin',
                 canEdit: true,
                 canDelete: isAdminOrKatim,
@@ -583,7 +583,7 @@ useEffect(() => {
             return {
                 type: 'revision',
                 label: 'Perlu Revisi',
-                color: 'bg-orange-100 text-orange-800',
+                color: 'bg-amber-100 text-amber-800',
                 message: `Perlu revisi oleh ${item.verified_by_nama}. ${item.keterangan ? 'Keterangan: ' + item.keterangan : ''}`,
                 canEdit: true,
                 canDelete: isAdminOrKatim,
@@ -607,7 +607,7 @@ useEffect(() => {
         const badges = {
             'Valid': 'bg-green-100 text-green-800',
             'Tidak Valid': 'bg-red-100 text-red-800',
-            'Perlu Revisi': 'bg-orange-100 text-orange-800'
+            'Perlu Revisi': 'bg-amber-100 text-amber-800'
         };
         return badges[hasil] || 'bg-gray-100 text-gray-800';
     };
@@ -793,7 +793,7 @@ useEffect(() => {
         const badges = {
             'Lulus': 'bg-green-100 text-green-800',
             'Tidak Lulus': 'bg-red-100 text-red-800',
-            'Dalam Proses': 'bg-yellow-100 text-yellow-800'
+            'Dalam Proses': 'bg-amber-100 text-amber-800'
         };
         return badges[status] || 'bg-gray-100 text-gray-800';
     };
@@ -842,7 +842,7 @@ useEffect(() => {
                     {/* Role Info */}
                     <div className="flex gap-2 mt-2">
                         {isAdminTambunRaya && (
-                            <span className="px-2 py-1 bg-purple-100 text-purple-800 text-xs rounded-full">
+                            <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
                                 Admin Tambun Raya
                             </span>
                         )}
@@ -873,9 +873,9 @@ useEffect(() => {
                             <p className="text-sm text-red-600">Tidak Lulus</p>
                             <p className="text-xl font-bold text-red-700">{stats.tidakLulus}</p>
                         </div>
-                        <div className="bg-yellow-50 p-3 rounded-lg">
-                            <p className="text-sm text-yellow-600">Dalam Proses</p>
-                            <p className="text-xl font-bold text-yellow-700">{stats.dalamProses}</p>
+                        <div className="bg-amber-50 p-3 rounded-lg">
+                            <p className="text-sm text-amber-600">Dalam Proses</p>
+                            <p className="text-xl font-bold text-amber-700">{stats.dalamProses}</p>
                         </div>
                     </div>
                 </div>
@@ -895,7 +895,7 @@ useEffect(() => {
                     {/* Tombol Tambah - SEMUA USER BISA MENAMBAH */}
                     <button
                         onClick={handleAdd}
-                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center shadow-lg"
+                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center"
                     >
                         <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
@@ -1028,7 +1028,7 @@ useEffect(() => {
                                                                     )}
                                                                 </div>
                                                             ) : (
-                                                                <span className="text-yellow-600 text-xs">Belum diverifikasi</span>
+                                                                <span className="text-amber-600 text-xs">Belum diverifikasi</span>
                                                             )}
                                                         </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
@@ -1064,7 +1064,7 @@ useEffect(() => {
                                                         className={`${
                                                             !canEdit
                                                                 ? 'text-gray-300 cursor-not-allowed' 
-                                                                : 'text-yellow-600 hover:text-yellow-900'
+                                                                : 'text-amber-600 hover:text-amber-900'
                                                         }`}
                                                         title={!canEdit ? verificationStatus.message : 'Edit'}
                                                         disabled={!canEdit}
@@ -1078,7 +1078,7 @@ useEffect(() => {
                                                     {userRoles.isAdmin && (
                                                         <button
                                                             onClick={() => handleVerify(item)}
-                                                            className="text-purple-600 hover:text-purple-900"
+                                                            className="text-blue-600 hover:text-blue-900"
                                                             title={verificationStatus.message || 'Verifikasi Kompetensi'}
                                                         >
                                                             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

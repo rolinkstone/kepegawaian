@@ -421,7 +421,7 @@ const UserskompetensiForm = ({ show, onClose, onSuccess, editingData, options, u
                                 />
                                 
                                 {showUserDropdown && filteredUsers.length > 0 && (
-                                    <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                                    <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-md max-h-60 overflow-y-auto">
                                         {filteredUsers.map(user => (
                                             <div
                                                 key={user.id}
@@ -476,7 +476,7 @@ const UserskompetensiForm = ({ show, onClose, onSuccess, editingData, options, u
                             />
                             
                             {showKompetensiDropdown && filteredKompetensi.length > 0 && (
-                                <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                                <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-md max-h-60 overflow-y-auto">
                                     {filteredKompetensi.map(kom => (
                                         <div
                                             key={kom.id}
@@ -500,7 +500,7 @@ const UserskompetensiForm = ({ show, onClose, onSuccess, editingData, options, u
                             )}
                             
                             {showKompetensiDropdown && filteredKompetensi.length === 0 && searchKompetensiTerm && (
-                                <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg p-4 text-center text-gray-500">
+                                <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-md p-4 text-center text-gray-500">
                                     Tidak ditemukan kompetensi dengan kata kunci "{searchKompetensiTerm}"
                                 </div>
                             )}

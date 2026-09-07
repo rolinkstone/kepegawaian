@@ -23,7 +23,7 @@ const NotificationModal = ({ show, message, onClose }) => {
                 <div className="px-6 py-4 border-t bg-gray-50 flex justify-end">
                     <button
                         onClick={onClose}
-                        className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                        className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                     >
                         OK
                     </button>

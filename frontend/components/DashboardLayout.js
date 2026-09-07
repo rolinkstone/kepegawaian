@@ -289,26 +289,27 @@ export default function DashboardLayout({ children }) {
         flex flex-col
         transition-all duration-300 ease-in-out
         ${isSidebarOpen ? 'w-64' : 'w-16'}
-        bg-gradient-to-b from-emerald-800 to-teal-900
+        bg-slate-900
         text-white
       `}>
         {/* Sidebar Header */}
-        <div className="p-4 flex items-center justify-between border-b border-emerald-700">
+        <div className="px-4 h-16 flex items-center justify-between border-b border-slate-800">
           {isSidebarOpen ? (
-            <h1 className="text-xl font-bold">
-              <Link href="/" className="hover:text-emerald-300 transition-colors">
-                Dashboard
+            <h1 className="text-lg font-bold tracking-tight">
+              <Link href="/" className="flex items-center gap-2 text-slate-100 hover:text-white transition-colors">
+                <span className="w-2 h-2 rounded-full bg-blue-500 inline-block" />
+                GAP Kompetensi
               </Link>
             </h1>
           ) : (
-            <div className="w-8 h-8" />
+            <span className="w-2 h-2 rounded-full bg-blue-500 inline-block mx-auto" />
           )}
           <button 
             onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-            className="p-2 rounded-lg hover:bg-emerald-700 transition-colors"
+            className="p-2 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white transition-colors"
             aria-label={isSidebarOpen ? 'Collapse sidebar' : 'Expand sidebar'}
           >
-            <span className="text-lg text-emerald-200">☰</span>
+            <span className="text-lg">☰</span>
           </button>
         </div>
 
@@ -317,7 +318,7 @@ export default function DashboardLayout({ children }) {
           {menuGroups.map((group, index) => (
             <div key={index} className="space-y-2">
               {isSidebarOpen && (
-                <p className="text-xs font-semibold uppercase text-emerald-300 px-2">
+                <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 px-2">
                   {group.title}
                 </p>
               )}
@@ -328,21 +329,21 @@ export default function DashboardLayout({ children }) {
                     key={itemIndex}
                     href={item.href}
                     className={`
-                      flex items-center py-3 px-3 rounded-lg
-                      transition-all duration-200
+                      flex items-center py-2.5 px-3 rounded-md text-sm
+                      transition-colors
                       ${router.pathname === item.href
-                        ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-lg'
-                        : 'hover:bg-emerald-700/70 text-emerald-100'
+                        ? 'bg-blue-600 text-white font-medium'
+                        : 'text-slate-400 hover:bg-slate-800 hover:text-slate-100'
                       }
                     `}
                     title={item.description || item.label}
                   >
-                    <span className="text-lg">{item.icon}</span>
+                    <span className="text-base">{item.icon}</span>
                     {isSidebarOpen && (
                       <div className="ml-3">
-                        <span className="font-medium block">{item.label}</span>
+                        <span className="block">{item.label}</span>
                         {item.description && (
-                          <span className="text-xs text-emerald-300 block">
+                          <span className={`text-xs block ${router.pathname === item.href ? 'text-blue-100' : 'text-slate-500'}`}>
                             {item.description}
                           </span>
                         )}
@@ -356,11 +357,11 @@ export default function DashboardLayout({ children }) {
         </nav>
 
         {/* User Info & Logout */}
-        <div className="p-4 border-t border-emerald-700">
+        <div className="p-4 border-t border-slate-800">
           {isSidebarOpen && (
-            <div className="mb-4 p-3 bg-emerald-700/50 rounded-lg backdrop-blur-sm">
-              <p className="text-sm font-semibold truncate text-white">{getUserName()}</p>
-              <p className="text-xs text-emerald-200 truncate">{getUserEmail()}</p>
+            <div className="mb-3 px-3 py-2.5 bg-slate-800 rounded-md">
+              <p className="text-sm font-medium truncate text-white">{getUserName()}</p>
+              <p className="text-xs text-slate-400 truncate">{getUserEmail()}</p>
             </div>
           )}
           
@@ -368,22 +369,22 @@ export default function DashboardLayout({ children }) {
             onClick={handleLogout}
             disabled={isLoggingOut}
             className="
-              flex items-center justify-center w-full py-3 px-3 rounded-lg
-              bg-gradient-to-r from-red-500 to-rose-600
-              hover:from-red-600 hover:to-rose-700
-              transition-all duration-200 shadow-lg
+              flex items-center justify-center w-full py-2.5 px-3 rounded-md text-sm
+              bg-slate-800 text-slate-300
+              hover:bg-red-600 hover:text-white
+              transition-colors
               disabled:opacity-50 disabled:cursor-not-allowed
             "
           >
             {isLoggingOut ? (
               <>
-                <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2"></div>
+                <div className="animate-spin rounded-full h-4 w-4 border-2 border-slate-300 border-t-transparent mr-2"></div>
                 {isSidebarOpen && <span className="ml-1 font-medium">Logging out...</span>}
               </>
             ) : (
               <>
-                <FaSignOutAlt className="text-lg" />
-                {isSidebarOpen && <span className="ml-3 font-medium">Logout</span>}
+                <FaSignOutAlt className="text-base" />
+                {isSidebarOpen && <span className="ml-2 font-medium">Logout</span>}
               </>
             )}
           </button>
@@ -408,7 +409,7 @@ export default function DashboardLayout({ children }) {
                     console.log("🔍 DEBUG Session Info:", debugInfo);
                     alert(`User Role: ${session?.user?.role}\nHas PPK: ${hasPPKRole() ? 'Yes' : 'No'}\n\nCheck console for details.`);
                   }}
-                  className="px-3 py-1 text-xs bg-yellow-100 text-yellow-800 rounded-lg hover:bg-yellow-200"
+                  className="px-3 py-1 text-xs bg-gray-100 text-gray-600 rounded-md hover:bg-gray-200"
                 >
                   Debug Role
                 </button>
@@ -433,19 +434,14 @@ export default function DashboardLayout({ children }) {
                   <p className="text-sm font-semibold text-gray-800">{getUserName()}</p>
                   <p className="text-xs text-gray-500">
                     {session?.user?.role && (
-                      <span className={`px-2 py-1 rounded ${
-                        session.user.role.includes('admin') ? 'bg-red-100 text-red-800' :
-                        session.user.role.includes('ppk') ? 'bg-yellow-100 text-yellow-800' :
-                        session.user.role.includes('kabalai') ? 'bg-purple-100 text-purple-800' :
-                        'bg-gray-100 text-gray-800'
-                      }`}>
+                      <span className="px-2 py-1 rounded-md bg-gray-100 text-gray-600">
                         {getUserRoleDisplay()}
                       </span>
                     )}
                   </p>
                 </div>
                 <div className="relative">
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-r from-emerald-500 to-teal-600 flex items-center justify-center text-white font-bold border-2 border-white shadow-md">
+                  <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white font-semibold border-2 border-white shadow-sm">
                     {getInitials()}
                   </div>
                   <span className="

@@ -152,8 +152,8 @@ const PersetujuanModal = ({ show, kegiatan, onClose, onSuccess }) => {
                     <div className="flex justify-between items-start">
                         <div className="flex-1">
                             <div className="flex items-center space-x-3">
-                                <div className="p-2 bg-teal-100 rounded-lg">
-                                    <svg className="w-6 h-6 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <div className="p-2 bg-blue-100 rounded-lg">
+                                    <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                                     </svg>
                                 </div>
@@ -187,7 +187,7 @@ const PersetujuanModal = ({ show, kegiatan, onClose, onSuccess }) => {
                                                     <span className={`px-3 py-1 text-xs font-medium rounded-full ${
                                                         kegiatan.status === 'Disetujui PPK' 
                                                             ? 'bg-green-100 text-green-800' 
-                                                            : 'bg-yellow-100 text-yellow-800'
+                                                            : 'bg-amber-100 text-amber-800'
                                                     }`}>
                                                         {kegiatan.status}
                                                     </span>
@@ -222,7 +222,7 @@ const PersetujuanModal = ({ show, kegiatan, onClose, onSuccess }) => {
                             onClick={() => setAction('menyetujui')}
                             className={`flex-1 py-3 px-4 text-center font-medium text-sm transition-colors ${
                                 action === 'menyetujui'
-                                    ? 'border-b-2 border-teal-500 text-teal-600 bg-teal-50'
+                                    ? 'border-b-2 border-blue-500 text-blue-600 bg-blue-50'
                                     : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'
                             }`}
                         >
@@ -237,7 +237,7 @@ const PersetujuanModal = ({ show, kegiatan, onClose, onSuccess }) => {
                             onClick={() => setAction('kembalikan')}
                             className={`flex-1 py-3 px-4 text-center font-medium text-sm transition-colors ${
                                 action === 'kembalikan'
-                                    ? 'border-b-2 border-orange-500 text-orange-600 bg-orange-50'
+                                    ? 'border-b-2 border-amber-500 text-amber-600 bg-amber-50'
                                     : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'
                             }`}
                         >
@@ -283,7 +283,7 @@ const PersetujuanModal = ({ show, kegiatan, onClose, onSuccess }) => {
                                         name="tanggal_mengetahui"
                                         value={formData.tanggal_mengetahui}
                                         onChange={handleInputChange}
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                     />
                                     <p className="text-xs text-gray-500 mt-1">
                                         Tanggal persetujuan Kabalai
@@ -299,7 +299,7 @@ const PersetujuanModal = ({ show, kegiatan, onClose, onSuccess }) => {
                                         name="catatan_kabalai"
                                         value={formData.catatan_kabalai}
                                         onChange={handleInputChange}
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                         rows="4"
                                         placeholder="Tambahkan catatan atau instruksi jika diperlukan..."
                                     />
@@ -311,14 +311,14 @@ const PersetujuanModal = ({ show, kegiatan, onClose, onSuccess }) => {
                         ) : (
                             <>
                                 {/* Info Penting untuk Kembalikan */}
-                                <div className="p-3 bg-orange-50 border border-orange-200 rounded-md">
+                                <div className="p-3 bg-amber-50 border border-amber-200 rounded-md">
                                     <div className="flex">
-                                        <svg className="h-5 w-5 text-orange-400 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                        <svg className="h-5 w-5 text-amber-400 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                                             <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
                                         </svg>
                                         <div>
-                                            <p className="text-sm font-medium text-orange-700 mb-1">Kembalikan ke User</p>
-                                            <p className="text-xs text-orange-600">
+                                            <p className="text-sm font-medium text-amber-700 mb-1">Kembalikan ke User</p>
+                                            <p className="text-xs text-amber-600">
                                                 Aksi ini akan mengembalikan kegiatan ke user untuk perbaikan. Kegiatan akan dikembalikan ke status sebelumnya dan user dapat memperbaiki data yang diperlukan.
                                             </p>
                                         </div>
@@ -334,7 +334,7 @@ const PersetujuanModal = ({ show, kegiatan, onClose, onSuccess }) => {
                                         name="catatan_kabalai"
                                         value={formData.catatan_kabalai}
                                         onChange={handleInputChange}
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
                                         rows="4"
                                         placeholder="Berikan alasan mengapa kegiatan perlu dikembalikan ke user (contoh: data tidak lengkap, perlu revisi, dll.)"
                                         required
@@ -381,7 +381,7 @@ const PersetujuanModal = ({ show, kegiatan, onClose, onSuccess }) => {
                                 {action === 'menyetujui' ? (
                                     <button
                                         type="submit"
-                                        className="px-4 py-2 bg-teal-600 text-white rounded-md hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center"
+                                        className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center"
                                         disabled={loading || kembalikanLoading}
                                     >
                                         {loading ? (
@@ -405,7 +405,7 @@ const PersetujuanModal = ({ show, kegiatan, onClose, onSuccess }) => {
                                     <button
                                         type="button"
                                         onClick={handleKembalikanKeUser}
-                                        className="px-4 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center"
+                                        className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center"
                                         disabled={loading || kembalikanLoading || !formData.catatan_kabalai.trim()}
                                     >
                                         {kembalikanLoading ? (

@@ -338,7 +338,7 @@ const handleSubmit = async (e) => {
                         <button
                             type="submit"
                             disabled={loading}
-                            className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:bg-purple-300"
+                            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-blue-300"
                         >
                             {loading ? 'Menyimpan...' : (editingData ? 'Update' : 'Simpan')}
                         </button>

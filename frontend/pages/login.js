@@ -78,10 +78,8 @@ const LoginPage = () => {
       particles = [];
       const particleCount = Math.min(80, Math.floor((canvas.width * canvas.height) / 20000));
       const colors = [
-        'rgba(59, 130, 246, 0.6)', // blue
-        'rgba(139, 92, 246, 0.6)', // violet
-        'rgba(6, 182, 212, 0.6)', // cyan
-        'rgba(245, 158, 11, 0.6)', // amber
+        'rgba(148, 163, 184, 0.5)',
+        'rgba(100, 116, 139, 0.5)',
       ];
 
       for (let i = 0; i < particleCount; i++) {
@@ -120,8 +118,8 @@ const LoginPage = () => {
       // Draw gradient background
       const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
       gradient.addColorStop(0, '#0f172a');
-      gradient.addColorStop(0.5, '#1e1b4b');
-      gradient.addColorStop(1, '#312e81');
+      gradient.addColorStop(0.5, '#111827');
+      gradient.addColorStop(1, '#0f172a');
       ctx.fillStyle = gradient;
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
@@ -177,31 +175,6 @@ const LoginPage = () => {
         className="fixed inset-0 z-0"
       />
 
-      {/* Floating Geometric Elements */}
-      <div className="fixed inset-0 z-1 overflow-hidden">
-        {[...Array(6)].map((_, i) => (
-          <div
-            key={i}
-            className="absolute border border-white/5 rounded-3xl"
-            style={{
-              width: `${100 + i * 50}px`,
-              height: `${100 + i * 50}px`,
-              top: `${10 + i * 15}%`,
-              left: `${5 + i * 10}%`,
-              animation: `float ${8 + i * 2}s ease-in-out infinite ${i * 0.5}s`,
-              transform: `rotate(${i * 15}deg)`,
-              background: `linear-gradient(135deg, rgba(59, 130, 246, ${0.02 + i * 0.01}), rgba(139, 92, 246, ${0.02 + i * 0.01}))`,
-            }}
-          />
-        ))}
-      </div>
-
-      {/* Animated Gradient Orbs */}
-      <div className="fixed inset-0 z-1 overflow-hidden pointer-events-none">
-        <div className="absolute top-1/4 left-1/4 w-[500px] h-[500px] bg-gradient-to-r from-blue-500/10 via-purple-500/10 to-cyan-500/10 rounded-full blur-[100px] animate-spin-slow" />
-        <div className="absolute bottom-1/4 right-1/4 w-[600px] h-[600px] bg-gradient-to-r from-violet-500/10 via-indigo-500/10 to-purple-500/10 rounded-full blur-[120px] animate-spin-slow-reverse" />
-      </div>
-
       <div className="min-h-screen flex items-center justify-center p-4 relative z-10">
         {/* Main Content Container */}
         <div className="w-full max-w-7xl">
@@ -211,14 +184,13 @@ const LoginPage = () => {
               {/* Logo and Brand */}
               <div className="mb-12 transform hover:scale-[1.02] transition-transform duration-500">
                 <div className="flex items-center space-x-6 mb-8">
-                  <div className="relative group">
-                    <div className="absolute inset-0 bg-gradient-to-r from-blue-600 via-violet-600 to-cyan-500 rounded-2xl blur-xl opacity-70 group-hover:opacity-100 transition-opacity duration-500" />
-                    <div className="relative w-20 h-20 bg-gradient-to-br from-slate-900 to-slate-800 rounded-2xl flex items-center justify-center shadow-2xl border border-white/10">
+                  <div className="relative">
+                    <div className="relative w-20 h-20 bg-gradient-to-br from-slate-900 to-slate-800 rounded-2xl flex items-center justify-center shadow-lg border border-white/10">
                       <svg className="w-12 h-12 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                       </svg>
                     </div>
-                    <div className="absolute -bottom-3 -right-3 w-12 h-12 bg-gradient-to-r from-emerald-500 to-teal-400 rounded-full border-4 border-slate-900 flex items-center justify-center shadow-lg animate-pulse">
+                    <div className="absolute -bottom-3 -right-3 w-10 h-10 bg-blue-600 rounded-full border-4 border-slate-900 flex items-center justify-center">
                       <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
                         <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                       </svg>
@@ -228,7 +200,7 @@ const LoginPage = () => {
                     <h1 className="text-5xl font-bold text-white mb-2 tracking-tight">TAMBUN RAYA</h1>
                     <div className="text-blue-200 text-base font-medium bg-white/10 backdrop-blur-sm px-4 py-2 rounded-full inline-block border border-white/20">
                       <span className="flex items-center">
-                        <span className="w-2 h-2 bg-emerald-400 rounded-full mr-2 animate-pulse"></span>
+                          <span className="w-2 h-2 bg-green-400 rounded-full mr-2"></span>
                         BBPOM di Palangka Raya
                       </span>
                     </div>
@@ -238,14 +210,14 @@ const LoginPage = () => {
                 {/* Tagline */}
                 <div className="mb-10">
                   <p className="text-3xl font-light text-white mb-3 leading-tight">
-                    <span className="font-bold bg-gradient-to-r from-blue-400 to-cyan-300 bg-clip-text text-transparent">T</span>alenta{" "}
-                    <span className="font-bold bg-gradient-to-r from-violet-400 to-purple-300 bg-clip-text text-transparent">A</span>paratur{" "}
-                    <span className="font-bold bg-gradient-to-r from-emerald-400 to-teal-300 bg-clip-text text-transparent">M</span>umpuni
+                    <span className="font-bold text-blue-400">T</span>alenta{" "}
+                    <span className="font-bold text-blue-400">A</span>paratur{" "}
+                    <span className="font-bold text-blue-400">M</span>umpuni
                   </p>
                   <p className="text-xl text-cyan-100/90 font-medium">
                     <span className="relative">
                       Berintegritas dan Unggul
-                      <span className="absolute -bottom-1 left-0 w-full h-px bg-gradient-to-r from-transparent via-cyan-400 to-transparent"></span>
+                      <span className="absolute -bottom-1 left-0 w-full h-px bg-gradient-to-r from-transparent via-blue-400 to-transparent"></span>
                     </span>
                   </p>
                 </div>
@@ -273,8 +245,8 @@ const LoginPage = () => {
                     ),
                     title: "Pengembangan Karir",
                     description: "Monitoring dan pengembangan kompetensi berkelanjutan",
-                    color: "from-emerald-500/20 to-teal-600/20",
-                    iconColor: "text-emerald-300"
+                    color: "from-blue-500/20 to-blue-600/20",
+                    iconColor: "text-blue-300"
                   },
                   {
                     icon: (
@@ -284,8 +256,8 @@ const LoginPage = () => {
                     ),
                     title: "Akuntabilitas",
                     description: "Transparansi dan pertanggungjawaban kinerja",
-                    color: "from-amber-500/20 to-amber-600/20",
-                    iconColor: "text-amber-300"
+                    color: "from-blue-500/20 to-blue-600/20",
+                    iconColor: "text-blue-300"
                   }
                 ].map((feature, index) => (
                   <div
@@ -311,42 +283,28 @@ const LoginPage = () => {
               </div>
 
               {/* Quote */}
-              <div className="relative group">
-              <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-600/30 via-violet-600/30 to-cyan-500/30 rounded-2xl blur opacity-70 group-hover:opacity-100 transition duration-500 group-hover:duration-200"></div>
-              <div className="relative p-8 bg-gradient-to-br from-slate-900/50 to-slate-800/50 rounded-2xl border border-white/10 backdrop-blur-sm">
-                <div className="absolute -top-4 -left-4 w-10 h-10 bg-gradient-to-br from-blue-500 to-cyan-400 rounded-full flex items-center justify-center shadow-2xl animate-bounce-slow">
-                  <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-                  </svg>
-                </div>
-                <p className="text-white/90 italic text-xl leading-relaxed">
+              <div className="relative rounded-xl border border-white/10 bg-slate-800/60 p-6">
+                <p className="text-white/90 italic text-base leading-relaxed">
                   "Kompetensi dan integritas adalah pondasi utama dalam membangun pelayanan publik yang berkualitas dan berkelanjutan."
                 </p>
-                <div className="mt-6 flex items-center justify-end">
-                  <div className="w-8 h-px bg-gradient-to-r from-transparent via-white/30 to-transparent flex-grow"></div>
-                  <span className="text-sm text-white/60 px-4">— Semangat Kepegawaian</span>
+                <div className="mt-4 flex items-center justify-end">
+                  <span className="text-sm text-white/60">— Semangat Kepegawaian</span>
                 </div>
               </div>
-            </div>
             </div>
 
             {/* Right Column - Login Form */}
             <div className="flex flex-col justify-center">
-              <div className="relative group">
-                {/* Glow Effect */}
-                <div className="absolute -inset-1 bg-gradient-to-r from-blue-600/20 via-violet-600/20 to-cyan-500/20 rounded-3xl blur-xl opacity-70 group-hover:opacity-100 transition duration-500 group-hover:duration-200 animate-glow"></div>
-                
+              <div className="relative">
                 {/* Main Form Card */}
-                <div className="relative bg-gradient-to-br from-white via-white/95 to-white/90 rounded-3xl shadow-2xl overflow-hidden border border-white/30">
-                  {/* Decorative Elements */}
-                  <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-600 via-violet-600 to-cyan-500"></div>
-                  <div className="absolute top-6 right-6 w-20 h-20 bg-gradient-to-br from-blue-500/10 to-cyan-500/10 rounded-full blur-xl"></div>
-                  <div className="absolute bottom-6 left-6 w-32 h-32 bg-gradient-to-br from-violet-500/10 to-purple-500/10 rounded-full blur-xl"></div>
+                <div className="relative bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
+                  {/* Decorative Top Bar */}
+                  <div className="absolute top-0 left-0 right-0 h-1 bg-blue-600"></div>
 
                   {/* Login Header */}
                   <div className="p-10 border-b border-gray-100/50">
                     <div className="text-center mb-10">
-                      <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-blue-500 to-cyan-400 rounded-2xl mb-6 shadow-2xl transform hover:scale-105 transition-transform duration-300">
+                      <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-600 rounded-xl mb-6 shadow-sm">
                         <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                         </svg>
@@ -383,15 +341,10 @@ const LoginPage = () => {
                       <button
                         onClick={handleKeycloakLogin}
                         disabled={isLoading}
-                        className="relative w-full flex items-center justify-center px-10 py-6 border-0 rounded-2xl text-base font-semibold text-white overflow-hidden group"
+                        className="relative w-full flex items-center justify-center px-8 py-5 rounded-lg bg-blue-600 font-semibold text-white hover:bg-blue-700 disabled:opacity-60 transition-colors"
                       >
-                        {/* Animated Gradient Background */}
-                        <div className="absolute inset-0 bg-gradient-to-r from-slate-800 via-slate-900 to-slate-800 group-hover:from-slate-900 group-hover:via-slate-800 group-hover:to-slate-900 transition-all duration-500"></div>
-                        <div className="absolute inset-0 bg-gradient-to-r from-blue-600 via-violet-600 to-cyan-500 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-                        <div className="absolute inset-0 bg-gradient-to-r from-blue-600 via-violet-600 to-cyan-500 animate-shimmer"></div>
-                        
                         {/* Button Content */}
-                        <div className="relative flex items-center justify-center space-x-5">
+                        <div className="relative flex items-center justify-center gap-5">
                           {isLoading ? (
                             <>
                               <div className="w-8 h-8 border-3 border-white/30 border-t-white rounded-full animate-spin"></div>
@@ -399,11 +352,9 @@ const LoginPage = () => {
                             </>
                           ) : (
                             <>
-                              <div className="w-12 h-12 bg-gradient-to-br from-white/20 to-white/10 backdrop-blur-sm rounded-xl flex items-center justify-center border border-white/20 group-hover:scale-110 transition-transform duration-300">
-                                <svg className="w-7 h-7 text-white" fill="currentColor" viewBox="0 0 24 24">
+                              <svg className="w-7 h-7 text-white" fill="currentColor" viewBox="0 0 24 24">
                                   <path d="M12 0c-6.627 0-12 5.373-12 12s5.373 12 12 12 12-5.373 12-12-5.373-12-12-12zm6 13h-5v5h-2v-5h-5v-2h5v-5h2v5h5v2z" />
                                 </svg>
-                              </div>
                               <div className="text-left">
                                 <div className="text-2xl font-bold mb-1">Login dengan SSO</div>
                                 <div className="text-sm font-normal opacity-90">Akun terverifikasi BBPOM Palangka Raya</div>
@@ -419,19 +370,13 @@ const LoginPage = () => {
 
                     {/* Security Badges */}
                     <div className="flex flex-wrap items-center justify-center gap-6">
-                      {[
-                        { text: 'SSL Encrypted', color: 'emerald', icon: '🔒' },
-                        { text: 'SSO Authentication', color: 'blue', icon: '🔑' },
-                      ].map((badge, index) => (
-                        <div
+                      {['SSL Encrypted', 'SSO Authentication'].map((text, index) => (
+                        <span
                           key={index}
-                          className="flex items-center space-x-2 px-4 py-2.5 bg-gradient-to-br from-white to-white/90 backdrop-blur-sm rounded-xl border border-gray-200/50 shadow-sm group hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300"
+                          className="flex items-center px-3 py-1.5 rounded-md border border-gray-200 bg-white text-xs font-medium text-gray-600"
                         >
-                          <span className="text-lg">{badge.icon}</span>
-                          <span className={`font-medium text-sm text-slate-700 group-hover:text-slate-900`}>
-                            {badge.text}
-                          </span>
-                        </div>
+                          {text}
+                        </span>
                       ))}
                     </div>
                   </div>
@@ -456,7 +401,7 @@ const LoginPage = () => {
                           className="relative text-sm font-medium text-slate-700 hover:text-blue-700 transition-colors group"
                         >
                           <span className="relative z-10">Tentang Sistem</span>
-                          <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-gradient-to-r from-blue-600 to-cyan-500 group-hover:w-full transition-all duration-300"></span>
+                          <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-blue-600 group-hover:w-full transition-all duration-300"></span>
                         </button>
                         <div className="h-6 w-px bg-gradient-to-b from-transparent via-gray-300 to-transparent"></div>
                         <a 
@@ -466,7 +411,7 @@ const LoginPage = () => {
                             target="_blank"
                             rel="noopener noreferrer"
                           >
-                            📥 Download Panduan
+                            Download Panduan
                           </a>
                       </div>
                     </div>
@@ -476,13 +421,8 @@ const LoginPage = () => {
 
               {/* Bottom Info */}
               <div className="mt-10 text-center">
-                <div className="inline-flex items-center space-x-3 bg-gradient-to-r from-white/10 to-white/5 backdrop-blur-sm px-6 py-3 rounded-full mb-5 hover:from-white/15 hover:to-white/10 transition-all duration-300 border border-white/10 group">
-                  <div className="flex space-x-1">
-                    <span className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse"></span>
-                    <span className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse delay-150"></span>
-                    <span className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse delay-300"></span>
-                  </div>
-                  <span className="text-white font-medium group-hover:text-cyan-100 transition-colors">Sistem Aktif • Terverifikasi • Real-time</span>
+                <div className="inline-flex items-center px-5 py-2.5 rounded-full bg-white/10 border border-white/10 mb-5">
+                  <span className="text-sm font-medium text-slate-100">Sistem Aktif • Terverifikasi • Real-time</span>
                 </div>
                 <p className="text-sm text-white/70 mb-2">
                   © {new Date().getFullYear()} TAMBUN RAYA. Hak cipta dilindungi undang-undang.

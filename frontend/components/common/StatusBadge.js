@@ -11,7 +11,7 @@ const StatusBadge = ({ status }) => {
             );
         case 'diajukan':
             return (
-                <span className="px-2 py-1 bg-yellow-200 text-yellow-800 text-xs font-medium rounded-full">
+                <span className="px-2 py-1 bg-amber-200 text-amber-800 text-xs font-medium rounded-full">
                     Diajukan
                 </span>
             );

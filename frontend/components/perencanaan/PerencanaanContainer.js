@@ -292,7 +292,7 @@ const PerencanaanContainer = ({ session, status }) => {
   if (status === 'loading') {
     return (
       <div className="flex items-center justify-center h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-600 mx-auto"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
       </div>
     );
   }
@@ -312,9 +312,9 @@ const PerencanaanContainer = ({ session, status }) => {
             onClick={() => setShowUploadModal(true)}
             className="
               flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg
-              bg-gradient-to-r from-emerald-600 to-teal-600 text-white
-              hover:from-emerald-700 hover:to-teal-700
-              transition-all duration-200 shadow-lg
+              bg-gradient-to-r from-blue-600 to-blue-600 text-white
+              hover:from-blue-700 hover:to-blue-700
+              transition-all duration-200 shadow-md
             "
           >
             <FaUpload />
@@ -373,7 +373,7 @@ const PerencanaanContainer = ({ session, status }) => {
                     <td className="px-6 py-4">
                       <button
                         onClick={() => handleView(doc)}
-                        className="flex items-center gap-2 text-sm font-medium text-emerald-700 hover:text-emerald-900 hover:underline text-left"
+                        className="flex items-center gap-2 text-sm font-medium text-blue-700 hover:text-blue-900 hover:underline text-left"
                         title="Klik untuk melihat"
                       >
                         <FaFilePdf className="text-red-500 flex-shrink-0" />
@@ -388,7 +388,7 @@ const PerencanaanContainer = ({ session, status }) => {
                       <div className="flex items-center gap-2">
                         <button
                           onClick={() => handleView(doc)}
-                          className="p-2 rounded-lg bg-emerald-100 text-emerald-700 hover:bg-emerald-200 transition-colors"
+                          className="p-2 rounded-lg bg-blue-100 text-blue-700 hover:bg-blue-200 transition-colors"
                           title="Lihat"
                         >
                           <FaEye />
@@ -441,7 +441,7 @@ const PerencanaanContainer = ({ session, status }) => {
                   type="text"
                   name="nama_file"
                   placeholder="Contoh: Rencana Kerja Tahunan 2026"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
               <div>
@@ -451,7 +451,7 @@ const PerencanaanContainer = ({ session, status }) => {
                 <input
                   type="file"
                   accept="application/pdf,.pdf"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
                 <p className="text-xs text-gray-400 mt-1">Hanya file PDF, maksimal 20MB</p>
               </div>
@@ -468,8 +468,8 @@ const PerencanaanContainer = ({ session, status }) => {
                   disabled={uploading}
                   className="
                     flex items-center gap-2 px-5 py-2 rounded-lg
-                    bg-gradient-to-r from-emerald-600 to-teal-600 text-white
-                    hover:from-emerald-700 hover:to-teal-700
+                    bg-gradient-to-r from-blue-600 to-blue-600 text-white
+                    hover:from-blue-700 hover:to-blue-700
                     transition-all duration-200 shadow
                     disabled:opacity-50 disabled:cursor-not-allowed
                   "

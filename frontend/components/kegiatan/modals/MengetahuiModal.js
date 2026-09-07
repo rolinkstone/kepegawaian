@@ -146,7 +146,7 @@ const PersetujuanModal = ({ show, kegiatan, onClose, onSuccess }) => {
                                     <span className="rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800">
                                         MAK: {kegiatan.mak || 'Belum diisi'}
                                     </span>
-                                    <span className="rounded-full bg-yellow-100 px-2.5 py-0.5 text-xs font-medium text-yellow-800">
+                                    <span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-medium text-amber-800">
                                         Status: {kegiatan.status || 'Draft'}
                                     </span>
                                 </div>
@@ -280,7 +280,7 @@ const PersetujuanModal = ({ show, kegiatan, onClose, onSuccess }) => {
                                     disabled={loading || (action === 'kembalikan' && !catatan.trim())}
                                     className={`inline-flex w-full items-center justify-center rounded-lg border border-transparent px-4 py-2.5 text-base font-medium text-white shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto sm:text-sm ${
                                         action === 'setuju'
-                                            ? 'bg-green-600 hover:bg-green-700 focus:ring-green-500'
+                                            ? 'bg-blue-600 hover:bg-blue-700 focus:ring-green-500'
                                             : 'bg-red-600 hover:bg-red-700 focus:ring-red-500'
                                     }`}
                                 >

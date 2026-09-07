@@ -516,7 +516,7 @@ const PegawaiForm = ({
                     <div className={`text-sm px-3 py-1 rounded-full mt-1 inline-block ${
                         jenisSPM === 'LS' 
                             ? 'bg-blue-100 text-blue-800 border border-blue-200' 
-                            : 'bg-purple-100 text-purple-800 border border-purple-200'
+                            : 'bg-blue-100 text-blue-800 border border-blue-200'
                     }`}>
                         <svg className="w-4 h-4 inline mr-1" fill="currentColor" viewBox="0 0 20 20">
                             <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
@@ -531,7 +531,7 @@ const PegawaiForm = ({
                     <button
                         type="button"
                         onClick={addPegawai}
-                        className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition flex items-center"
+                        className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition flex items-center"
                         disabled={formLoading}
                     >
                         <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -544,14 +544,14 @@ const PegawaiForm = ({
 
             {/* Info banner untuk KKP */}
             {jenisSPM === 'KKP' && (
-                <div className="p-3 bg-purple-50 border border-purple-200 rounded-md">
+                <div className="p-3 bg-blue-50 border border-blue-200 rounded-md">
                     <div className="flex items-start">
-                        <svg className="w-5 h-5 mr-2 text-purple-600 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                        <svg className="w-5 h-5 mr-2 text-blue-600 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
                             <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
                         </svg>
                         <div>
-                            <div className="text-sm font-medium text-purple-800">Mode KKP (Kartu Kredit Pemerintah)</div>
-                            <div className="text-sm text-purple-700">
+                            <div className="text-sm font-medium text-blue-800">Mode KKP (Kartu Kredit Pemerintah)</div>
+                            <div className="text-sm text-blue-700">
                                 Hanya menghitung Transport. Inputan Uang Harian dan Penginapan akan diabaikan.
                             </div>
                         </div>
@@ -571,7 +571,7 @@ const PegawaiForm = ({
                                     </span>
                                 )}
                                 {jenisSPM === 'KKP' && (
-                                    <span className="ml-2 text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded-full">
+                                    <span className="ml-2 text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
                                         KKP
                                     </span>
                                 )}
@@ -579,7 +579,7 @@ const PegawaiForm = ({
                             <div className="text-sm text-gray-500">
                                 Total Biaya: <span className="font-bold text-green-700">Rp {formatRupiah(pegawai.total_biaya)}</span>
                                 {jenisSPM === 'KKP' && (
-                                    <span className="ml-2 text-xs text-purple-600">
+                                    <span className="ml-2 text-xs text-blue-600">
                                         (Hanya Transport)
                                     </span>
                                 )}
@@ -620,7 +620,7 @@ const PegawaiForm = ({
                                     className={`w-full px-3 py-2 border rounded-md pr-10 focus:outline-none focus:ring-2 ${
                                         pegawai.pegawai_id 
                                             ? 'border-green-300 bg-green-50 focus:ring-green-500' 
-                                            : 'border-gray-300 focus:ring-indigo-500'
+                                            : 'border-gray-300 focus:ring-blue-500'
                                     }`}
                                     placeholder={pegawai.pegawai_id ? "Pegawai sudah dipilih" : "Cari nama pegawai..."}
                                     disabled={formLoading}
@@ -679,7 +679,7 @@ const PegawaiForm = ({
                             {showSuggestions[pIndex] && !pegawai.pegawai_id && availableSuggestions && (
                                 <div 
                                     ref={el => suggestionRefs.current[pIndex] = el}
-                                    className="absolute z-50 mt-1 w-full bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-y-auto"
+                                    className="absolute z-50 mt-1 w-full bg-white border border-gray-300 rounded-md shadow-md max-h-60 overflow-y-auto"
                                 >
                                     {getFilteredSuggestions(pIndex).length > 0 ? (
                                         <>
@@ -689,8 +689,8 @@ const PegawaiForm = ({
                                             {getFilteredSuggestions(pIndex).map((suggestion, idx) => (
                                                 <div
                                                     key={`${pIndex}-${idx}`}
-                                                    className={`px-3 py-2 cursor-pointer border-b border-gray-100 last:border-b-0 hover:bg-indigo-50 ${
-                                                        selectedIndex === idx ? 'bg-indigo-100' : ''
+                                                    className={`px-3 py-2 cursor-pointer border-b border-gray-100 last:border-b-0 hover:bg-blue-50 ${
+                                                        selectedIndex === idx ? 'bg-blue-100' : ''
                                                     }`}
                                                     onClick={() => handleSelectPegawai(pIndex, suggestion)}
                                                     onMouseDown={(e) => e.preventDefault()}
@@ -759,7 +759,7 @@ const PegawaiForm = ({
                                 className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${
                                     pegawai.pegawai_id 
                                         ? 'border-green-300 bg-green-50 focus:ring-green-500' 
-                                        : 'border-gray-300 focus:ring-indigo-500'
+                                        : 'border-gray-300 focus:ring-blue-500'
                                 }`}
                                 disabled={formLoading || pegawai.pegawai_id}
                                 placeholder={pegawai.pegawai_id ? "Terisi otomatis" : "Akan terisi otomatis"}
@@ -786,7 +786,7 @@ const PegawaiForm = ({
                                 className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${
                                     pegawai.pegawai_id 
                                         ? 'border-green-300 bg-green-50 focus:ring-green-500' 
-                                        : 'border-gray-300 focus:ring-indigo-500'
+                                        : 'border-gray-300 focus:ring-blue-500'
                                 }`}
                                 disabled={formLoading || pegawai.pegawai_id}
                                 placeholder={pegawai.pegawai_id ? "Terisi otomatis" : "Akan terisi otomatis"}
@@ -969,7 +969,7 @@ const PegawaiForm = ({
                             <div className="p-4 bg-gray-50 rounded-lg">
                                 <div className="flex justify-between items-center mb-3">
                                     <h6 className="font-medium text-gray-700 flex items-center">
-                                        <svg className="w-4 h-4 mr-2 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <svg className="w-4 h-4 mr-2 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                                         </svg>
                                         Penginapan
@@ -1046,12 +1046,12 @@ const PegawaiForm = ({
 
                         {/* Informasi untuk KKP */}
                         {jenisSPM === 'KKP' && (
-                            <div className="p-4 bg-purple-50 border border-purple-200 rounded-md">
+                            <div className="p-4 bg-blue-50 border border-blue-200 rounded-md">
                                 <div className="flex items-center">
-                                    <svg className="w-5 h-5 mr-2 text-purple-600" fill="currentColor" viewBox="0 0 20 20">
+                                    <svg className="w-5 h-5 mr-2 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
                                         <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                                     </svg>
-                                    <div className="text-sm text-purple-700">
+                                    <div className="text-sm text-blue-700">
                                         <span className="font-medium">Mode KKP Aktif:</span> Hanya Transportasi yang dihitung. Uang Harian dan Penginapan tidak tersedia untuk jenis SPM ini.
                                     </div>
                                 </div>
@@ -1072,7 +1072,7 @@ const PegawaiForm = ({
                     <button
                         type="button"
                         onClick={addPegawai}
-                        className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition"
+                        className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition"
                         disabled={formLoading}
                     >
                         Tambah Pegawai Pertama

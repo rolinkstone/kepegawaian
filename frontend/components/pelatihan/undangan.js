@@ -80,7 +80,7 @@ const UndanganPage = () => {
 
     const getStatusBadge = (status) => {
         const badges = {
-            'Pending': 'bg-yellow-100 text-yellow-800',
+            'Pending': 'bg-amber-100 text-amber-800',
             'Diterima': 'bg-green-100 text-green-800',
             'Ditolak': 'bg-red-100 text-red-800'
         };
@@ -108,9 +108,9 @@ const UndanganPage = () => {
 
                 {/* Stats Cards */}
                 <div className="grid grid-cols-3 gap-4 mb-6">
-                    <div className="bg-yellow-50 p-4 rounded-lg">
-                        <p className="text-sm text-yellow-600">Pending</p>
-                        <p className="text-2xl font-bold text-yellow-700">{stats.pending}</p>
+                    <div className="bg-amber-50 p-4 rounded-lg">
+                        <p className="text-sm text-amber-600">Pending</p>
+                        <p className="text-2xl font-bold text-amber-700">{stats.pending}</p>
                     </div>
                     <div className="bg-green-50 p-4 rounded-lg">
                         <p className="text-sm text-green-600">Diterima</p>
@@ -174,7 +174,7 @@ const UndanganPage = () => {
                                                     <div className="flex space-x-2">
                                                         <button
                                                             onClick={() => handleRespond(item.id, 'Diterima')}
-                                                            className="px-3 py-1 bg-green-600 text-white text-sm rounded hover:bg-green-700"
+                                                            className="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700"
                                                         >
                                                             Terima
                                                         </button>

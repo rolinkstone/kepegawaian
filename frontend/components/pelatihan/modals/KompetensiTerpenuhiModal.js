@@ -131,7 +131,7 @@ const KompetensiTerpenuhiModal = ({ show, onClose, data, session, onSuccess }) =
                             </div>
                         </>
                     ) : (
-                        <div className="mb-4 p-4 bg-yellow-50 rounded-lg text-sm text-yellow-800">
+                        <div className="mb-4 p-4 bg-amber-50 rounded-lg text-sm text-amber-800">
                             <p>Tidak ada kompetensi yang terkait dengan pelatihan ini.</p>
                         </div>
                     )}

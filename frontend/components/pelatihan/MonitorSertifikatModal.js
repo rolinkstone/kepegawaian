@@ -95,7 +95,7 @@ const MonitorSertifikatModal = ({ show, onClose, jadwal, session }) => {
         if (p.sudah_upload) {
             return <span className="px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-700">Lengkap ({p.sudah_kompetensi}/{p.jumlah_kompetensi})</span>;
         }
-        return <span className="px-2 py-1 text-xs font-medium rounded-full bg-orange-100 text-orange-700">Belum Lengkap ({p.sudah_kompetensi}/{p.jumlah_kompetensi})</span>;
+        return <span className="px-2 py-1 text-xs font-medium rounded-full bg-amber-100 text-amber-700">Belum Lengkap ({p.sudah_kompetensi}/{p.jumlah_kompetensi})</span>;
     };
 
     const verifBadge = (verif) => {
@@ -103,7 +103,7 @@ const MonitorSertifikatModal = ({ show, onClose, jadwal, session }) => {
         const map = {
             'Valid': 'bg-green-100 text-green-700',
             'Tidak Valid': 'bg-red-100 text-red-700',
-            'Perlu Revisi': 'bg-yellow-100 text-yellow-700'
+            'Perlu Revisi': 'bg-amber-100 text-amber-700'
         };
         return <span className={`px-2 py-0.5 text-xs rounded-full ${map[verif] || 'bg-gray-100 text-gray-700'}`}>Verif: {verif}</span>;
     };
@@ -148,7 +148,7 @@ const MonitorSertifikatModal = ({ show, onClose, jadwal, session }) => {
                         <div className="mb-4 flex flex-wrap gap-1 items-center">
                             <span className="text-xs text-gray-500 mr-1">Kompetensi terkait:</span>
                             {monitor.kompetensi_pelatihan.map((k, i) => (
-                                <span key={i} className="text-xs px-2 py-0.5 bg-purple-100 text-purple-700 rounded">
+                                <span key={i} className="text-xs px-2 py-0.5 bg-blue-100 text-blue-700 rounded">
                                     {k.kode} - {k.nama}
                                 </span>
                             ))}
@@ -169,9 +169,9 @@ const MonitorSertifikatModal = ({ show, onClose, jadwal, session }) => {
                             <p className="text-sm text-green-600">Peserta Lengkap</p>
                             <p className="text-2xl font-bold text-green-700">{pesertaLengkap}</p>
                         </div>
-                        <div className="bg-orange-50 border border-orange-100 rounded-lg p-3 text-center">
-                            <p className="text-sm text-orange-600">Peserta Belum Lengkap</p>
-                            <p className="text-2xl font-bold text-orange-700">{pesertaBelum}</p>
+                        <div className="bg-amber-50 border border-amber-100 rounded-lg p-3 text-center">
+                            <p className="text-sm text-amber-600">Peserta Belum Lengkap</p>
+                            <p className="text-2xl font-bold text-amber-700">{pesertaBelum}</p>
                         </div>
                     </div>
 

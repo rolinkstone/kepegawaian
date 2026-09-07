@@ -138,7 +138,7 @@ const KompetensiWajibForm = ({ show, onClose, onSuccess, session, existingTahunO
                                             name="tahun"
                                             value={formData.tahun}
                                             onChange={handleChange}
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                         >
                                             {tahunList.map(tahun => (
                                                 <option key={tahun} value={tahun}>{tahun}</option>
@@ -157,14 +157,14 @@ const KompetensiWajibForm = ({ show, onClose, onSuccess, session, existingTahunO
                                             placeholder="Cari kompetensi (kode atau nama)..."
                                             value={searchTerm}
                                             onChange={(e) => setSearchTerm(e.target.value)}
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 mb-2"
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 mb-2"
                                         />
                                         
                                         {filteredKompetensi.length > 0 && (
                                             <button
                                                 type="button"
                                                 onClick={handleSelectAll}
-                                                className="text-sm text-purple-600 hover:text-purple-800 mb-2 block"
+                                                className="text-sm text-blue-600 hover:text-blue-800 mb-2 block"
                                             >
                                                 {selectedKompetensi.length === filteredKompetensi.length ? 'Deselect All' : 'Select All'}
                                                 {filteredKompetensi.length > 0 && (
@@ -199,7 +199,7 @@ const KompetensiWajibForm = ({ show, onClose, onSuccess, session, existingTahunO
                                                                     setSelectedKompetensi(selectedKompetensi.filter(id => id !== kom.id));
                                                                 }
                                                             }}
-                                                            className="w-4 h-4 mt-0.5 text-purple-600 border-gray-300 rounded focus:ring-purple-500"
+                                                            className="w-4 h-4 mt-0.5 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                                                         />
                                                         <div className="ml-3 flex-1 min-w-0">
                                                             <div className="flex flex-wrap items-center gap-2">
@@ -237,7 +237,7 @@ const KompetensiWajibForm = ({ show, onClose, onSuccess, session, existingTahunO
                             type="button"
                             onClick={handleSubmit}
                             disabled={loading || kompetensiOptions.length === 0}
-                            className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-purple-600 text-base font-medium text-white hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 sm:ml-3 sm:w-auto sm:text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:ml-3 sm:w-auto sm:text-sm disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             {loading ? (
                                 <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
@@ -249,7 +249,7 @@ const KompetensiWajibForm = ({ show, onClose, onSuccess, session, existingTahunO
                             type="button"
                             onClick={onClose}
                             disabled={loading}
-                            className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
+                            className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
                         >
                             Batal
                         </button>
