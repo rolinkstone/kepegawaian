@@ -24,13 +24,12 @@ COPY . .
 RUN npm run build
 
 # Set environment variable untuk port
-# ⭐ PASTIKAN PORT 3001 untuk Next.js
-ENV PORT=3001
+# Next.js jalan di 3002 (lihat script "start" di package.json: next start -p 3002)
+ENV PORT=3002
 ENV HOSTNAME=0.0.0.0
 ENV NODE_ENV=production
 
-# Expose port yang benar
-EXPOSE 3001
+EXPOSE 3002
 
 # Start aplikasi
 CMD ["npm", "start"]

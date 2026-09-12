@@ -1,0 +1,64 @@
+# ============================================================
+#  ROOT .gitignore - Aplikasi Kepegawaian
+# ============================================================
+
+# ---------- Environment / Secrets (JANGAN PERNAH DI-COMMIT) ----------
+.env
+.env.*
+**/.env
+**/.env.*
+# ...kecuali file template
+!.env.example
+!**/.env.example
+
+# ---------- Kredensial & sertifikat ----------
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+credentials*.json
+service-account*.json
+
+# ---------- Dependencies ----------
+node_modules/
+**/node_modules/
+.pnp
+.pnp.js
+
+# ---------- Build output ----------
+.next/
+**/.next/
+out/
+build/
+dist/
+*.tsbuildinfo
+
+# ---------- Logs ----------
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+logs/
+
+# ---------- Data runtime (DB, uploads, cache) ----------
+data/
+backend/uploads/
+frontend/public/uploads/
+
+# ---------- Backup / dump ----------
+*.sql.gz
+*.dump
+*.bak
+*.old
+
+# ---------- OS & editor ----------
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/
+*.swp
+
+# ---------- Docker ----------
+docker-compose.override.yml

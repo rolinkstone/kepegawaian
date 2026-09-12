@@ -1,0 +1,24 @@
+# Dependency & build output
+node_modules
+npm-debug.log*
+
+# RAHASIA - jangan sampai masuk ke layer image
+.env
+.env.*
+!.env.example
+
+# Log & artefak lokal
+*.log
+logs
+coverage
+
+# Git & editor
+.git
+.gitignore
+.vscode
+.idea
+
+# Docker
+Dockerfile
+.dockerignore
+docker-compose*.yml

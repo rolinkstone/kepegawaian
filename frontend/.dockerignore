@@ -1,0 +1,26 @@
+# Dependency & build output
+node_modules
+.next
+out
+build
+npm-debug.log*
+
+# RAHASIA - jangan sampai masuk ke layer image.
+# NEXT_PUBLIC_* dikirim lewat build-arg di docker-compose.yml, bukan dari file ini.
+.env
+.env.*
+!.env.example
+
+# Git & editor
+.git
+.gitignore
+.vscode
+.idea
+
+# Docker
+Dockerfile
+.dockerignore
+docker-compose*.yml
+
+# Dokumentasi
+README.md

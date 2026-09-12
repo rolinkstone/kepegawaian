@@ -1,4 +1,24 @@
-version: '3.8'
+# ============================================================================
+#  Docker Compose - Aplikasi Kepegawaian
+# ============================================================================
+#  !! FILE INI TIDAK BOLEH BERISI PASSWORD / SECRET APA PUN !!            
+#  File ini ikut ter-commit ke git. Semua kredensial disimpan di file
+#  terpisah yang sudah di-ignore git:
+#
+#     backend/.env    -> kredensial DB, Keycloak, session
+#     frontend/.env   -> kredensial Keycloak & NextAuth
+#
+#  Template-nya ada di backend/.env.example dan frontend/.env.example
+#
+#  Deploy / rebuild di server:
+#    1. cp backend/.env.example  backend/.env    && nano backend/.env
+#    2. cp frontend/.env.example frontend/.env   && nano frontend/.env
+#    3. docker compose config          # cek konfigurasi
+#    4. docker compose up -d --build
+#
+#  Catatan: nilai NEXT_PUBLIC_* di bawah BUKAN rahasia (ikut ter-bundle ke
+#  browser). Nilainya bisa ditimpa lewat file .env di root project ini.
+# ============================================================================
 
 services:
   backend:
@@ -9,61 +29,53 @@ services:
     dns:
       - 8.8.8.8
       - 1.1.1.1
+
+    # Seluruh kredensial dibaca dari file .env (tidak ikut ke git)
+    env_file:
+      - ./backend/.env
+
+    # Nilai di bawah hanya konfigurasi non-rahasia; menimpa isi env_file
     environment:
-      - DB_HOST=127.0.0.1
-      - DB_PORT=3306
-      - DB_USER=raya
-      - DB_PASSWORD=***REMOVED***
-      - DB_NAME=kepegawaian
-      - KEYCLOAK_SERVER_URL=https://auth.bbpompky.id
-      - KEYCLOAK_REALM=master
-      - KEYCLOAK_ADMIN_USERNAME=admin
-      - KEYCLOAK_ADMIN_PASSWORD=***REMOVED***
       - NODE_ENV=production
-      - PORT=5001
-      - FRONTEND_URL=https://tambun-raya.bbpompky.id
-      - BACKEND_URL=https://api-tambun.bbpompky.id
+      - PORT=${BACKEND_PORT:-5001}
       - DATA_PATH=/data
       - LOGS_PATH=/data/logs
       - UPLOADS_PATH=/data/uploads
+
     volumes:
       - ./data/backend:/data
       - ./backend:/usr/src/app
       - /usr/src/app/node_modules
 
   frontend:
-    build: 
+    build:
       context: ./frontend
       dockerfile: Dockerfile
       args:
-        - NEXT_PUBLIC_API_URL=https://api-tambun.bbpompky.id/api
-        - NEXT_PUBLIC_KEYCLOAK_ISSUER=https://auth.bbpompky.id/realms/master
-        - NEXT_PUBLIC_KEYCLOAK_CLIENT_ID=kepegawaian
+        # NEXT_PUBLIC_* ditanam saat build time - bukan nilai rahasia
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://api-tambun.bbpompky.id/api}
+        NEXT_PUBLIC_KEYCLOAK_ISSUER: ${NEXT_PUBLIC_KEYCLOAK_ISSUER:-https://auth.bbpompky.id/realms/master}
+        NEXT_PUBLIC_KEYCLOAK_CLIENT_ID: ${NEXT_PUBLIC_KEYCLOAK_CLIENT_ID:-kepegawaian}
     container_name: tambunraya-frontend
     restart: unless-stopped
     dns:
       - 8.8.8.8
       - 1.1.1.1
     ports:
-      - "3002:3002"
+      - "${FRONTEND_PORT:-3002}:3002"
+
+    # Seluruh kredensial NextAuth & Keycloak dibaca dari file .env
+    env_file:
+      - ./frontend/.env
+
     environment:
       - NODE_ENV=production
-      # ⭐ Gunakan domain tunnel untuk NextAuth
-      - NEXT_PUBLIC_API_URL=https://api-tambun.bbpompky.id/api
-      - NEXT_PUBLIC_KEYCLOAK_CLIENT_ID=kepegawaian
-      - NEXT_PUBLIC_KEYCLOAK_ISSUER=https://auth.bbpompky.id/realms/master
-      - KEYCLOAK_ISSUER=https://auth.bbpompky.id/realms/master
-      - KEYCLOAK_CLIENT_ID=kepegawaian
-      - KEYCLOAK_CLIENT_SECRET=***REMOVED***
-      - NEXTAUTH_URL=https://tambun-raya.bbpompky.id
-      - NEXTAUTH_URL_INTERNAL=http://localhost:3002
-      - NEXTAUTH_TRUST_HOST=true
-      - NEXTAUTH_SECRET=***REMOVED***=
-      - KEYCLOAK_ADMIN_USERNAME=admin
-      - KEYCLOAK_ADMIN_PASSWORD=***REMOVED***
+      - PORT=3002
+      - HOSTNAME=0.0.0.0
       - DATA_PATH=/data
       - CACHE_PATH=/data/.next/cache
       - PUBLIC_UPLOADS_PATH=/data/public/uploads
+
     volumes:
       - ./data/frontend:/data
       - ./frontend:/usr/src/app
