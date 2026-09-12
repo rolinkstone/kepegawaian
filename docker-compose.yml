@@ -1,23 +1,25 @@
 # ============================================================================
 #  Docker Compose - Aplikasi Kepegawaian
 # ============================================================================
-#  !! FILE INI TIDAK BOLEH BERISI PASSWORD / SECRET APA PUN !!            
-#  File ini ikut ter-commit ke git. Semua kredensial disimpan di file
-#  terpisah yang sudah di-ignore git:
+#  !! FILE INI TIDAK BOLEH BERISI PASSWORD / SECRET APA PUN !!
 #
-#     backend/.env    -> kredensial DB, Keycloak, session
-#     frontend/.env   -> kredensial Keycloak & NextAuth
+#  SEMUA konfigurasi & kredensial dibaca dari SATU file di root project:
 #
-#  Template-nya ada di backend/.env.example dan frontend/.env.example
+#      .env        <- di-ignore git, JANGAN di-commit
+#      .env.example <- template yang aman di-commit
 #
 #  Deploy / rebuild di server:
-#    1. cp backend/.env.example  backend/.env    && nano backend/.env
-#    2. cp frontend/.env.example frontend/.env   && nano frontend/.env
-#    3. docker compose config          # cek konfigurasi
-#    4. docker compose up -d --build
+#      1. cp .env.example .env
+#      2. nano .env            # isi semua nilai
+#      3. chmod 600 .env
+#      4. docker compose config        # cek konfigurasi
+#      5. docker compose up -d --build
 #
-#  Catatan: nilai NEXT_PUBLIC_* di bawah BUKAN rahasia (ikut ter-bundle ke
-#  browser). Nilainya bisa ditimpa lewat file .env di root project ini.
+#  Kalau ada nilai yang belum diisi, langkah 4 akan berhenti dengan pesan
+#  yang menyebutkan nama variabelnya - jadi tidak perlu menebak.
+#
+#  Catatan: NEXT_PUBLIC_* BUKAN rahasia (ikut ter-bundle ke browser), tapi
+#  wajib diisi karena ditanam saat build time.
 # ============================================================================
 
 services:
@@ -30,17 +32,35 @@ services:
       - 8.8.8.8
       - 1.1.1.1
 
-    # Seluruh kredensial dibaca dari file .env (tidak ikut ke git)
-    env_file:
-      - ./backend/.env
-
-    # Nilai di bawah hanya konfigurasi non-rahasia; menimpa isi env_file
     environment:
+      # --- runtime ---
       - NODE_ENV=production
       - PORT=${BACKEND_PORT:-5001}
       - DATA_PATH=/data
       - LOGS_PATH=/data/logs
       - UPLOADS_PATH=/data/uploads
+
+      # --- database ---
+      - DB_HOST=${DB_HOST:-127.0.0.1}
+      - DB_PORT=${DB_PORT:-3306}
+      - DB_USER=${DB_USER:?DB_USER belum diisi di .env}
+      - DB_PASSWORD=${DB_PASSWORD:?DB_PASSWORD belum diisi di .env}
+      - DB_NAME=${DB_NAME:-kepegawaian}
+
+      # --- keycloak ---
+      - KEYCLOAK_SERVER_URL=${KEYCLOAK_SERVER_URL:?KEYCLOAK_SERVER_URL belum diisi di .env}
+      - KEYCLOAK_REALM=${KEYCLOAK_REALM:-master}
+      - KEYCLOAK_ADMIN_USERNAME=${KEYCLOAK_ADMIN_USERNAME:?KEYCLOAK_ADMIN_USERNAME belum diisi di .env}
+      - KEYCLOAK_ADMIN_PASSWORD=${KEYCLOAK_ADMIN_PASSWORD:?KEYCLOAK_ADMIN_PASSWORD belum diisi di .env}
+      # Backend memakai client Keycloak miliknya sendiri
+      - KEYCLOAK_CLIENT_ID=${BACKEND_KEYCLOAK_CLIENT_ID:?BACKEND_KEYCLOAK_CLIENT_ID belum diisi di .env}
+      - KEYCLOAK_CLIENT_SECRET=${BACKEND_KEYCLOAK_CLIENT_SECRET:?BACKEND_KEYCLOAK_CLIENT_SECRET belum diisi di .env}
+
+      # --- url & session ---
+      - FRONTEND_URL=${FRONTEND_URL:?FRONTEND_URL belum diisi di .env}
+      - BACKEND_URL=${BACKEND_URL:?BACKEND_URL belum diisi di .env}
+      - SESSION_SECRET=${SESSION_SECRET:?SESSION_SECRET belum diisi di .env}
+      - ALLOW_TESTING_FALLBACK=${ALLOW_TESTING_FALLBACK:-false}
 
     volumes:
       - ./data/backend:/data
@@ -53,9 +73,9 @@ services:
       dockerfile: Dockerfile
       args:
         # NEXT_PUBLIC_* ditanam saat build time - bukan nilai rahasia
-        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://api-tambun.bbpompky.id/api}
-        NEXT_PUBLIC_KEYCLOAK_ISSUER: ${NEXT_PUBLIC_KEYCLOAK_ISSUER:-https://auth.bbpompky.id/realms/master}
-        NEXT_PUBLIC_KEYCLOAK_CLIENT_ID: ${NEXT_PUBLIC_KEYCLOAK_CLIENT_ID:-kepegawaian}
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:?NEXT_PUBLIC_API_URL belum diisi di .env}
+        NEXT_PUBLIC_KEYCLOAK_ISSUER: ${NEXT_PUBLIC_KEYCLOAK_ISSUER:?NEXT_PUBLIC_KEYCLOAK_ISSUER belum diisi di .env}
+        NEXT_PUBLIC_KEYCLOAK_CLIENT_ID: ${NEXT_PUBLIC_KEYCLOAK_CLIENT_ID:?NEXT_PUBLIC_KEYCLOAK_CLIENT_ID belum diisi di .env}
     container_name: tambunraya-frontend
     restart: unless-stopped
     dns:
@@ -64,17 +84,35 @@ services:
     ports:
       - "${FRONTEND_PORT:-3002}:3002"
 
-    # Seluruh kredensial NextAuth & Keycloak dibaca dari file .env
-    env_file:
-      - ./frontend/.env
-
     environment:
+      # --- runtime ---
       - NODE_ENV=production
       - PORT=3002
       - HOSTNAME=0.0.0.0
       - DATA_PATH=/data
       - CACHE_PATH=/data/.next/cache
       - PUBLIC_UPLOADS_PATH=/data/public/uploads
+
+      # --- NextAuth ---
+      - NEXTAUTH_URL=${NEXTAUTH_URL:?NEXTAUTH_URL belum diisi di .env}
+      - NEXTAUTH_URL_INTERNAL=http://localhost:3002
+      - NEXTAUTH_TRUST_HOST=true
+      - NEXTAUTH_SECRET=${NEXTAUTH_SECRET:?NEXTAUTH_SECRET belum diisi di .env}
+
+      # --- Keycloak (dipakai NextAuth di sisi server) ---
+      - KEYCLOAK_ISSUER=${KEYCLOAK_ISSUER:?KEYCLOAK_ISSUER belum diisi di .env}
+      # Frontend memakai client Keycloak yang berbeda dari backend
+      - KEYCLOAK_CLIENT_ID=${FRONTEND_KEYCLOAK_CLIENT_ID:?FRONTEND_KEYCLOAK_CLIENT_ID belum diisi di .env}
+      - KEYCLOAK_CLIENT_SECRET=${FRONTEND_KEYCLOAK_CLIENT_SECRET:?FRONTEND_KEYCLOAK_CLIENT_SECRET belum diisi di .env}
+
+      # --- publik, ikut ter-bundle ke browser ---
+      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:?NEXT_PUBLIC_API_URL belum diisi di .env}
+      - NEXT_PUBLIC_KEYCLOAK_ISSUER=${NEXT_PUBLIC_KEYCLOAK_ISSUER:?NEXT_PUBLIC_KEYCLOAK_ISSUER belum diisi di .env}
+      - NEXT_PUBLIC_KEYCLOAK_CLIENT_ID=${NEXT_PUBLIC_KEYCLOAK_CLIENT_ID:?NEXT_PUBLIC_KEYCLOAK_CLIENT_ID belum diisi di .env}
+
+      # --- Keycloak admin (dipakai script admin bila ada) ---
+      - KEYCLOAK_ADMIN_USERNAME=${KEYCLOAK_ADMIN_USERNAME:-}
+      - KEYCLOAK_ADMIN_PASSWORD=${KEYCLOAK_ADMIN_PASSWORD:-}
 
     volumes:
       - ./data/frontend:/data

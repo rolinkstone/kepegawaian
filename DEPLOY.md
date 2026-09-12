@@ -5,18 +5,26 @@ dipindahkan dari `docker-compose.yml` ke file `.env`.
 
 ---
 
-## 1. Struktur Konfigurasi (BARU)
+## 1. Struktur Konfigurasi
+
+Seluruh konfigurasi ada di **satu file**: `.env` di root project.
 
 | File | Isi | Status git |
 |---|---|---|
+| `.env.example` | template lengkap + keterangan tiap variabel | **dilacak** |
+| `.env` | nilai sebenarnya (password & secret) | diabaikan git |
 | `docker-compose.yml` | hanya konfigurasi non-rahasia | **dilacak** |
-| `backend/.env` | DB, Keycloak admin, client secret, session | diabaikan git |
-| `frontend/.env` | NextAuth, Keycloak client, `NEXT_PUBLIC_*` | diabaikan git |
-| `backend/.env.example` | template backend | dilacak |
-| `frontend/.env.example` | template frontend | dilacak |
 
-> `docker-compose.yml` **tidak boleh** lagi berisi password / secret apa pun.
-> Semuanya dibaca lewat `env_file` dari dua file di atas.
+`docker-compose.yml` memetakan variabel dari `.env` ke container backend dan
+frontend. Jadi **tidak perlu** mengisi `backend/.env` atau `frontend/.env`.
+
+> File lama `backend/.env`, `backend/.env.local`, `backend/.env.production`,
+> dan `frontend/.env` sudah tidak dipakai Docker dan boleh dihapus. Simpan saja
+> bila Anda masih menjalankan aplikasi tanpa Docker.
+
+Catatan: kode backend memuat `dotenv` dari `.env.local`, tetapi dotenv
+**tidak menimpa** variabel yang sudah diset Docker. Jadi nilai dari `.env`
+selalu yang menang.
 
 ---
 
@@ -28,9 +36,8 @@ Gunakan `reset --hard`:
 ```bash
 cd /path/ke/folder/kepegawaian
 
-# cadangkan file .env lama (kalau ada)
-cp -a backend/.env  backend/.env.bak  2>/dev/null || true
-cp -a frontend/.env frontend/.env.bak 2>/dev/null || true
+# file .env di root TIDAK ter-track git, jadi aman dari reset --hard
+cp -a .env .env.bak 2>/dev/null || true
 
 git fetch origin
 git reset --hard origin/main
@@ -44,24 +51,28 @@ ini normal. Dependency akan diambil ulang dari image Docker saat rebuild.
 ## 3. Siapkan File `.env`
 
 ```bash
-cp backend/.env.example  backend/.env
-cp frontend/.env.example frontend/.env
+cp .env.example .env
+nano .env          # isi semua nilai
+chmod 600 .env
 ```
 
-Lalu isi keduanya dengan nilai sebenarnya. Kalau `.env` lama masih ada,
-nilai-nilainya bisa dipindahkan dari `backend/.env.bak` / `frontend/.env.bak`.
-
-Pastikan permission ketat:
+Nilai yang wajib diganti ditandai `GANTI_...`. Cari dengan:
 
 ```bash
-chmod 600 backend/.env frontend/.env
+grep -n 'GANTI_' .env
 ```
 
-Verifikasi file-file itu **tidak** terbaca git:
+Generate nilai untuk `NEXTAUTH_SECRET` dan `SESSION_SECRET`:
 
 ```bash
-git status --short        # backend/.env & frontend/.env TIDAK boleh muncul
-git check-ignore -v backend/.env frontend/.env
+node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
+```
+
+Verifikasi `.env` **tidak** terbaca git:
+
+```bash
+git status --short        # .env TIDAK boleh muncul
+git check-ignore -v .env
 ```
 
 ---
@@ -99,8 +110,8 @@ nilainya di `.env`:
 |---|---|---|
 | Password user MySQL `raya` | MySQL | `DB_PASSWORD` |
 | Password admin Keycloak | Keycloak Admin Console | `KEYCLOAK_ADMIN_PASSWORD` |
-| Client secret Keycloak (frontend) | Keycloak → Clients → `kepegawaian` → Credentials | `KEYCLOAK_CLIENT_SECRET` (frontend) |
-| Client secret Keycloak (backend) | Keycloak → Clients → `nextjs-local` → Credentials | `KEYCLOAK_CLIENT_SECRET` (backend) |
+| Client secret Keycloak (frontend) | Keycloak → Clients → `kepegawaian` → Credentials | `FRONTEND_KEYCLOAK_CLIENT_SECRET` |
+| Client secret Keycloak (backend) | Keycloak → Clients → `nextjs-local` → Credentials | `BACKEND_KEYCLOAK_CLIENT_SECRET` |
 | NextAuth secret | generate sendiri | `NEXTAUTH_SECRET` |
 | Session secret | generate sendiri | `SESSION_SECRET` |
 
@@ -143,5 +154,5 @@ Kalau nilainya diubah, image frontend harus di-build ulang:
 docker compose up -d --build frontend
 ```
 
-Nilai default-nya ada di `docker-compose.yml` dan bisa ditimpa lewat file
-`.env` di root project (opsional).
+Nilainya diambil dari variabel `NEXT_PUBLIC_*` di `.env` dan **wajib diisi** —
+`docker compose config` akan berhenti bila masih kosong.
