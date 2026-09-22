@@ -80,16 +80,19 @@ export const getPemenuhanPeran = async (session, peranId, params = {}) => {
     }
 
     try {
-        const url = new URL(`${BASE_URL}/${peranId}/pemenuhan`);
-
+        // CATATAN: NEXT_PUBLIC_API_URL bersifat relative ('/api/backend') supaya browser
+        // memakai proxy same-origin. `new URL(relative)` tanpa base akan melempar
+        // "Failed to construct 'URL': Invalid URL", jadi query string disusun manual.
+        const query = new URLSearchParams();
         if (params.search && params.search !== '') {
-            url.searchParams.append('search', params.search);
+            query.append('search', params.search);
         }
         if (params.id_fungsi && params.id_fungsi !== '') {
-            url.searchParams.append('id_fungsi', params.id_fungsi);
+            query.append('id_fungsi', params.id_fungsi);
         }
+        const qs = query.toString();
 
-        const response = await fetch(url.toString(), {
+        const response = await fetch(`${BASE_URL}/${peranId}/pemenuhan${qs ? `?${qs}` : ''}`, {
             method: 'GET',
             headers: {
                 'Authorization': `Bearer ${token}`,

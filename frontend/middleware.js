@@ -50,6 +50,14 @@ export default withAuth(
           url.searchParams.set('callbackUrl', req.url);
           return NextResponse.redirect(url);
         }
+
+        // Token ada tapi sudah tidak bisa diperbarui (refresh token kedaluwarsa):
+        // minta login ulang supaya tidak terjebak "sudah login tapi semua API 401".
+        if (token.error) {
+          const url = new URL('/login', req.url);
+          url.searchParams.set('callbackUrl', req.url);
+          return NextResponse.redirect(url);
+        }
         
         console.log(`✅ Access granted for ${path} - User: ${token.name}, Role: ${token.role}`);
         return true;

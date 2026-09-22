@@ -17,6 +17,17 @@ export default function DashboardLayout({ children }) {
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const loading = status === 'loading';
 
+  // Sesi sudah tidak bisa diperbarui (refresh token Keycloak kedaluwarsa /
+  // ditolak): paksa login ulang. Redirect tidak lagi mengandalkan middleware
+  // karena pada Next 16 respons redirect dari middleware tidak diterapkan,
+  // proteksi halaman datang dari getServerSideProps.
+  useEffect(() => {
+    if (session?.error === 'RefreshTokenError') {
+      console.warn('⚠️ Sesi tidak dapat diperbarui — mengalihkan ke halaman login');
+      signOut({ callbackUrl: '/login' });
+    }
+  }, [session?.error]);
+
   // Fungsi untuk cek apakah user memiliki role PPK - DIPERBAIKI
   const hasPPKRole = () => {
     if (!session?.user) return false;

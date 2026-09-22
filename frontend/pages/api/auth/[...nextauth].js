@@ -38,6 +38,46 @@ function decodeJwtPayload(jwtToken) {
   }
 }
 
+/**
+ * Perbarui access token memakai refresh token (Keycloak).
+ *
+ * Kenapa perlu: di realm ini `accessTokenLifespan` = 10800 detik (3 jam) sedangkan
+ * sesi NextAuth 4 jam. Tanpa refresh, semua panggilan API setelah 3 jam akan ditolak
+ * backend dengan "Token tidak valid atau kadaluarsa" walau user masih login.
+ */
+async function refreshAccessToken(token) {
+  const issuer = String(process.env.KEYCLOAK_ISSUER || '').replace(/\/+$/, '');
+  const res = await fetch(`${issuer}/protocol/openid-connect/token`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({
+      grant_type: 'refresh_token',
+      client_id: process.env.KEYCLOAK_CLIENT_ID || '',
+      client_secret: process.env.KEYCLOAK_CLIENT_SECRET || '',
+      refresh_token: token.refreshToken,
+    }),
+  });
+
+  const data = await res.json().catch(() => null);
+  if (!res.ok || !data?.access_token) {
+    throw new Error(data?.error_description || data?.error || `HTTP ${res.status}`);
+  }
+
+  const claims = decodeJwtPayload(data.access_token);
+  return {
+    ...token,
+    accessToken: data.access_token,
+    refreshToken: data.refresh_token || token.refreshToken,
+    idToken: data.id_token || token.idToken,
+    expiresAt: Math.floor(Date.now() / 1000) + Number(data.expires_in || 300),
+    displayClaims: {
+      preferred_username: claims.preferred_username || token.username,
+      jabatan: claims.jabatan || null,
+    },
+    error: undefined,
+  };
+}
+
 export const authOptions = {
   providers: [
     KeycloakProvider({
@@ -115,6 +155,7 @@ export const authOptions = {
         // Cookie ini hanya bisa dibaca di server (lihat pages/api/backend/[...path].js).
         token.accessToken = account.access_token;
         token.idToken = account.id_token;
+        token.refreshToken = account.refresh_token;
         token.expiresAt = account.expires_at;
 
         // Klaim tampilan (bukan token) supaya UI tetap punya data yang dulu
@@ -124,9 +165,26 @@ export const authOptions = {
           preferred_username: claims.preferred_username || user.username,
           jabatan: claims.jabatan || null,
         };
+
+        return token;
       }
-      
-      return token;
+
+      // --- Perpanjang token sebelum kedaluwarsa (60 detik lebih awal) ---
+      const nowSec = Math.floor(Date.now() / 1000);
+      if (!token.expiresAt || nowSec < token.expiresAt - 60) {
+        return token; // masih berlaku
+      }
+      if (!token.refreshToken) {
+        return token; // sesi lama (dibuat sebelum fitur refresh) — biarkan seperti dulu
+      }
+      try {
+        const refreshed = await refreshAccessToken(token);
+        console.log('🔄 Access token diperbarui lewat refresh token');
+        return refreshed;
+      } catch (refreshError) {
+        console.error('❌ Gagal memperbarui access token:', refreshError.message);
+        return { ...token, error: 'RefreshTokenError' };
+      }
     },
 
     async session({ session, token }) {
@@ -152,6 +210,9 @@ export const authOptions = {
         // pages/api/backend/[...path].js — jadi tidak pernah sampai ke browser.
         session.accessToken = 'session';
         session.clientId = process.env.KEYCLOAK_CLIENT_ID || 'nextjs-local';
+        // Bukan rahasia: hanya penanda bahwa token tidak bisa diperbarui lagi
+        // (refresh token kedaluwarsa) sehingga klien perlu login ulang.
+        session.error = token.error || null;
         session.expires = token.expiresAt ? 
           new Date(token.expiresAt * 1000).toISOString() : null;
       }
