@@ -73,7 +73,10 @@ services:
       dockerfile: Dockerfile
       args:
         # NEXT_PUBLIC_* ditanam saat build time - bukan nilai rahasia
-        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:?NEXT_PUBLIC_API_URL belum diisi di .env}
+        # Nilai ini SENGAJA dipatok (bukan dari .env): klien wajib memakai proxy
+        # same-origin /api/backend. Kalau diisi URL backend langsung, browser
+        # memblokir request (CSP connect-src) dan klien tidak punya token sah.
+        NEXT_PUBLIC_API_URL: /api/backend
         NEXT_PUBLIC_KEYCLOAK_ISSUER: ${NEXT_PUBLIC_KEYCLOAK_ISSUER:?NEXT_PUBLIC_KEYCLOAK_ISSUER belum diisi di .env}
         NEXT_PUBLIC_KEYCLOAK_CLIENT_ID: ${NEXT_PUBLIC_KEYCLOAK_CLIENT_ID:?NEXT_PUBLIC_KEYCLOAK_CLIENT_ID belum diisi di .env}
     container_name: tambunraya-frontend
@@ -109,7 +112,8 @@ services:
       - KEYCLOAK_CLIENT_SECRET=${FRONTEND_KEYCLOAK_CLIENT_SECRET:?FRONTEND_KEYCLOAK_CLIENT_SECRET belum diisi di .env}
 
       # --- publik, ikut ter-bundle ke browser ---
-      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:?NEXT_PUBLIC_API_URL belum diisi di .env}
+      # Nilai ini dipatok di build args; di sini hanya ikut disamakan.
+      - NEXT_PUBLIC_API_URL=/api/backend
       - NEXT_PUBLIC_KEYCLOAK_ISSUER=${NEXT_PUBLIC_KEYCLOAK_ISSUER:?NEXT_PUBLIC_KEYCLOAK_ISSUER belum diisi di .env}
       - NEXT_PUBLIC_KEYCLOAK_CLIENT_ID=${NEXT_PUBLIC_KEYCLOAK_CLIENT_ID:?NEXT_PUBLIC_KEYCLOAK_CLIENT_ID belum diisi di .env}
 

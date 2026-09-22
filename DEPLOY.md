@@ -190,6 +190,19 @@ docker compose up -d --build frontend backend
 ### Verifikasi setelah deploy
 
 ```bash
+# 0. Pastikan paket frontend TIDAK lagi memuat URL backend publik.
+#    Kalau perintah ini mengeluarkan URL, artinya frontend belum di-build ulang
+#    dengan NEXT_PUBLIC_API_URL=/api/backend.
+#    Gejala di browser: "Failed to fetch" (request diblokir CSP connect-src 'self').
+curl -s https://tambun-raya.bbpompky.id/login | grep -o 'https://api-tambun[^"]*' \
+  || echo 'OK: tidak ada URL backend publik di HTML'
+
+# 0b. Proxy harus bisa menjangkau backend dari dalam container frontend.
+#     Kalau gagal: 502 "Tidak dapat menghubungi server backend" dari /api/backend/*.
+#     Solusi: samakan BACKEND_INTERNAL_URL dengan alamat backend yang bisa
+#     dijangkau container (mis. http://172.17.0.1:5001 bila host-gateway tidak tersedia).
+docker compose exec frontend wget -qO- http://host.docker.internal:5001/api/health
+
 # 1. HTML halaman berproteksi tidak boleh memuat JWT (cari "eyJhbGciOi" -> harus kosong)
 curl -s -b "next-auth.session-token=<cookie-anda>" https://tambun-raya.bbpompky.id/kegiatan | grep -c 'eyJhbGciOi'
 
@@ -212,4 +225,64 @@ Catatan perilaku:
   (`backend/utils/keycloakJwt.js`). Token yang dibuat sendiri (tanpa tanda tangan
   Keycloak) akan ditolak 401. Bila client Keycloak memakai audience mapper dan
   ingin audience diperiksa juga, isi `KEYCLOAK_AUDIENCES` (dipisah koma) di `.env`.
+
+### Kalau muncul "Failed to fetch" di browser
+
+Penyebab paling sering: **`.env` diisi URL backend publik lagi** (mis.
+`NEXT_PUBLIC_API_URL=https://api-tambun.bbpompky.id/api`) lalu frontend di-build.
+Akibatnya browser mencoba memanggil domain backend langsung, padahal:
+
+1. CSP `connect-src 'self'` memblokirnya -> error `Failed to fetch`; dan
+2. klien memang **tidak punya token** lagi (token hanya ada di cookie HttpOnly),
+   jadi request langsung ke backend tetap akan ditolak 401.
+
+Langkah perbaikan:
+
+```bash
+# 1. Pastikan tidak ada nilai absolute (nilai benar: /api/backend)
+grep -n 'NEXT_PUBLIC_API_URL' .env            # tidak wajib ada; kalau ada harus /api/backend
+
+# 2. Build ulang frontend (build akan GAGAL dengan pesan jelas bila nilainya salah)
+docker compose up -d --build frontend
+
+# 3. Pastikan paket baru sudah benar
+curl -s https://tambun-raya.bbpompky.id/login | grep -o 'https://api-tambun[^"]*' \
+  || echo 'OK: tidak ada URL backend publik di HTML'
+```
+
+### Diagnosa cepat lain
+
+| Gejala | Artinya | Tindakan |
+|---|---|---|
+| `Failed to fetch` | Permintaan tidak pernah sampai (CSP/mixed content/DNS) | Cek langkah di atas; pastikan bundle memakai `/api/backend` |
+| `502` + `Tidak dapat menghubungi server backend` | Proxy tidak bisa menjangkau backend | Cek `BACKEND_INTERNAL_URL` & langkah 0b |
+| `401` + `Sesi tidak ditemukan` | Cookie sesi tidak terkirim / user belum login | Login ulang; pastikan domain & HTTPS benar |
+| `401` + `Token tidak valid atau kadaluarsa` | Token ditolak backend (JWKS/iss/exp) | Cek `KEYCLOAK_SERVER_URL`/`KEYCLOAK_REALM` di backend & jam server |
+
+---
+
+## 9. Migration Index (Sekali Saja)
+
+`backend/migrations/005_add_performance_indexes.sql` menambahkan 7 index untuk
+menghilangkan full table scan pada query agregat & daftar. MySQL tidak punya
+`ADD INDEX IF NOT EXISTS`, jadi jalankan **hanya sekali**:
+
+```bash
+docker compose exec -T db mysql -u"$DB_USER" -p"$DB_PASSWORD" "$DB_NAME" \
+  < backend/migrations/005_add_performance_indexes.sql
+```
+
+Kalau MySQL berjalan di host (bukan container), jalankan dari host:
+
+```bash
+mysql -u <user> -p <nama_db> < backend/migrations/005_add_performance_indexes.sql
+```
+
+Verifikasi (harus menampilkan 7 baris):
+
+```sql
+SELECT table_name, index_name FROM information_schema.statistics
+WHERE table_schema = DATABASE() AND index_name LIKE 'idx_%'
+GROUP BY table_name, index_name;
+```
 

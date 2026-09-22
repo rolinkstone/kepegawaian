@@ -1,6 +1,25 @@
 /** @type {import('next').NextConfig} */
 const isDev = process.env.NODE_ENV !== 'production';
 
+// ============================================================================
+//  GUARD: NEXT_PUBLIC_API_URL wajib '/api/backend'
+// ============================================================================
+// Sejak token Keycloak tidak lagi dikirim ke browser (hanya ada di cookie HttpOnly),
+// klien HANYA bisa mengambil data lewat proxy same-origin /api/backend.
+// Kalau variabel ini diisi URL backend langsung (mis. https://api-tambun.bbpompky.id/api),
+// aplikasi gagal total di browser: CSP `connect-src 'self'` memblokir request itu
+// (gejalanya "Failed to fetch") dan klien juga tidak punya token yang sah.
+// Lebih baik build GAGAL dengan pesan jelas daripada men-deploy aplikasi rusak.
+const API_BASE = '/api/backend';
+const configuredApiUrl = process.env.NEXT_PUBLIC_API_URL;
+if (configuredApiUrl && configuredApiUrl !== API_BASE) {
+  throw new Error(
+    `NEXT_PUBLIC_API_URL harus "${API_BASE}", tetapi berisi "${configuredApiUrl}".\n` +
+      'Klien wajib memanggil backend lewat proxy same-origin (DEPLOY.md bagian 8).\n' +
+      'Perbaiki nilainya di .env / build args frontend, lalu build ulang.'
+  );
+}
+
 // Origin Keycloak untuk form-action (halaman login diarahkan ke sana).
 const keycloakOrigin = (() => {
   try {
