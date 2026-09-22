@@ -156,3 +156,60 @@ docker compose up -d --build frontend
 
 Nilainya diambil dari variabel `NEXT_PUBLIC_*` di `.env` dan **wajib diisi** —
 `docker compose config` akan berhenti bila masih kosong.
+
+---
+
+## 8. Token Tidak Lagi Dikirim ke Browser (proxy `/api/backend`)
+
+Sejak perbaikan keamanan ini:
+
+- Token Keycloak (access + id token) **hanya** disimpan di cookie sesi NextAuth
+  yang `HttpOnly` + terenkripsi, dan hanya dibaca di sisi server.
+- Browser memanggil backend lewat proxy internal `frontend/pages/api/backend/[...path].js`
+  (`NEXT_PUBLIC_API_URL=/api/backend`), dan proxy itulah yang menambahkan
+  `Authorization: Bearer ...`.
+
+### Variabel baru yang WAJIB diisi di `.env`
+
+```bash
+# Alamat backend DILIHAT DARI container frontend (bukan dari browser).
+# Backend memakai network_mode: host, jadi dijangkau lewat gateway host.
+BACKEND_INTERNAL_URL=http://host.docker.internal:5001
+```
+
+`docker-compose.yml` menambahkan `extra_hosts: host.docker.internal:host-gateway`
+pada service frontend; `docker compose config` akan gagal bila variabel ini kosong.
+
+`NEXT_PUBLIC_API_URL` sekarang berisi **path relatif** `/api/backend`, bukan URL
+backend publik. Karena itu **frontend wajib di-build ulang**:
+
+```bash
+docker compose up -d --build frontend backend
+```
+
+### Verifikasi setelah deploy
+
+```bash
+# 1. HTML halaman berproteksi tidak boleh memuat JWT (cari "eyJhbGciOi" -> harus kosong)
+curl -s -b "next-auth.session-token=<cookie-anda>" https://tambun-raya.bbpompky.id/kegiatan | grep -c 'eyJhbGciOi'
+
+# 2. Proxy tanpa sesi harus membalas 401 JSON (bukan redirect)
+curl -s -o /dev/null -w '%{http_code}\n' https://tambun-raya.bbpompky.id/api/backend/health
+
+# 3. Log backend harus menolak token palsu
+docker compose logs backend | grep 'Token ditolak'
+```
+
+Catatan perilaku:
+
+- Rate limit & log backend tetap melihat IP pengguna asli (proxy meneruskan
+  `X-Forwarded-For`).
+- Logout ke Keycloak tidak lagi menaruh `id_token_hint` di URL. Bila setelah
+  logout user masih otomatis masuk kembali (SSO cookie Keycloak tidak terhapus),
+  jalur alternatifnya adalah membuat route server-side yang menyusun URL logout
+  lengkap dengan `id_token_hint` dari cookie (token tetap di server).
+- Backend sekarang **memverifikasi tanda tangan JWT** lewat JWKS Keycloak
+  (`backend/utils/keycloakJwt.js`). Token yang dibuat sendiri (tanpa tanda tangan
+  Keycloak) akan ditolak 401. Bila client Keycloak memakai audience mapper dan
+  ingin audience diperiksa juga, isi `KEYCLOAK_AUDIENCES` (dipisah koma) di `.env`.
+

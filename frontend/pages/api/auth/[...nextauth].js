@@ -22,6 +22,22 @@ function formatNipWithSpaces(nip) {
     return cleanNip;
 }
 
+/**
+ * Ambil klaim dari payload access token DI SERVER saja (bukan mengirim tokennya).
+ * Dipakai untuk mempertahankan perilaku lama (mis. tampilan username/jabatan)
+ * tanpa perlu menyerahkan token ke browser.
+ */
+function decodeJwtPayload(jwtToken) {
+  try {
+    const part = String(jwtToken).split('.')[1];
+    if (!part) return {};
+    const base64 = part.replace(/-/g, '+').replace(/_/g, '/');
+    return JSON.parse(Buffer.from(base64, 'base64').toString('utf8'));
+  } catch {
+    return {};
+  }
+}
+
 export const authOptions = {
   providers: [
     KeycloakProvider({
@@ -87,7 +103,6 @@ export const authOptions = {
   callbacks: {
     async jwt({ token, user, account }) {
       if (account && user) {
-        console.log("🔄 JWT - Storing user, NIP_raw:", user.nip_raw);
         token.id = user.id;
         token.name = user.name;
         token.email = user.email;
@@ -96,18 +111,25 @@ export const authOptions = {
         token.nip = user.nip;         // NIP tanpa spasi
         token.nip_raw = user.nip_raw; // NIP dengan spasi
         token.username = user.username;
+        // Token asli TETAP disimpan di cookie NextAuth (HttpOnly + terenkripsi).
+        // Cookie ini hanya bisa dibaca di server (lihat pages/api/backend/[...path].js).
         token.accessToken = account.access_token;
         token.idToken = account.id_token;
         token.expiresAt = account.expires_at;
+
+        // Klaim tampilan (bukan token) supaya UI tetap punya data yang dulu
+        // diambil dengan mendekode token di browser.
+        const claims = decodeJwtPayload(account.access_token);
+        token.displayClaims = {
+          preferred_username: claims.preferred_username || user.username,
+          jabatan: claims.jabatan || null,
+        };
       }
       
-      console.log("🔄 JWT - Token has nip_raw:", !!token.nip_raw);
       return token;
     },
 
     async session({ session, token }) {
-      console.log("💼 SESSION - Building from token");
-      
       if (token) {
         session.user = {
           id: token.id,
@@ -118,17 +140,21 @@ export const authOptions = {
           nip: token.nip,           // NIP tanpa spasi
           nip_raw: token.nip_raw,   // NIP dengan spasi
           username: token.username,
+          // klaim tampilan (bukan token) — dulu diambil dari mendekode token
+          preferred_username: token.displayClaims?.preferred_username || token.username,
+          jabatan: token.displayClaims?.jabatan || undefined,
         };
-        
-        session.accessToken = token.accessToken;
-        session.idToken = token.idToken;
+
+        // PENTING (keamanan): token asli TIDAK boleh masuk ke sini.
+        // Nilai di bawah hanya penanda "sudah login" supaya pemeriksaan
+        // `if (!session?.accessToken)` di komponen lama tetap berjalan.
+        // Token asli dibaca dari cookie HttpOnly di server oleh
+        // pages/api/backend/[...path].js — jadi tidak pernah sampai ke browser.
+        session.accessToken = 'session';
         session.clientId = process.env.KEYCLOAK_CLIENT_ID || 'nextjs-local';
         session.expires = token.expiresAt ? 
           new Date(token.expiresAt * 1000).toISOString() : null;
       }
-      
-      console.log("💼 SESSION - NIP_raw value:", session.user?.nip_raw);
-      console.log("💼 SESSION - Role:", session.user?.role);
       
       return session;
     },
@@ -178,7 +204,8 @@ export const authOptions = {
     maxAge: 4 * 60 * 60,
   },
 
-  debug: process.env.NODE_ENV === 'development',
+  // debug NextAuth bisa menulis token ke log server -> matikan.
+  debug: false,
   secret: process.env.NEXTAUTH_SECRET,
   trustHost: true,
 

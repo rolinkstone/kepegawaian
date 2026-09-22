@@ -78,6 +78,9 @@ services:
         NEXT_PUBLIC_KEYCLOAK_CLIENT_ID: ${NEXT_PUBLIC_KEYCLOAK_CLIENT_ID:?NEXT_PUBLIC_KEYCLOAK_CLIENT_ID belum diisi di .env}
     container_name: tambunraya-frontend
     restart: unless-stopped
+    extra_hosts:
+      # Backend memakai network_mode: host -> dari container dijangkau via gateway host
+      - "host.docker.internal:host-gateway"
     dns:
       - 8.8.8.8
       - 1.1.1.1
@@ -109,6 +112,9 @@ services:
       - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:?NEXT_PUBLIC_API_URL belum diisi di .env}
       - NEXT_PUBLIC_KEYCLOAK_ISSUER=${NEXT_PUBLIC_KEYCLOAK_ISSUER:?NEXT_PUBLIC_KEYCLOAK_ISSUER belum diisi di .env}
       - NEXT_PUBLIC_KEYCLOAK_CLIENT_ID=${NEXT_PUBLIC_KEYCLOAK_CLIENT_ID:?NEXT_PUBLIC_KEYCLOAK_CLIENT_ID belum diisi di .env}
+
+      # --- proxy /api/backend: alamat backend dilihat dari container frontend ---
+      - BACKEND_INTERNAL_URL=${BACKEND_INTERNAL_URL:?BACKEND_INTERNAL_URL belum diisi di .env}
 
       # --- Keycloak admin (dipakai script admin bila ada) ---
       - KEYCLOAK_ADMIN_USERNAME=${KEYCLOAK_ADMIN_USERNAME:-}

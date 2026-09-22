@@ -24,17 +24,20 @@ async function findUserByNip(executor, userNip, username) {
         return rows;
     };
 
+    // PENTING: jangan bungkus kolom dengan fungsi — REPLACE(nip, ' ', '') membuat
+    // index unik `nip` tidak terpakai (full table scan). Bandingkan dua bentuk NIP
+    // langsung supaya optimizer memakai index.
     let rows = await run(
-        `SELECT id, nama, nip FROM kepegawaian.user WHERE REPLACE(nip, ' ', '') = ?`,
-        [cleanNip]
+        `SELECT id, nama, nip FROM kepegawaian.user WHERE nip IN (?, ?)`,
+        [cleanNip, String(userNip || '')]
     );
 
     // Jika tidak ditemukan, coba cari berdasarkan username
     if (rows.length === 0 && username) {
         console.log('🔍 Mencari user berdasarkan username:', username);
         rows = await run(
-            `SELECT id, nama, nip FROM kepegawaian.user WHERE REPLACE(nama, ' ', '') = ? OR REPLACE(nip, ' ', '') = ?`,
-            [username, username]
+            `SELECT id, nama, nip FROM kepegawaian.user WHERE REPLACE(nama, ' ', '') = ? OR nip IN (?, ?)`,
+            [username, normalizeNip(username), username]
         );
     }
 
@@ -383,10 +386,10 @@ router.get('/jadwal', keycloakAuth, async (req, res) => {
     console.log('📥 isKatim:', isKatimRole);
     
     try {
-        // Dapatkan ID user (normalisasi NIP)
+        // Dapatkan ID user (kolom nip dibandingkan langsung agar index terpakai)
         const [user] = await db.query(
-            `SELECT id FROM kepegawaian.user WHERE REPLACE(nip, ' ', '') = ?`,
-            [normalizeNip(userNip)]
+            `SELECT id FROM kepegawaian.user WHERE nip IN (?, ?)`,
+            [normalizeNip(userNip), String(userNip || '')]
         );
         
         if (user.length === 0 && !isAdmin && !isKatimRole) {
@@ -498,10 +501,10 @@ router.get('/jadwal/:id', keycloakAuth, async (req, res) => {
     console.log(`📊 Mengakses detail jadwal ID: ${id} oleh user ${userNip}`);
     
     try {
-        // Dapatkan ID user (normalisasi NIP)
+        // Dapatkan ID user (kolom nip dibandingkan langsung agar index terpakai)
         const [user] = await db.query(
-            `SELECT id FROM kepegawaian.user WHERE REPLACE(nip, ' ', '') = ?`,
-            [normalizeNip(userNip)]
+            `SELECT id FROM kepegawaian.user WHERE nip IN (?, ?)`,
+            [normalizeNip(userNip), String(userNip || '')]
         );
         
         if (user.length === 0 && !isAdmin && !isKatimRole) {
@@ -1022,10 +1025,10 @@ router.post('/jadwal/:id/tambah-peserta', keycloakAuth, async (req, res) => {
     await connection.beginTransaction();
     
     try {
-        // Dapatkan ID user yang menambah (normalisasi NIP)
+        // Dapatkan ID user yang menambah (kolom nip dibandingkan langsung agar index terpakai)
         const [user] = await connection.query(
-            `SELECT id FROM kepegawaian.user WHERE REPLACE(nip, ' ', '') = ?`,
-            [normalizeNip(userNip)]
+            `SELECT id FROM kepegawaian.user WHERE nip IN (?, ?)`,
+            [normalizeNip(userNip), String(userNip || '')]
         );
         
         if (user.length === 0) {
@@ -1111,10 +1114,10 @@ router.post('/peserta/:id/kompetensi-terpenuhi', keycloakAuth, async (req, res) 
     await connection.beginTransaction();
     
     try {
-        // Dapatkan ID verifikator (normalisasi NIP)
+        // Dapatkan ID verifikator (kolom nip dibandingkan langsung agar index terpakai)
         const [verifier] = await connection.query(
-            `SELECT id FROM kepegawaian.user WHERE REPLACE(nip, ' ', '') = ?`,
-            [normalizeNip(userNip)]
+            `SELECT id FROM kepegawaian.user WHERE nip IN (?, ?)`,
+            [normalizeNip(userNip), String(userNip || '')]
         );
         
         if (verifier.length === 0) {
@@ -1446,10 +1449,10 @@ router.get('/undangan', keycloakAuth, async (req, res) => {
     const userNip = getUserNipFromToken(req.user);
     
     try {
-        // Dapatkan ID user (normalisasi NIP)
+        // Dapatkan ID user (kolom nip dibandingkan langsung agar index terpakai)
         const [user] = await db.query(
-            `SELECT id FROM kepegawaian.user WHERE REPLACE(nip, ' ', '') = ?`,
-            [normalizeNip(userNip)]
+            `SELECT id FROM kepegawaian.user WHERE nip IN (?, ?)`,
+            [normalizeNip(userNip), String(userNip || '')]
         );
         
         if (user.length === 0) {
@@ -1539,8 +1542,8 @@ router.put('/undangan/:id', keycloakAuth, async (req, res) => {
         // Hanya user yang diundang yang boleh merespon undangannya
         const userNip = getUserNipFromToken(req.user);
         const [user] = await db.query(
-            `SELECT id FROM kepegawaian.user WHERE REPLACE(nip, ' ', '') = ?`,
-            [normalizeNip(userNip)]
+            `SELECT id FROM kepegawaian.user WHERE nip IN (?, ?)`,
+            [normalizeNip(userNip), String(userNip || '')]
         );
         if (user.length === 0 || user[0].id !== peserta[0].id_user) {
             return res.status(403).json({

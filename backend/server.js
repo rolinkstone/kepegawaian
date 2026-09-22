@@ -7,6 +7,7 @@ const passport = require('passport');
 const KeycloakStrategy = require('passport-keycloak');
 const db = require('./db');
 const jwt = require('jsonwebtoken');
+const { verifyAccessToken } = require('./utils/keycloakJwt');
 const axios = require('axios');
 const https = require('https');
 const fs = require('fs');
@@ -272,22 +273,18 @@ const enhancedAuth = async (req, res, next) => {
             });
         }
 
-        const decoded = jwt.decode(token);
-
-        if (!decoded) {
+        // Verifikasi tanda tangan token (JWKS Keycloak) + issuer + exp.
+        // JANGAN kembali memakai jwt.decode() saja — itu menerima token palsu
+        // karena tidak memeriksa tanda tangan sama sekali.
+        let decoded;
+        try {
+            decoded = await verifyAccessToken(token);
+        } catch (verifyError) {
+            console.warn(`⛔ Token ditolak (${req.method} ${req.path}): ${verifyError.message}`);
             return res.status(401).json({
                 success: false,
                 error: 'Unauthorized',
-                message: 'Invalid token format'
-            });
-        }
-
-        const currentTime = Math.floor(Date.now() / 1000);
-        if (decoded.exp && decoded.exp < currentTime) {
-            return res.status(401).json({
-                success: false,
-                error: 'Unauthorized',
-                message: 'Token expired'
+                message: 'Token tidak valid atau kadaluarsa'
             });
         }
 

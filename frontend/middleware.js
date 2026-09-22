@@ -60,6 +60,9 @@ export default withAuth(
 
 export const config = {
   matcher: [
-    '/((?!api/auth|_next/static|_next/image|favicon.ico|images).*)',
+    // /api/backend dikecualikan: proxy itu menangani auth sendiri dan harus
+    // membalas JSON 401 (bukan redirect HTML ke /login) agar penanganan error
+    // di klien tetap berjalan.
+    '/((?!api/auth|api/backend|_next/static|_next/image|favicon.ico|images).*)',
   ],
 };

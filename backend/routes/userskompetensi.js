@@ -96,9 +96,11 @@ router.get('/', keycloakAuth, async (req, res) => {
         // Filter berdasarkan role
         if (!isAdmin && !isKatimRole) {
             // User biasa: hanya melihat data sendiri
+            // Jangan bungkus kolom dengan fungsi: REPLACE(u.nip, ' ', '') membuat
+            // index unik `nip` tidak bisa dipakai -> full table scan.
             const cleanNip = String(userNip || '').replace(/\s/g, '');
-            query += ` WHERE REPLACE(u.nip, ' ', '') = ?`;
-            params.push(cleanNip);
+            query += ` WHERE u.nip IN (?, ?)`;
+            params.push(cleanNip, String(userNip || ''));
         }
         
         query += ` ORDER BY uk.created_at DESC`;
@@ -509,8 +511,8 @@ router.post('/', keycloakAuth, upload.single('bukti'), async (req, res) => {
             // Normalisasi NIP: hapus spasi untuk pencarian
             const cleanNip = String(userNip || '').replace(/\s/g, '');
             const [userData] = await db.query(
-                `SELECT id FROM kepegawaian.user WHERE REPLACE(nip, ' ', '') = ?`,
-                [cleanNip]
+                `SELECT id FROM kepegawaian.user WHERE nip IN (?, ?)`,
+                [cleanNip, String(userNip || '')]
             );
 
             if (userData.length === 0) {
@@ -675,8 +677,8 @@ router.put('/:id', keycloakAuth, upload.single('bukti'), async (req, res) => {
         // Ambil data user yang mengupdate
         const cleanNip = String(userNip || '').replace(/\s/g, '');
         const [updater] = await db.query(
-            'SELECT id FROM kepegawaian.user WHERE REPLACE(nip, \' \', \'\') = ?',
-            [cleanNip]
+            'SELECT id FROM kepegawaian.user WHERE nip IN (?, ?)',
+            [cleanNip, String(userNip || '')]
         );
 
         if (updater.length === 0 && !isAdmin) {

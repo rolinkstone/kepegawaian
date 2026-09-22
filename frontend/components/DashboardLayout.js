@@ -19,13 +19,7 @@ export default function DashboardLayout({ children }) {
 
   // Fungsi untuk cek apakah user memiliki role PPK - DIPERBAIKI
   const hasPPKRole = () => {
-    console.log("🔍 Checking PPK role in session:", session);
-    
     if (!session?.user) return false;
-    
-    // DEBUG: Tampilkan semua data user
-    console.log("🔍 User data:", session.user);
-    console.log("🔍 User role:", session.user.role);
     
     // Check 1: Role langsung dari user.role
     if (session.user.role) {
@@ -56,13 +50,6 @@ export default function DashboardLayout({ children }) {
         return true;
       }
     }
-    
-    console.log("❌ User does NOT have PPK role");
-    console.log("❌ Available user data:", {
-      role: session.user?.role,
-      roles: session.user?.roles,
-      allUserData: session.user
-    });
     
     return false;
   };
@@ -105,21 +92,21 @@ export default function DashboardLayout({ children }) {
       localStorage.removeItem('user');
       localStorage.removeItem('accessToken');
 
-      // Redirect ke Keycloak logout dengan id_token_hint untuk hancurkan SSO session
-      const idToken = session?.idToken;
+      // Redirect ke Keycloak logout untuk menghancurkan SSO session.
+      // id_token_hint TIDAK dipakai lagi: id token di URL akan bocor lewat
+      // riwayat browser, header Referer, dan log reverse proxy. Cookie sesi
+      // NextAuth masih menyimpan id token di server, dan Keycloak mengenali
+      // sesi dari cookie browser miliknya saat endpoint ini dibuka.
       const keycloakIssuer = process.env.NEXT_PUBLIC_KEYCLOAK_ISSUER;
       const clientId = process.env.NEXT_PUBLIC_KEYCLOAK_CLIENT_ID || process.env.KEYCLOAK_CLIENT_ID || 'kepegawaian';
       const origin = typeof window !== 'undefined' ? window.location.origin : '';
 
-      if (idToken && keycloakIssuer) {
+      if (keycloakIssuer) {
         const keycloakLogoutUrl = `${keycloakIssuer}/protocol/openid-connect/logout` +
-          `?id_token_hint=${encodeURIComponent(idToken)}` +
-          `&post_logout_redirect_uri=${encodeURIComponent(origin + '/login')}` +
-          `&client_id=${encodeURIComponent(clientId)}`;
-        console.log("🚪 Redirecting to Keycloak logout with id_token_hint");
+          `?client_id=${encodeURIComponent(clientId)}` +
+          `&post_logout_redirect_uri=${encodeURIComponent(origin + '/login')}`;
         window.location.href = keycloakLogoutUrl;
       } else {
-        console.log("🚪 No idToken available, redirecting to login page");
         window.location.href = '/login';
       }
     } catch (err) {
