@@ -41,6 +41,10 @@ const csp = [
   "font-src 'self' data:",
   `connect-src 'self' https://www.emsifa.com${isDev ? ' ws: wss:' : ''}`,
   "object-src 'none'",
+  // Pratinjau dokumen (mis. PDF perencanaan) memakai blob: URL di dalam <iframe>,
+  // jadi frame-src WAJIB mengizinkan blob:. Tanpa ini browser memblokir frame
+  // dan menampilkan "This content is blocked. Contact the site owner to fix the issue."
+  "frame-src 'self' blob:",
   "base-uri 'self'",
   `form-action 'self'${keycloakOrigin ? ` ${keycloakOrigin}` : ''}`,
   "frame-ancestors 'none'",

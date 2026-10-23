@@ -286,3 +286,29 @@ WHERE table_schema = DATABASE() AND index_name LIKE 'idx_%'
 GROUP BY table_name, index_name;
 ```
 
+### 9b. Kolom Link Pelatihan (006)
+
+`backend/migrations/006_add_link_pelatihan.sql` menambahkan kolom `link_pelatihan`
+pada `jadwal_pelatihan` (dipakai form **Buat Jadwal Pelatihan** untuk pelatihan
+online). Tanpa kolom ini, simpan jadwal akan gagal dengan error
+`Unknown column 'link_pelatihan'`. Jalankan sekali:
+
+```bash
+docker compose exec -T db mysql -u"$DB_USER" -p"$DB_PASSWORD" "$DB_NAME" \
+  < backend/migrations/006_add_link_pelatihan.sql
+```
+
+Atau dari host:
+
+```bash
+mysql -u <user> -p <nama_db> < backend/migrations/006_add_link_pelatihan.sql
+```
+
+Verifikasi (harus menampilkan 1 baris):
+
+```sql
+SELECT column_name FROM information_schema.columns
+WHERE table_schema = DATABASE() AND table_name = 'jadwal_pelatihan'
+  AND column_name = 'link_pelatihan';
+```
+

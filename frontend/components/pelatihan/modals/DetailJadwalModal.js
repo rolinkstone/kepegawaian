@@ -153,6 +153,12 @@ useEffect(() => {
         }
     };
 
+    // Hanya izinkan tautan http(s) yang dirender sebagai <a href> (cegah javascript:).
+    const safeHttpUrl = (value) => {
+        const raw = String(value || '').trim();
+        return /^https?:\/\/\S+$/i.test(raw) ? raw : null;
+    };
+
     const getStatusBadge = (status) => {
         const badges = {
             'Pending': 'bg-amber-100 text-amber-800',
@@ -330,6 +336,19 @@ useEffect(() => {
                                                 <p className="text-sm text-gray-500">Lokasi</p>
                                                 <p className="font-medium">{detailData.lokasi || '-'}</p>
                                             </div>
+                                            {safeHttpUrl(detailData.link_pelatihan) && (
+                                                <div className="col-span-2">
+                                                    <p className="text-sm text-gray-500">Link Pelatihan</p>
+                                                    <a
+                                                        href={safeHttpUrl(detailData.link_pelatihan)}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="font-medium text-blue-600 hover:text-blue-800 underline break-all"
+                                                    >
+                                                        {detailData.link_pelatihan}
+                                                    </a>
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
 

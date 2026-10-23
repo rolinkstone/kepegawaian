@@ -503,6 +503,13 @@ const PerencanaanContainer = ({ session, status }) => {
               </div>
               <div className="flex items-center gap-2 flex-shrink-0">
                 <button
+                  onClick={() => window.open(viewingDoc.blobUrl, '_blank', 'noopener')}
+                  className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors text-sm"
+                >
+                  <FaEye />
+                  <span>Tab Baru</span>
+                </button>
+                <button
                   onClick={() => handleDownload(viewingDoc)}
                   className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-blue-100 text-blue-700 hover:bg-blue-200 transition-colors text-sm"
                 >

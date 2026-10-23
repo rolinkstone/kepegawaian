@@ -50,6 +50,37 @@ async function findUserByNip(executor, userNip, username) {
     return rows;
 }
 
+// ========== HELPER: LINK PELATIHAN (ONLINE) ==========
+const MAX_LINK_PELATIHAN = 500;
+
+/**
+ * Menormalkan link pelatihan: string kosong -> null, tanpa skema -> https://.
+ * Mengembalikan { value } bila valid atau { error } bila tidak.
+ */
+function normalizeLinkPelatihan(value) {
+    const raw = String(value ?? '').trim();
+    if (!raw) return { value: null };
+
+    const withProto = /^https?:\/\//i.test(raw) ? raw : `https://${raw}`;
+
+    let url;
+    try {
+        url = new URL(withProto);
+    } catch {
+        return { error: 'Link pelatihan tidak valid. Contoh: https://zoom.us/j/123456789' };
+    }
+
+    if (!['http:', 'https:'].includes(url.protocol) || !url.hostname.includes('.')) {
+        return { error: 'Link pelatihan tidak valid. Contoh: https://zoom.us/j/123456789' };
+    }
+
+    if (withProto.length > MAX_LINK_PELATIHAN) {
+        return { error: `Link pelatihan maksimal ${MAX_LINK_PELATIHAN} karakter` };
+    }
+
+    return { value: withProto };
+}
+
 // ========== MASTER PELATIHAN ==========
 
 /**
@@ -636,6 +667,7 @@ router.post('/jadwal', keycloakAuth, async (req, res) => {
         metode,
         kuota,
         deskripsi,
+        link_pelatihan,
         peserta_ids
     } = req.body;
     
@@ -644,6 +676,14 @@ router.post('/jadwal', keycloakAuth, async (req, res) => {
         return res.status(400).json({
             success: false,
             message: 'Pelatihan, tanggal mulai, dan tanggal selesai harus diisi'
+        });
+    }
+
+    const link = normalizeLinkPelatihan(link_pelatihan);
+    if (link.error) {
+        return res.status(400).json({
+            success: false,
+            message: link.error
         });
     }
     
@@ -695,11 +735,11 @@ router.post('/jadwal', keycloakAuth, async (req, res) => {
         const [result] = await connection.query(`
             INSERT INTO kepegawaian.jadwal_pelatihan 
             (id_pelatihan, id_penyelenggara, nama_penyelenggara, tanggal_mulai, tanggal_selesai, 
-             waktu_mulai, waktu_selesai, lokasi, metode, kuota, deskripsi, status, created_by)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Draft', ?)
+             waktu_mulai, waktu_selesai, lokasi, link_pelatihan, metode, kuota, deskripsi, status, created_by)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Draft', ?)
         `, [
             id_pelatihan, penyelenggaraId, nama_penyelenggara || null, tanggal_mulai, tanggal_selesai,
-            waktu_mulai || null, waktu_selesai || null, lokasi || null, metode || 'Offline', 
+            waktu_mulai || null, waktu_selesai || null, lokasi || null, link.value, metode || 'Offline', 
             kuota || null, deskripsi || null, createdById
         ]);
         
@@ -767,8 +807,17 @@ router.put('/jadwal/:id', keycloakAuth, async (req, res) => {
         metode,
         kuota,
         deskripsi,
+        link_pelatihan,
         status
     } = req.body;
+
+    const link = normalizeLinkPelatihan(link_pelatihan);
+    if (link.error) {
+        return res.status(400).json({
+            success: false,
+            message: link.error
+        });
+    }
     
     try {
         // Cek kepemilikan jadwal (pembuat_nip dinormalisasi agar sebanding dengan token tanpa spasi)
@@ -794,16 +843,30 @@ router.put('/jadwal/:id', keycloakAuth, async (req, res) => {
             });
         }
         
+        // Link hanya ditimpa bila field-nya memang dikirim, agar klien lama tidak
+        // menghapus link yang sudah tersimpan.
+        const setClauses = [
+            'id_pelatihan = ?', 'nama_penyelenggara = ?', 'tanggal_mulai = ?',
+            'tanggal_selesai = ?', 'waktu_mulai = ?', 'waktu_selesai = ?',
+            'lokasi = ?', 'metode = ?', 'kuota = ?', 'deskripsi = ?', 'status = ?'
+        ];
+        const setParams = [
+            id_pelatihan, nama_penyelenggara, tanggal_mulai, tanggal_selesai,
+            waktu_mulai, waktu_selesai, lokasi, metode, kuota, deskripsi, status
+        ];
+
+        if (Object.prototype.hasOwnProperty.call(req.body, 'link_pelatihan')) {
+            setClauses.push('link_pelatihan = ?');
+            setParams.push(link.value);
+        }
+
+        setParams.push(id);
+
         await db.query(`
             UPDATE kepegawaian.jadwal_pelatihan
-            SET id_pelatihan = ?, nama_penyelenggara = ?, tanggal_mulai = ?, 
-                tanggal_selesai = ?, waktu_mulai = ?, waktu_selesai = ?, 
-                lokasi = ?, metode = ?, kuota = ?, deskripsi = ?, status = ?
+            SET ${setClauses.join(', ')}
             WHERE id = ?
-        `, [
-            id_pelatihan, nama_penyelenggara, tanggal_mulai, tanggal_selesai,
-            waktu_mulai, waktu_selesai, lokasi, metode, kuota, deskripsi, status, id
-        ]);
+        `, setParams);
         
         res.status(200).json({
             success: true,

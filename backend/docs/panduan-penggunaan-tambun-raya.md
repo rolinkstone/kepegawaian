@@ -259,6 +259,7 @@ Kompetensi wajib inilah yang muncul sebagai daftar tugas di **Beranda** pegawai 
 | **Waktu Mulai / Waktu Selesai** | Tidak | |
 | **Lokasi** | Tidak | Contoh: Ruang Meeting, Zoom Meeting |
 | **Metode** | Tidak | Offline / Online / Hybrid (default: Offline) |
+| **Link Pelatihan (Online)** | Ya, bila Metode **Online** | URL pelatihan daring (Zoom/Google Meet, dsb.). Boleh diketik tanpa `https://`. Tampil sebagai tautan yang bisa diklik peserta di **Detail Jadwal** |
 | **Kuota Peserta** | Tidak | Kosongkan bila tidak terbatas |
 | **Deskripsi / Catatan** | Tidak | |
 | **Undang Peserta (Opsional)** | Tidak | Pilih beberapa pegawai sekaligus saat membuat jadwal |
@@ -405,7 +406,7 @@ Role **Katim** menangani **operasional pelatihan** dan **perencanaan**. Master d
 **A. Menyiapkan pelatihan untuk tim Anda**
 
 1. Buka **Jadwal Pelatihan**, lalu klik **Buat Jadwal Pelatihan**.
-2. Isi form jadwal (Nama Pelatihan, Tanggal Mulai/Selesai, Waktu, Lokasi, Metode, Kuota, Deskripsi). Penyelenggara otomatis tercatat sebagai Anda.
+2. Isi form jadwal (Nama Pelatihan, Tanggal Mulai/Selesai, Waktu, Lokasi, Metode, Kuota, Deskripsi). Penyelenggara otomatis tercatat sebagai Anda. Bila **Metode = Online**, isi juga **Link Pelatihan** (Zoom/Google Meet) agar peserta bisa langsung bergabung.
 3. Klik **Simpan** - jadwal berstatus **Draft**.
 4. Klik **Undang Peserta** pada baris jadwal, cari pegawai, pilih peserta, lalu klik **Undang Peserta**.
 5. Klik ikon **Publikasi**, lalu konfirmasi **Ya, Publikasi**.
@@ -494,6 +495,8 @@ Data pada Beranda **diperbarui otomatis setiap 30 detik**, saat Anda kembali ke 
 2. Klik ikon **Detail** pada baris jadwal.
 3. Buka tab **Status Undangan Saya (N)**.
 4. Klik **Terima Undangan** atau **Tolak Undangan**.
+
+Untuk pelatihan **Online**, tab **Informasi Pelatihan** menampilkan **Link Pelatihan** yang dapat diklik untuk langsung bergabung (Zoom/Google Meet).
 
 Tombol hanya muncul bila jadwal sudah **dipublikasikan** (bukan Draft) dan status undangan Anda masih **Pending**.
 

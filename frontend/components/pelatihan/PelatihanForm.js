@@ -13,6 +13,7 @@ const PelatihanForm = ({ show, onClose, onSuccess, editingData, options, masterP
         waktu_mulai: '',
         waktu_selesai: '',
         lokasi: '',
+        link_pelatihan: '',
         metode: 'Offline',
         kuota: '',
         deskripsi: '',
@@ -42,6 +43,7 @@ const PelatihanForm = ({ show, onClose, onSuccess, editingData, options, masterP
                     waktu_mulai: editingData.waktu_mulai || '',
                     waktu_selesai: editingData.waktu_selesai || '',
                     lokasi: editingData.lokasi || '',
+                    link_pelatihan: editingData.link_pelatihan || '',
                     metode: editingData.metode || 'Offline',
                     kuota: editingData.kuota?.toString() || '',
                     deskripsi: editingData.deskripsi || '',
@@ -67,6 +69,7 @@ const PelatihanForm = ({ show, onClose, onSuccess, editingData, options, masterP
             waktu_mulai: '',
             waktu_selesai: '',
             lokasi: '',
+            link_pelatihan: '',
             metode: 'Offline',
             kuota: '',
             deskripsi: '',
@@ -92,8 +95,7 @@ const PelatihanForm = ({ show, onClose, onSuccess, editingData, options, masterP
         }
     };
 
-    const handlePesertaChange = (e) => {
-        const options = e.target.options;
+    const handlePesertaChange = (e) => {        const options = e.target.options;
         const selected = [];
         for (let i = 0; i < options.length; i++) {
             if (options[i].selected) {
@@ -102,6 +104,18 @@ const PelatihanForm = ({ show, onClose, onSuccess, editingData, options, masterP
         }
         setSelectedPeserta(selected);
         setFormData(prev => ({ ...prev, peserta_ids: selected }));
+    };
+
+    // Link pelatihan online (Zoom/Meet/dll). Boleh diketik tanpa "https://".
+    const isLinkValid = (value) => {
+        const raw = String(value || '').trim();
+        if (!raw) return true;
+        try {
+            const url = new URL(/^https?:\/\//i.test(raw) ? raw : `https://${raw}`);
+            return ['http:', 'https:'].includes(url.protocol) && url.hostname.includes('.');
+        } catch {
+            return false;
+        }
     };
 
     const validateForm = () => {
@@ -126,6 +140,12 @@ const PelatihanForm = ({ show, onClose, onSuccess, editingData, options, masterP
         
         if (showPenyelenggaraPicker && !formData.id_penyelenggara) {
             newErrors.id_penyelenggara = 'Pilih penyelenggara';
+        }
+
+        if (formData.metode === 'Online' && !String(formData.link_pelatihan || '').trim()) {
+            newErrors.link_pelatihan = 'Link wajib diisi untuk pelatihan online';
+        } else if (!isLinkValid(formData.link_pelatihan)) {
+            newErrors.link_pelatihan = 'Link tidak valid. Contoh: https://zoom.us/j/123456789';
         }
         
         setErrors(newErrors);
@@ -424,6 +444,32 @@ const PelatihanForm = ({ show, onClose, onSuccess, editingData, options, masterP
                                     placeholder="Kosongkan jika tidak terbatas"
                                     disabled={loading}
                                 />
+                            </div>
+
+                            {/* Link Pelatihan (Online) */}
+                            <div className="col-span-2">
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    Link Pelatihan (Online)
+                                    {formData.metode === 'Online' && <span className="text-red-500"> *</span>}
+                                </label>
+                                <input
+                                    type="text"
+                                    name="link_pelatihan"
+                                    value={formData.link_pelatihan}
+                                    onChange={handleChange}
+                                    placeholder="Contoh: https://zoom.us/j/123456789 atau https://meet.google.com/abc-defg-hij"
+                                    className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                                        errors.link_pelatihan ? 'border-red-500' : 'border-gray-300'
+                                    }`}
+                                    disabled={loading}
+                                />
+                                {errors.link_pelatihan && (
+                                    <p className="mt-1 text-sm text-red-600">{errors.link_pelatihan}</p>
+                                )}
+                                <p className="text-xs text-gray-500 mt-1">
+                                    Dipakai untuk pelatihan online (Zoom, Google Meet, dsb.). Link ini tampil di detail
+                                    jadwal sehingga peserta dapat langsung bergabung.
+                                </p>
                             </div>
                         </div>
                     </div>
