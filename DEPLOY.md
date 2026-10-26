@@ -22,9 +22,9 @@ frontend. Jadi **tidak perlu** mengisi `backend/.env` atau `frontend/.env`.
 > dan `frontend/.env` sudah tidak dipakai Docker dan boleh dihapus. Simpan saja
 > bila Anda masih menjalankan aplikasi tanpa Docker.
 
-Catatan: kode backend memuat `dotenv` dari `.env.local`, tetapi dotenv
-**tidak menimpa** variabel yang sudah diset Docker. Jadi nilai dari `.env`
-selalu yang menang.
+Catatan: kode backend memuat `dotenv` dari `backend/.env` lalu `backend/.env.local`
+(`.env.local` menimpa `.env`), tetapi dotenv **tidak menimpa** variabel yang sudah
+diset Docker. Jadi nilai dari `.env` di root selalu yang menang saat memakai Docker.
 
 ---
 

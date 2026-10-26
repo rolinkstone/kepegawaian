@@ -160,13 +160,14 @@ export default function DashboardLayout({ children }) {
   };
 
   const getUserRoleDisplay = () => {
+    // Multi-role: tampilkan semua role yang dimiliki user.
+    if (Array.isArray(session?.user?.roles) && session.user.roles.length > 0) {
+      return session.user.roles.join(', ');
+    }
     if (session?.user?.role) {
       return session.user.role;
     }
     if (session?.user?.roles) {
-      if (Array.isArray(session.user.roles)) {
-        return session.user.roles.join(', ');
-      }
       return session.user.roles;
     }
     return 'User';

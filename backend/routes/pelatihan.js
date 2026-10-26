@@ -473,10 +473,18 @@ router.get('/jadwal', keycloakAuth, async (req, res) => {
             )`;
             params.push(userId);
         } else if (isKatimRole && !isAdmin) {
-            // Katim: melihat jadwal yang mereka buat (opsional, bisa ditambahkan filter lain)
-            console.log('👥 Katim: filter jadwal yang dibuat');
-            query += ` AND jp.id_penyelenggara = ?`;
-            params.push(userId);
+            // Katim: jadwal yang ia buat/dikelola + jadwal (non-Draft) yang mengundangnya.
+            // Tanpa bagian "diundang", katim yang belum pernah membuat jadwal akan melihat
+            // daftar kosong padahal sebagai user biasa ia melihat jadwal undangannya.
+            console.log('👥 Katim: jadwal yang dibuat sendiri + jadwal yang mengundang');
+            query += ` AND (
+                jp.id_penyelenggara = ?
+                OR (jp.status <> 'Draft' AND EXISTS (
+                    SELECT 1 FROM kepegawaian.peserta_pelatihan
+                    WHERE id_jadwal = jp.id AND id_user = ?
+                ))
+            )`;
+            params.push(userId, userId);
         }
         // Admin: melihat semua jadwal (tanpa filter tambahan)
         

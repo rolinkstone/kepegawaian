@@ -919,7 +919,12 @@ const Home = () => {
     return null;
   }
 
-  const isAdmin = userInfo.role === 'admin' || userInfo.role === 'admin_tambun_raya' || userInfo.role === 'katim';
+  // Multi-role: jangan hanya bergantung pada `role` utama.
+  const userRoleList = Array.isArray(userInfo.roles) && userInfo.roles.length > 0
+    ? userInfo.roles
+    : (userInfo.role ? [userInfo.role] : []);
+  const hasUserRole = (...targets) => targets.some(r => userRoleList.includes(r));
+  const isAdmin = hasUserRole('admin', 'admin_tambun_raya', 'katim');
 
   // Data yang digunakan untuk stat card user biasa (menggunakan kompetensi yang sudah difilter)
   const kompetensiWajibTotal = kompetensiWajibFiltered.length;
@@ -1687,7 +1692,7 @@ const Home = () => {
           onSuccess={handleFormSuccess}
           editingData={formEditingData}
           options={formOptions}
-          userRoles={{ isAdmin: isAdmin, isKatim: userInfo.role === 'katim' }}
+          userRoles={{ isAdmin: isAdmin, isKatim: hasUserRole('katim') }}
           session={session}
           preselectUserId={formPreselectUserId}
         />

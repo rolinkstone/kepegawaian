@@ -43,6 +43,100 @@ const VerifyModal = ({ show, onClose, data, onConfirm }) => {
         }
     }, [show, data]);
 
+    // ========== PRATINJAU SERTIFIKAT ==========
+    // File diambil lewat proxy same-origin (/api/backend/uploads/...) dengan cookie
+    // sesi, lalu dijadikan blob URL agar bisa ditampilkan inline (img/iframe).
+    const [preview, setPreview] = useState({ loading: false, url: null, kind: null, error: null });
+
+    useEffect(() => {
+        if (!show || !data?.bukti) {
+            setPreview({ loading: false, url: null, kind: null, error: null });
+            return;
+        }
+
+        const controller = new AbortController();
+        let createdUrl = null;
+
+        setPreview({ loading: true, url: null, kind: null, error: null });
+
+        (async () => {
+            try {
+                const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
+                const fileUrl = `${baseUrl}/uploads/${encodeURIComponent(data.bukti)}`;
+                const response = await fetch(fileUrl, {
+                    credentials: 'same-origin',
+                    signal: controller.signal,
+                });
+
+                if (!response.ok) {
+                    throw new Error(
+                        response.status === 401
+                            ? 'Sesi login tidak valid, silakan login ulang'
+                            : `Gagal memuat sertifikat (HTTP ${response.status})`
+                    );
+                }
+
+                const blob = await response.blob();
+                createdUrl = window.URL.createObjectURL(blob);
+
+                const type = (blob.type || '').toLowerCase();
+                const ext = String(data.bukti).split('.').pop().toLowerCase();
+                const kind = type.startsWith('image/') || ['jpg', 'jpeg', 'png'].includes(ext)
+                    ? 'image'
+                    : (type === 'application/pdf' || ext === 'pdf' ? 'pdf' : 'other');
+
+                setPreview({ loading: false, url: createdUrl, kind, error: null });
+                createdUrl = null; // sudah dipakai state; jangan di-revoke di cleanup ini
+            } catch (error) {
+                if (error.name === 'AbortError') return;
+                setPreview({ loading: false, url: null, kind: null, error: error.message || 'Gagal memuat sertifikat' });
+            }
+        })();
+
+        return () => {
+            controller.abort();
+            if (createdUrl) window.URL.revokeObjectURL(createdUrl);
+        };
+    }, [show, data?.bukti]);
+
+    // Lepaskan blob URL saat berganti file / modal ditutup.
+    useEffect(() => {
+        const url = preview.url;
+        return () => {
+            if (url) window.URL.revokeObjectURL(url);
+        };
+    }, [preview.url]);
+
+    const handleDownloadSertifikat = async () => {
+        try {
+            const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
+            const response = await fetch(`${baseUrl}/uploads/${encodeURIComponent(data.bukti)}`, {
+                credentials: 'same-origin',
+            });
+
+            if (!response.ok) {
+                throw new Error(`Gagal mengunduh file (HTTP ${response.status})`);
+            }
+
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = data.bukti;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            window.URL.revokeObjectURL(url);
+        } catch (error) {
+            console.error('❌ Error downloading sertifikat:', error);
+            Swal.fire({
+                icon: 'error',
+                title: 'Gagal Unduh',
+                text: error.message || 'Terjadi kesalahan saat mengunduh file',
+            });
+        }
+    };
+
     if (!show || !data) return null;
 
     const handleSubmit = async (e) => {
@@ -204,6 +298,62 @@ const VerifyModal = ({ show, onClose, data, onConfirm }) => {
                                     {data.hasil_verif}
                                 </span>
                             </div>
+                        )}
+                    </div>
+
+                    {/* Sertifikat / Bukti yang akan diverifikasi */}
+                    <div className="p-4 bg-gray-50 rounded-lg">
+                        <div className="flex items-center justify-between mb-2">
+                            <h3 className="font-medium text-gray-700">Sertifikat / Bukti</h3>
+                            {data.bukti && (
+                                <button
+                                    type="button"
+                                    onClick={handleDownloadSertifikat}
+                                    className="text-sm text-blue-600 hover:text-blue-800"
+                                    disabled={loading}
+                                >
+                                    Unduh
+                                </button>
+                            )}
+                        </div>
+
+                        {!data.bukti ? (
+                            <p className="text-sm text-gray-500">Tidak ada sertifikat/bukti yang diunggah.</p>
+                        ) : preview.loading ? (
+                            <div className="flex items-center justify-center h-32 text-sm text-gray-500">
+                                <svg className="animate-spin h-5 w-5 mr-2 text-blue-600" fill="none" viewBox="0 0 24 24">
+                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+                                </svg>
+                                Memuat pratinjau...
+                            </div>
+                        ) : preview.error ? (
+                            <p className="text-sm text-red-600">
+                                {preview.error}
+                                <span className="block text-xs text-gray-500 break-all mt-1">{data.bukti}</span>
+                            </p>
+                        ) : preview.kind === 'image' ? (
+                            <a href={preview.url} target="_blank" rel="noopener noreferrer" title="Buka ukuran penuh">
+                                <img
+                                    src={preview.url}
+                                    alt={`Sertifikat ${data.nama_kompetensi || ''}`}
+                                    className="max-h-72 mx-auto object-contain border border-gray-200 rounded bg-white"
+                                />
+                            </a>
+                        ) : preview.kind === 'pdf' ? (
+                            <iframe
+                                src={preview.url}
+                                title="Pratinjau Sertifikat"
+                                className="w-full h-80 border border-gray-200 rounded bg-white"
+                            />
+                        ) : (
+                            <p className="text-sm text-gray-500">
+                                Pratinjau inline tidak tersedia untuk tipe file ini. Gunakan tombol <strong>Unduh</strong>.
+                            </p>
+                        )}
+
+                        {data.bukti && !preview.error && (
+                            <p className="mt-2 text-xs text-gray-500 break-all">File: {data.bukti}</p>
                         )}
                     </div>
 

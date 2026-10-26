@@ -38,6 +38,58 @@ function decodeJwtPayload(jwtToken) {
   }
 }
 
+// Role Keycloak yang dikenal aplikasi.
+const RECOGNIZED_ROLES = ['admin', 'admin_tambun_raya', 'ppk', 'kabalai', 'kabag_tu', 'katim', 'bendahara'];
+// Urutan prioritas untuk memilih `role` utama (kompatibilitas kode lama yang
+// masih membandingkan `session.user.role` dengan satu nilai).
+const ROLE_PRIORITY = ['admin_tambun_raya', 'admin', 'katim', 'kabalai', 'kabag_tu', 'ppk', 'bendahara'];
+
+/**
+ * Kumpulkan nama role dari claims Keycloak (realm_access, resource_access, roles datar).
+ *
+ * PENTING: `realm_access` HANYA ada di ACCESS token, bukan di ID token. NextAuth
+ * mengisi `profile` dari ID token, sehingga `profile.realm_access` hampir selalu
+ * kosong — akibatnya semua user jatuh ke role default 'user' walau di Keycloak
+ * punya role lain (mis. katim). Karena itu role harus dibaca dari access token.
+ */
+function collectRoles(claims) {
+  if (!claims || typeof claims !== 'object') return [];
+
+  const names = new Set();
+  const add = (list) => {
+    if (!Array.isArray(list)) return;
+    list.forEach((role) => {
+      if (typeof role === 'string' && role.trim()) names.add(role.trim());
+    });
+  };
+
+  add(claims.realm_access?.roles);
+  if (claims.resource_access && typeof claims.resource_access === 'object') {
+    Object.values(claims.resource_access).forEach((client) => add(client?.roles));
+  }
+  add(claims.roles);
+
+  return [...names];
+}
+
+/**
+ * Gabungkan role dari beberapa sumber (objek claims atau array role), saring ke
+ * role yang dikenal, lalu urutkan sesuai prioritas. Multi-role tetap utuh;
+ * elemen pertama dipakai sebagai `role` utama.
+ */
+function resolveRoles(...sources) {
+  const names = new Set();
+  sources.forEach((source) => {
+    if (!source) return;
+    const list = Array.isArray(source) ? source : collectRoles(source);
+    list.forEach((role) => names.add(role));
+  });
+
+  return [...names]
+    .filter((role) => RECOGNIZED_ROLES.includes(role))
+    .sort((a, b) => ROLE_PRIORITY.indexOf(a) - ROLE_PRIORITY.indexOf(b));
+}
+
 /**
  * Perbarui access token memakai refresh token (Keycloak).
  *
@@ -64,12 +116,17 @@ async function refreshAccessToken(token) {
   }
 
   const claims = decodeJwtPayload(data.access_token);
+  // Role bisa berubah di Keycloak selama sesi berjalan (mis. role katim baru
+  // ditambahkan) — ambil ulang dari access token yang baru.
+  const roles = resolveRoles(claims, token.roles);
   return {
     ...token,
     accessToken: data.access_token,
     refreshToken: data.refresh_token || token.refreshToken,
     idToken: data.id_token || token.idToken,
     expiresAt: Math.floor(Date.now() / 1000) + Number(data.expires_in || 300),
+    role: roles[0] || token.role,
+    roles,
     displayClaims: {
       preferred_username: claims.preferred_username || token.username,
       jabatan: claims.jabatan || null,
@@ -95,10 +152,10 @@ export const authOptions = {
         console.log("🔐 Profile for:", profile.preferred_username);
         
         // Determine ALL roles — user bisa punya multiple roles (ppk + katim, admin_tambun_raya + user, dll)
-        const realmRoles = profile.realm_access?.roles || [];
-        const recognizedRoles = ['admin', 'admin_tambun_raya', 'ppk', 'kabalai', 'kabag_tu', 'katim', 'bendahara'];
-        const roles = realmRoles.filter(r => recognizedRoles.includes(r));
-        const primaryRole = roles.length > 0 ? roles[0] : 'user';
+        // `profile` berasal dari ID token dan biasanya TIDAK memuat realm_access;
+        // sumber utama role adalah access token (dibaca ulang di callback jwt).
+        const roles = resolveRoles(profile);
+        const primaryRole = roles[0] || 'user';
         
         // Ambil NIP dari berbagai sumber
         let nipRaw = '';
@@ -146,8 +203,15 @@ export const authOptions = {
         token.id = user.id;
         token.name = user.name;
         token.email = user.email;
-        token.role = user.role;
-        token.roles = user.roles;     // SEMUA roles (array)
+
+        // Role WAJIB diambil dari ACCESS token: realm_access/resource_access hanya
+        // ada di sana (ID token tidak memuatnya). `user.roles` dari profile dipakai
+        // sebagai cadangan bila klaim tidak tersedia.
+        const accessClaims = decodeJwtPayload(account.access_token);
+        const roles = resolveRoles(accessClaims, user.roles);
+        token.roles = roles;              // SEMUA roles (array)
+        token.role = roles[0] || user.role || 'user';
+
         token.nip = user.nip;         // NIP tanpa spasi
         token.nip_raw = user.nip_raw; // NIP dengan spasi
         token.username = user.username;
@@ -160,13 +224,23 @@ export const authOptions = {
 
         // Klaim tampilan (bukan token) supaya UI tetap punya data yang dulu
         // diambil dengan mendekode token di browser.
-        const claims = decodeJwtPayload(account.access_token);
         token.displayClaims = {
-          preferred_username: claims.preferred_username || user.username,
-          jabatan: claims.jabatan || null,
+          preferred_username: accessClaims.preferred_username || user.username,
+          jabatan: accessClaims.jabatan || null,
         };
 
         return token;
+      }
+
+      // --- Sesi lama (dibuat sebelum perbaikan) belum punya roles ---
+      // Turunkan ulang dari access token (murah, hanya decode) supaya multi-role
+      // langsung berlaku tanpa menunggu access token kedaluwarsa.
+      if (token.accessToken && (!Array.isArray(token.roles) || token.roles.length === 0)) {
+        const roles = resolveRoles(decodeJwtPayload(token.accessToken));
+        if (roles.length > 0) {
+          token.roles = roles;
+          token.role = roles[0];
+        }
       }
 
       // --- Perpanjang token sebelum kedaluwarsa (60 detik lebih awal) ---

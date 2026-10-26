@@ -13,7 +13,8 @@ const https = require('https');
 const fs = require('fs');
 const rateLimit = require('express-rate-limit');
 const helmet = require('helmet');
-require('dotenv').config({ path: '.env.local' });
+const { loadEnv } = require('./config/loadEnv');
+loadEnv();
 
 const app = express();
 

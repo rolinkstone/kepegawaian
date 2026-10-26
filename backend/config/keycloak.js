@@ -1,6 +1,7 @@
-require('dotenv').config({ path: '.env.local' });
+const { loadEnv } = require('./loadEnv');
+const loadedEnvFiles = loadEnv();
 
-console.log('🔍 Loading environment variables from .env.local');
+console.log(`🔍 Loading environment variables from ${loadedEnvFiles.length ? loadedEnvFiles.join(' + ') : '(file .env / .env.local tidak ditemukan)'}`);
 console.log('KEYCLOAK_SERVER_URL:', process.env.KEYCLOAK_SERVER_URL ? '✓ SET' : '✗ NOT SET');
 console.log('KEYCLOAK_ADMIN_USERNAME:', process.env.KEYCLOAK_ADMIN_USERNAME ? '✓ SET' : '✗ NOT SET');
 console.log('NODE_ENV:', process.env.NODE_ENV || 'not set');
@@ -15,8 +16,8 @@ const requiredEnvVars = [
 
 for (const envVar of requiredEnvVars) {
     if (!process.env[envVar]) {
-        console.error(`❌ ERROR: ${envVar} is required but not set in .env.local`);
-        console.error('Please create .env.local file in backend folder with proper credentials');
+        console.error(`❌ ERROR: ${envVar} is required but not set`);
+        console.error('Isi variabel tersebut di backend/.env atau backend/.env.local');
         process.exit(1);
     }
 }

@@ -11,8 +11,12 @@ export default withAuth(
     console.log("🛡️ Middleware - Token present:", !!token);
     
     if (token) {
-      // Role-based access control
-      if (path.startsWith('/admin') && token.role !== 'admin') {
+      // Role-based access control (multi-role: cek seluruh daftar role)
+      const tokenRoles = Array.isArray(token.roles) && token.roles.length > 0
+        ? token.roles
+        : (token.role ? [token.role] : []);
+
+      if (path.startsWith('/admin') && !tokenRoles.includes('admin')) {
         const url = new URL('/unauthorized', req.url);
         return NextResponse.redirect(url);
       }

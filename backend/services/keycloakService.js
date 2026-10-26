@@ -1,5 +1,6 @@
 const axios = require('axios');
-require('dotenv').config({ path: '.env.local' });
+const { loadEnv } = require('../config/loadEnv');
+loadEnv();
 
 const KEYCLOAK_CONFIG = {
     serverUrl: process.env.KEYCLOAK_SERVER_URL,
