@@ -47,7 +47,8 @@ const MonitorSertifikatModal = ({ show, onClose, jadwal, session }) => {
             });
             if (result.success) {
                 const list = result.data?.jadwal || [];
-                setMonitor(list.length > 0 ? list[0] : null);
+                const current = list.find(j => String(j.jadwal_id) === String(jadwal.id));
+                setMonitor(current || null);
             } else {
                 Swal.fire({
                     icon: 'error',

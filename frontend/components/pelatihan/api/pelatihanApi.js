@@ -723,7 +723,7 @@ export const respondUndangan = async (session, id, status) => {
 /**
  * GET /api/pelatihan/monitor/sertifikat
  * Monitoring peserta yang sudah/belum upload sertifikat ke Riwayat Pelatihan (user_kompetensi),
- * berdasarkan kompetensi terkait pelatihan. Bisa difilter per nama pelatihan.
+ * berdasarkan kompetensi terkait pelatihan. Bisa difilter per jadwal (jadwal_id) atau nama pelatihan.
  */
 export const fetchMonitorSertifikat = async (session, params = {}) => {
     const token = getToken(session);
@@ -739,6 +739,7 @@ export const fetchMonitorSertifikat = async (session, params = {}) => {
     const queryParams = new URLSearchParams();
     if (params.status) queryParams.append('status', params.status);
     if (params.search) queryParams.append('search', params.search);
+    if (params.jadwal_id) queryParams.append('jadwal_id', params.jadwal_id);
 
     const baseUrl = process.env.NEXT_PUBLIC_API_URL;
     const url = `${baseUrl}/pelatihan/monitor/sertifikat${queryParams.toString() ? `?${queryParams}` : ''}`;

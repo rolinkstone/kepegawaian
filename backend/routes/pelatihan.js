@@ -1240,7 +1240,8 @@ router.post('/peserta/:id/kompetensi-terpenuhi', keycloakAuth, async (req, res) 
  * yang dipilih saat membuat jadwal). Bisa dimonitor per nama pelatihan.
  *
  * Default: jadwal berstatus 'Selesai' & peserta dengan undangan 'Diterima'.
- * Query params: ?status=Selesai (opsional) & search= (cari nama/kode pelatihan / nama peserta)
+ * Query params: ?status=Selesai (opsional), ?jadwal_id= (opsional, pantau 1 jadwal saja)
+ *               & search= (cari nama/kode pelatihan / nama peserta)
  */
 router.get('/monitor/sertifikat', keycloakAuth, async (req, res) => {
     const isAdmin = isAdminTambunRaya(req.user);
