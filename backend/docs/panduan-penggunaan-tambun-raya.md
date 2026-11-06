@@ -600,7 +600,7 @@ Catatan: tombol **Export Data** pada tab Kompetensi belum berfungsi.
 - **Tombol:** Refresh Data - Export Data - Cetak - Tambah Pegawai
   (Export Data masih placeholder: "Fitur export sedang dalam pengembangan")
 - **Kartu:** Total Pegawai - Aktif - Tidak Aktif
-- **Tab:** **Daftar Pegawai** (badge jumlah) dan **Statistik**
+- **Tab:** **Daftar Pegawai** (badge jumlah) dan **Statistik**. Untuk **Admin Tambun Raya** dan **Katim** (multirole: pengelola sekaligus pegawai) muncul tab tambahan **Pegawai Lain** dan **Diri Sendiri** — tab **Diri Sendiri** hanya menampilkan baris data Anda sendiri (Detail & Analisis Kenaikan tetap bisa dibuka), sedangkan **Pegawai Lain** menampilkan seluruh pegawai seperti biasa.
 - **Filter:** Pencarian (NIP/Nama/Email) - Fungsi - Jabatan - Jenjang - Status (Aktif/Tidak Aktif) - **Reset**
 - **Kolom tabel:** No - NIP - Nama - Jabatan - Jenjang - Fungsi - Peran - Status - Aksi
 - **Aksi:** Detail - Edit - Analisis Kenaikan - Nonaktifkan
@@ -696,6 +696,7 @@ Pada tab **Kompetensi Terkait**, Admin Tambun Raya dapat menekan **Tambah Kompet
   - Admin Tambun Raya: melihat semua data pegawai
   - Katim: melihat data pegawai di fungsi Anda
   - User: hanya melihat data Anda sendiri
+- **Tab cakupan data (multirole):** untuk **Admin Tambun Raya** dan **Katim** tersedia tab **Pegawai Lain** (memantau pegawai lain) dan **Diri Sendiri** (hanya data Anda). Di tab **Diri Sendiri**, tombol **Tambah Kompetensi** otomatis mengisi data untuk Anda sendiri (pilihan pegawai dikunci).
 - **Kolom:** No - Pegawai - Kompetensi - Tanggal Dipenuhi - Nilai - Status / Hasil - Sertifikat - Verifikator - Aksi
 - **Aksi:** Detail - Lihat Sertifikat - Edit (diblokir bila sudah Valid) - Verifikasi (Admin Tambun Raya) - Hapus (Admin Tambun Raya/Katim)
 

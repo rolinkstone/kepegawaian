@@ -15,6 +15,9 @@ import {
     deleteUserKompetensi 
 } from './api/userKompetensiApi';
 
+// NIP di database bisa memuat spasi, sedangkan NIP dari session tidak.
+const normalizeNipValue = (value) => String(value ?? '').replace(/\s/g, '');
+
 const UserskompetensiContainer = () => {
     const { data: session } = useSession();
     const [data, setData] = useState([]);
@@ -24,6 +27,7 @@ const UserskompetensiContainer = () => {
     const [showForm, setShowForm] = useState(false);
     const [editingData, setEditingData] = useState(null);
     const [preselectUserId, setPreselectUserId] = useState(null);
+    const [dataScope, setDataScope] = useState('others'); // 'others' | 'self'
     const [modalConfig, setModalConfig] = useState({
         show: false,
         type: null,
@@ -161,6 +165,9 @@ const UserskompetensiContainer = () => {
 
     const isAdminTambunRaya = userRoles.isAdmin;
     const isKatim = userRoles.isKatim;
+
+    // Admin/Katim juga seorang pegawai → bisa beralih antara "Pegawai Lain" dan "Diri Sendiri"
+    const isMultirole = isAdminTambunRaya || isKatim;
     
     // Tentukan apakah user bisa melakukan operasi tulis
     const canWrite = true; // Semua user bisa menambah dan mengedit
@@ -303,8 +310,8 @@ const fetchData = useCallback(async (showMessage = true) => {
                 
                 const beforeCount = fetchedData.length;
                 fetchedData = fetchedData.filter(item => {
-                    // Pastikan item.user_nip ada dan bandingkan dengan NIP session
-                    return item.user_nip === userNip;
+                    // user_nip dari DB bisa memuat spasi, sedangkan NIP session tidak
+                    return normalizeNipValue(item.user_nip) === userNip;
                 });
                 console.log(`📌 Filtered from ${beforeCount} to ${fetchedData.length} items for user ${userNip}`);
             }
@@ -412,7 +419,7 @@ useEffect(() => {
     // ========== APPLY FILTERS ==========
     useEffect(() => {
         applyFilters();
-    }, [data, filters]);
+    }, [data, filters, dataScope]);
 
     const applyFilters = () => {
         if (!data || data.length === 0) {
@@ -421,6 +428,12 @@ useEffect(() => {
         }
 
         let result = [...data];
+
+        // Tab "Diri Sendiri": hanya data milik user yang login
+        if (dataScope === 'self') {
+            const myNip = normalizeNipValue(getUserNip());
+            result = result.filter(item => normalizeNipValue(item.user_nip) === myNip);
+        }
 
         if (filters.search) {
             const searchLower = filters.search.toLowerCase();
@@ -463,6 +476,17 @@ useEffect(() => {
     const handleFilterChange = (name, value) => {
         setFilters(prev => ({ ...prev, [name]: value }));
     };
+
+    // Statistik mengikuti cakupan data yang sedang ditampilkan
+    const statsForScope = useMemo(() => {
+        if (dataScope !== 'self') return stats;
+        return {
+            total: filteredData.length,
+            lulus: filteredData.filter(item => item.status === 'Lulus').length,
+            tidakLulus: filteredData.filter(item => item.status === 'Tidak Lulus').length,
+            dalamProses: filteredData.filter(item => item.status === 'Dalam Proses').length
+        };
+    }, [dataScope, filteredData, stats]);
 
     const handleResetFilters = () => {
         setFilters({
@@ -863,19 +887,19 @@ useEffect(() => {
                     <div className="flex gap-4 mt-4">
                         <div className="bg-blue-50 p-3 rounded-lg">
                             <p className="text-sm text-blue-600">Total</p>
-                            <p className="text-xl font-bold text-blue-700">{stats.total}</p>
+                            <p className="text-xl font-bold text-blue-700">{statsForScope.total}</p>
                         </div>
                         <div className="bg-green-50 p-3 rounded-lg">
                             <p className="text-sm text-green-600">Lulus</p>
-                            <p className="text-xl font-bold text-green-700">{stats.lulus}</p>
+                            <p className="text-xl font-bold text-green-700">{statsForScope.lulus}</p>
                         </div>
                         <div className="bg-red-50 p-3 rounded-lg">
                             <p className="text-sm text-red-600">Tidak Lulus</p>
-                            <p className="text-xl font-bold text-red-700">{stats.tidakLulus}</p>
+                            <p className="text-xl font-bold text-red-700">{statsForScope.tidakLulus}</p>
                         </div>
                         <div className="bg-amber-50 p-3 rounded-lg">
                             <p className="text-sm text-amber-600">Dalam Proses</p>
-                            <p className="text-xl font-bold text-amber-700">{stats.dalamProses}</p>
+                            <p className="text-xl font-bold text-amber-700">{statsForScope.dalamProses}</p>
                         </div>
                     </div>
                 </div>
@@ -915,6 +939,40 @@ useEffect(() => {
                 </div>
             </div>
 
+            {/* Tab cakupan data: hanya untuk user multirole (Admin/Katim yang juga pegawai) */}
+            {isMultirole && (
+                <div className="mb-4 border-b border-gray-200">
+                    <nav className="flex gap-6">
+                        <button
+                            onClick={() => setDataScope('others')}
+                            className={`py-2 px-1 font-medium text-sm border-b-2 transition-colors ${
+                                dataScope === 'others'
+                                    ? 'border-blue-500 text-blue-600'
+                                    : 'border-transparent text-gray-500 hover:text-gray-700'
+                            }`}
+                        >
+                            Pegawai Lain
+                        </button>
+                        <button
+                            onClick={() => setDataScope('self')}
+                            className={`py-2 px-1 font-medium text-sm border-b-2 transition-colors ${
+                                dataScope === 'self'
+                                    ? 'border-blue-500 text-blue-600'
+                                    : 'border-transparent text-gray-500 hover:text-gray-700'
+                            }`}
+                        >
+                            Diri Sendiri
+                        </button>
+                    </nav>
+                </div>
+            )}
+
+            {dataScope === 'self' && (
+                <div className="mb-4 bg-blue-50 text-blue-800 p-3 rounded-lg text-sm">
+                    Menampilkan riwayat pelatihan Anda sendiri. Gunakan tombol <span className="font-medium">Tambah Kompetensi</span> untuk mengisi data Anda.
+                </div>
+            )}
+
             {/* Filter Section */}
             <FilterSection
                 filters={filters}
@@ -953,7 +1011,9 @@ useEffect(() => {
                             ) : currentData.length === 0 ? (
                                 <tr>
                                     <td colSpan="9" className="px-6 py-4 text-center text-gray-500">
-                                        Tidak ada data
+                                        {dataScope === 'self'
+                                            ? 'Belum ada riwayat pelatihan untuk Anda. Gunakan tombol Tambah Kompetensi untuk mengisi.'
+                                            : 'Tidak ada data'}
                                     </td>
                                 </tr>
                             ) : (
@@ -1170,6 +1230,7 @@ useEffect(() => {
                     userRoles={userRoles}
                     session={session}
                     preselectUserId={preselectUserId}
+                    restrictToSelf={dataScope === 'self'}
                 />
             )}
 

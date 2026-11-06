@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import Swal from 'sweetalert2';
 import { createUserKompetensi, updateUserKompetensi } from './api/userKompetensiApi';
 
-const UserskompetensiForm = ({ show, onClose, onSuccess, editingData, options, userRoles, session, preselectUserId }) => {
+const UserskompetensiForm = ({ show, onClose, onSuccess, editingData, options, userRoles, session, preselectUserId, restrictToSelf = false }) => {
     const [formData, setFormData] = useState({
         id_user: '',
         id_kompetensi: '',
@@ -29,7 +29,8 @@ const UserskompetensiForm = ({ show, onClose, onSuccess, editingData, options, u
     const [filteredKompetensi, setFilteredKompetensi] = useState([]);
     const [showKompetensiDropdown, setShowKompetensiDropdown] = useState(false);
 
-    const isAdmin = userRoles?.isAdmin || false;
+    // Saat mode "Diri Sendiri", admin pun dikunci untuk mengisi data miliknya sendiri
+    const isAdmin = (userRoles?.isAdmin || false) && !restrictToSelf;
 
     // Helper untuk normalisasi NIP (hapus spasi)
     const normalizeNip = (nip) => String(nip || '').replace(/\s/g, '');
@@ -383,10 +384,16 @@ const UserskompetensiForm = ({ show, onClose, onSuccess, editingData, options, u
                         </div>
                     ) : (
                         <div className="bg-gray-50 text-gray-800 p-2 rounded-lg text-sm">
-                            <span className="font-medium">👤 Mode User:</span> Kompetensi akan ditambahkan untuk Anda sendiri
-                            {currentUser && (
+                            <span className="font-medium">
+                                {restrictToSelf ? '👤 Mode Diri Sendiri:' : '👤 Mode User:'}
+                            </span> Kompetensi akan ditambahkan untuk Anda sendiri
+                            {currentUser ? (
                                 <div className="mt-1 text-xs text-gray-600">
                                     Pegawai: {currentUser.nama} ({currentUser.nip})
+                                </div>
+                            ) : (
+                                <div className="mt-1 text-xs text-red-600">
+                                    Data pegawai Anda tidak ditemukan. Hubungi Admin agar akun ditautkan ke data pegawai.
                                 </div>
                             )}
                         </div>

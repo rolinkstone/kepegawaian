@@ -53,6 +53,9 @@ const { Title, Text } = Typography;
 const { confirm } = Modal;
 const { TabPane } = Tabs;
 
+// NIP di database bisa memuat spasi, sedangkan NIP dari session tidak.
+const normalizeNipValue = (value) => String(value ?? '').replace(/\s/g, '');
+
 // ========== STAT CARD COMPONENT ==========
 const StatCard = ({ title, value, icon, color, subtitle, loading }) => {
   const colors = {
@@ -210,6 +213,18 @@ const PegawaiContainer = ({ session }) => {
   const canWrite = isAdminTambunRaya; // Hanya admin yang bisa write
   const canView = true; // Semua user bisa view
 
+  // Admin/Katim juga seorang pegawai → bisa beralih antara "Pegawai Lain" dan "Diri Sendiri"
+  const isMultirole = isAdminTambunRaya || isKatim;
+
+  const currentUserNip = useMemo(() => normalizeNipValue(
+    session?.user?.nip ||
+    session?.user?.nip_raw ||
+    session?.user?.preferred_username ||
+    session?.user?.username ||
+    session?.user?.email?.split('@')[0] ||
+    ''
+  ), [session]);
+
   // Log role untuk debugging
   useEffect(() => {
     console.log('👑 isAdminTambunRaya:', isAdminTambunRaya);
@@ -275,6 +290,7 @@ const PegawaiContainer = ({ session }) => {
   });
 
   const [activeTab, setActiveTab] = useState('list');
+  const [dataScope, setDataScope] = useState('others');
   const [viewMode, setViewMode] = useState('table');
 
   const API_URL = `${process.env.NEXT_PUBLIC_API_URL}/pegawai`;
@@ -555,6 +571,11 @@ const PegawaiContainer = ({ session }) => {
       filtered = filtered.filter(item => item.is_active === isActive);
     }
 
+    // Tab "Diri Sendiri" hanya menampilkan baris milik user yang login
+    if (dataScope === 'self') {
+      filtered = filtered.filter(item => normalizeNipValue(item.nip) === currentUserNip);
+    }
+
     if (sorter.field) {
       filtered.sort((a, b) => {
         let valA = a[sorter.field];
@@ -584,11 +605,23 @@ const PegawaiContainer = ({ session }) => {
       total: filtered.length
     }));
     setSelectedRowKeys([]);
-  }, [dataPegawai, filters, sorter]);
+  }, [dataPegawai, filters, sorter, dataScope, currentUserNip]);
 
   useEffect(() => {
     applyFilters();
   }, [applyFilters]);
+
+  // Kartu statistik mengikuti cakupan data yang sedang ditampilkan
+  const statsForScope = useMemo(() => {
+    if (dataScope !== 'self') return stats;
+    const aktif = filteredData.filter(item => item.is_active === 1 || item.is_active === true).length;
+    return {
+      ...stats,
+      total: filteredData.length,
+      aktif,
+      tidakAktif: filteredData.length - aktif
+    };
+  }, [dataScope, filteredData, stats]);
 
   useEffect(() => {
     if (session || !session) {
@@ -1311,17 +1344,19 @@ const PegawaiContainer = ({ session }) => {
                     style={{ borderRadius: 8 }}
                   />
                 </Tooltip>
-                <Tooltip title={!canWrite ? "Hanya admin_tambun_raya yang dapat menambah pegawai" : "Tambah Pegawai"}>
-                  <Button
-                    type="primary"
-                    icon={<PlusOutlined />}
-                    onClick={handleTambah}
-                    disabled={!canWrite}
-                    style={{ borderRadius: 8 }}
-                  >
-                    Tambah Pegawai
-                  </Button>
-                </Tooltip>
+                {dataScope !== 'self' && (
+                  <Tooltip title={!canWrite ? "Hanya admin_tambun_raya yang dapat menambah pegawai" : "Tambah Pegawai"}>
+                    <Button
+                      type="primary"
+                      icon={<PlusOutlined />}
+                      onClick={handleTambah}
+                      disabled={!canWrite}
+                      style={{ borderRadius: 8 }}
+                    >
+                      Tambah Pegawai
+                    </Button>
+                  </Tooltip>
+                )}
               </Space>
             </Col>
           </Row>
@@ -1331,17 +1366,17 @@ const PegawaiContainer = ({ session }) => {
             <Col xs={24} sm={8}>
               <StatCard
                 title="Total Pegawai"
-                value={stats.total}
+                value={statsForScope.total}
                 icon={<TeamOutlined />}
                 color="blue"
-                subtitle="Seluruh pegawai"
+                subtitle={dataScope === 'self' ? 'Data Anda sendiri' : 'Seluruh pegawai'}
                 loading={loading}
               />
             </Col>
             <Col xs={24} sm={8}>
               <StatCard
                 title="Aktif"
-                value={stats.aktif}
+                value={statsForScope.aktif}
                 icon={<UserOutlined />}
                 color="green"
                 subtitle="Pegawai aktif"
@@ -1351,7 +1386,7 @@ const PegawaiContainer = ({ session }) => {
             <Col xs={24} sm={8}>
               <StatCard
                 title="Tidak Aktif"
-                value={stats.tidakAktif}
+                value={statsForScope.tidakAktif}
                 icon={<UserOutlined />}
                 color="orange"
                 subtitle="Pegawai non-aktif"
@@ -1406,6 +1441,35 @@ const PegawaiContainer = ({ session }) => {
           {/* Filter Section */}
           {activeTab === 'list' && (
             <>
+              {/* Tab cakupan data: hanya untuk user multirole (Admin/Katim yang juga pegawai) */}
+              {isMultirole && (
+                <Tabs
+                  activeKey={dataScope}
+                  onChange={setDataScope}
+                  type="card"
+                  size="small"
+                  style={{ marginBottom: 16 }}
+                  items={[
+                    {
+                      key: 'others',
+                      label: (
+                        <span>
+                          <TeamOutlined /> Pegawai Lain
+                        </span>
+                      )
+                    },
+                    {
+                      key: 'self',
+                      label: (
+                        <span>
+                          <UserOutlined /> Diri Sendiri
+                        </span>
+                      )
+                    }
+                  ]}
+                />
+              )}
+
               <FilterSection
                 filters={filters}
                 setFilters={setFilters}
@@ -1436,7 +1500,9 @@ const PegawaiContainer = ({ session }) => {
                     
                     {/* Info jumlah data */}
                     <Tag color="geekblue" style={{ borderRadius: 12 }}>
-                      Total Data: {dataPegawai.length} pegawai
+                      {dataScope === 'self'
+                        ? `Data Anda: ${filteredData.length} entri`
+                        : `Total Data: ${dataPegawai.length} pegawai`}
                     </Tag>
                   </Space>
                 </Col>
@@ -1481,6 +1547,17 @@ const PegawaiContainer = ({ session }) => {
                   columnWidth: 48
                 }}
                 rowKey="id"
+                locale={{
+                  emptyText: (
+                    <Empty
+                      description={
+                        dataScope === 'self'
+                          ? 'Data pegawai untuk akun Anda tidak ditemukan. Hubungi Admin agar akun ditautkan ke data pegawai.'
+                          : 'Belum ada data pegawai'
+                      }
+                    />
+                  )
+                }}
                 scroll={{ x: 1600, y: 'calc(100vh - 450px)' }}
                 style={{ borderRadius: 12, overflow: 'hidden' }}
               />
