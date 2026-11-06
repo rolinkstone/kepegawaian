@@ -1,7 +1,7 @@
 // components/pelatihan/MasterPelatihanForm.js
 import React, { useState, useEffect } from 'react';
 import Swal from 'sweetalert2';
-import { createMasterPelatihan, updateMasterPelatihan } from './api/pelatihanApi';
+import { createMasterPelatihan, updateMasterPelatihan, fetchMasterPelatihanById } from './api/pelatihanApi';
 
 const MasterPelatihanForm = ({ show, onClose, onSuccess, editingData, options, session, userRoles }) => {
     const [formData, setFormData] = useState({
@@ -30,11 +30,26 @@ const MasterPelatihanForm = ({ show, onClose, onSuccess, editingData, options, s
                     biaya: editingData.biaya?.toString() || '',
                     kompetensi_ids: []
                 });
+                loadKompetensiTerkait(editingData.id);
             } else {
                 resetForm();
             }
         }
     }, [show, editingData]);
+
+    // Muat kompetensi yang sudah terkait agar tidak terhapus saat menyimpan perubahan
+    const loadKompetensiTerkait = async (id) => {
+        try {
+            const result = await fetchMasterPelatihanById(session, id);
+            if (result.success) {
+                const ids = (result.data?.kompetensi || []).map(kom => kom.id_kompetensi);
+                setSelectedKompetensi(ids);
+                setFormData(prev => ({ ...prev, kompetensi_ids: ids }));
+            }
+        } catch (error) {
+            console.error('Gagal memuat kompetensi terkait:', error);
+        }
+    };
 
     const resetForm = () => {
         setFormData({

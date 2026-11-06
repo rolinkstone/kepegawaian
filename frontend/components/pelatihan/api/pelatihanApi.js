@@ -587,6 +587,81 @@ export const simpanKompetensiTerpenuhi = async (session, idPeserta, kompetensiId
  */
 // components/pelatihan/api/pelatihanApi.js
 
+// ========== KOMPETENSI TERKAIT API ==========
+
+/**
+ * GET /api/pelatihan/kompetensi
+ * Daftar seluruh master kompetensi untuk pilihan kompetensi terkait
+ */
+export const fetchKompetensiOptions = async (session) => {
+    const token = getToken(session);
+    
+    if (!token) {
+        return {
+            success: false,
+            message: 'Token tidak ditemukan',
+            data: []
+        };
+    }
+    
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL;
+    const url = `${baseUrl}/pelatihan/kompetensi`;
+    
+    try {
+        const response = await fetch(url, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        return await handleResponse(response);
+    } catch (error) {
+        return {
+            success: false,
+            message: error.message,
+            data: []
+        };
+    }
+};
+
+/**
+ * PUT /api/pelatihan/jadwal/:id/kompetensi
+ * Menyimpan kompetensi terkait (tersimpan di level master pelatihan)
+ */
+export const updateKompetensiJadwal = async (session, idJadwal, kompetensiIds) => {
+    const token = getToken(session);
+    
+    if (!token) {
+        return {
+            success: false,
+            message: 'Token tidak ditemukan'
+        };
+    }
+    
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL;
+    const url = `${baseUrl}/pelatihan/jadwal/${idJadwal}/kompetensi`;
+    
+    try {
+        const response = await fetch(url, {
+            method: 'PUT',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ kompetensi_ids: kompetensiIds })
+        });
+        
+        return await handleResponse(response);
+    } catch (error) {
+        return {
+            success: false,
+            message: error.message
+        };
+    }
+};
+
 // ========== OPTIONS API ==========
 
 /**

@@ -850,6 +850,7 @@ const PelatihanContainer = () => {
                 onClose={handleCloseModal}
                 jadwal={modalConfig.data}
                 session={session}
+                userRoles={userRoles}
                 onUndang={() => handleUndangPeserta(modalConfig.data)}
                 onKompetensi={(peserta) => {
                     setModalConfig({

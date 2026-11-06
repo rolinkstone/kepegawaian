@@ -174,6 +174,37 @@ router.get('/master/:id', keycloakAuth, async (req, res) => {
 });
 
 /**
+ * GET /api/pelatihan/kompetensi
+ * Daftar seluruh master kompetensi (untuk pilihan "Kompetensi Terkait")
+ */
+router.get('/kompetensi', keycloakAuth, async (req, res) => {
+    try {
+        const [kompetensi] = await db.query(`
+            SELECT
+                mk.id,
+                mk.kode_kompetensi,
+                mk.nama_kompetensi,
+                f.nama_fungsi
+            FROM kepegawaian.master_kompetensi mk
+            LEFT JOIN kepegawaian.fungsi f ON mk.id_fungsi = f.id
+            ORDER BY mk.kode_kompetensi
+        `);
+
+        res.status(200).json({
+            success: true,
+            data: kompetensi
+        });
+    } catch (error) {
+        console.error('Error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Terjadi kesalahan server',
+            error: error.message
+        });
+    }
+});
+
+/**
  * POST /api/pelatihan/master
  * Menambah master pelatihan baru (bisa admin dan katim)
  */
@@ -887,6 +918,109 @@ router.put('/jadwal/:id', keycloakAuth, async (req, res) => {
             message: 'Terjadi kesalahan server',
             error: error.message
         });
+    }
+});
+
+/**
+ * PUT /api/pelatihan/jadwal/:id/kompetensi
+ * Mengubah kompetensi terkait dari detail jadwal (hanya admin).
+ * Kompetensi tersimpan di level master pelatihan, sehingga perubahan berlaku
+ * untuk semua jadwal yang memakai master pelatihan tersebut.
+ */
+router.put('/jadwal/:id/kompetensi', keycloakAuth, async (req, res) => {
+    const { id } = req.params;
+    const username = getUsername(req.user);
+
+    if (!isAdminTambunRaya(req.user)) {
+        return res.status(403).json({
+            success: false,
+            message: 'Hanya admin yang dapat mengubah kompetensi terkait'
+        });
+    }
+
+    const rawIds = req.body?.kompetensi_ids;
+    if (!Array.isArray(rawIds)) {
+        return res.status(400).json({
+            success: false,
+            message: 'kompetensi_ids harus berupa array'
+        });
+    }
+
+    const kompetensiIds = [...new Set(
+        rawIds
+            .map(value => Number(value))
+            .filter(value => Number.isInteger(value) && value > 0)
+    )];
+
+    const connection = await db.getConnection();
+    await connection.beginTransaction();
+
+    try {
+        const [jadwal] = await connection.query(
+            'SELECT id_pelatihan FROM kepegawaian.jadwal_pelatihan WHERE id = ?',
+            [id]
+        );
+
+        if (jadwal.length === 0) {
+            await connection.rollback();
+            return res.status(404).json({
+                success: false,
+                message: 'Jadwal tidak ditemukan'
+            });
+        }
+
+        const idPelatihan = jadwal[0].id_pelatihan;
+
+        // Pastikan semua kompetensi yang dikirim memang ada
+        if (kompetensiIds.length > 0) {
+            const [found] = await connection.query(
+                'SELECT id FROM kepegawaian.master_kompetensi WHERE id IN (?)',
+                [kompetensiIds]
+            );
+            const foundIds = new Set(found.map(row => row.id));
+            const invalidIds = kompetensiIds.filter(kompetensiId => !foundIds.has(kompetensiId));
+
+            if (invalidIds.length > 0) {
+                await connection.rollback();
+                return res.status(400).json({
+                    success: false,
+                    message: `Kompetensi tidak ditemukan: ${invalidIds.join(', ')}`
+                });
+            }
+        }
+
+        await connection.query(
+            'DELETE FROM kepegawaian.pelatihan_kompetensi WHERE id_pelatihan = ?',
+            [idPelatihan]
+        );
+
+        if (kompetensiIds.length > 0) {
+            const kompetensiValues = kompetensiIds.map(kompetensiId => [idPelatihan, kompetensiId]);
+            await connection.query(
+                'INSERT INTO kepegawaian.pelatihan_kompetensi (id_pelatihan, id_kompetensi) VALUES ?',
+                [kompetensiValues]
+            );
+        }
+
+        await connection.commit();
+
+        console.log(`✅ ${username} (Admin) mengubah kompetensi terkait master pelatihan ID: ${idPelatihan} (${kompetensiIds.length} kompetensi)`);
+
+        res.status(200).json({
+            success: true,
+            message: 'Kompetensi terkait berhasil disimpan',
+            data: { id_pelatihan: idPelatihan, kompetensi_ids: kompetensiIds }
+        });
+    } catch (error) {
+        await connection.rollback();
+        console.error('Error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Terjadi kesalahan server',
+            error: error.message
+        });
+    } finally {
+        connection.release();
     }
 });
 

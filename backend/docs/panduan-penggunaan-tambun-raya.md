@@ -678,6 +678,8 @@ Catatan: tombol **Export Data** pada tab Kompetensi belum berfungsi.
 
 **Detail Jadwal** memiliki 3 tab: **Informasi Pelatihan**, **Daftar Peserta (N)** (untuk Admin Tambun Raya/Katim) atau **Status Undangan Saya (N)** (untuk pegawai), dan **Kompetensi Terkait**.
 
+Pada tab **Kompetensi Terkait**, Admin Tambun Raya dapat menekan **Tambah Kompetensi** / **Edit Kompetensi** untuk mencari (kode/nama/fungsi) dan mencentang kompetensi yang terkait, lalu **Simpan**. Kompetensi tersimpan pada master pelatihan, sehingga perubahan berlaku untuk semua jadwal yang memakai pelatihan tersebut. Katim dan pegawai hanya dapat melihat daftar kompetensi terkait.
+
 **Tab Kompetensi Wajib:** dropdown **Tahun** + **Refresh**; kartu **Total Kompetensi Wajib**, **Tahun Aktif**, **Status**; kolom **No - Kode - Nama Kompetensi - Fungsi - Tahun - Aksi**; tombol **Tambah Kompetensi Wajib** dan **Hapus Semua {tahun}**.
 
 ## 6.9 Riwayat Pelatihan

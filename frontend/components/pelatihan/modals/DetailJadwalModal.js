@@ -1,15 +1,26 @@
 // components/pelatihan/modals/DetailJadwalModal.js
 import React, { useState, useEffect } from 'react';
 import Swal from 'sweetalert2';
-import { fetchJadwalPelatihanById, updateStatusPeserta, respondUndangan } from '../api/pelatihanApi';
+import { fetchJadwalPelatihanById, updateStatusPeserta, respondUndangan, fetchKompetensiOptions, updateKompetensiJadwal } from '../api/pelatihanApi';
 
-const DetailJadwalModal = ({ show, onClose, jadwal, session, onUndang, onKompetensi }) => {
+const DetailJadwalModal = ({ show, onClose, jadwal, session, onUndang, onKompetensi, userRoles: parentUserRoles }) => {
     const [detailData, setDetailData] = useState(null);
     const [loading, setLoading] = useState(false);
     const [activeTab, setActiveTab] = useState('info');
     const [respondingId, setRespondingId] = useState(null);
     const [userNip, setUserNip] = useState('');
-    const [userRoles, setUserRoles] = useState({ isAdmin: false, isKatim: false });
+    const [detectedRoles, setDetectedRoles] = useState({ isAdmin: false, isKatim: false });
+
+    // Peran dari parent (deteksinya lebih lengkap) dipakai lebih dulu
+    const userRoles = parentUserRoles || detectedRoles;
+
+    // State untuk edit kompetensi terkait (admin)
+    const [editingKompetensi, setEditingKompetensi] = useState(false);
+    const [kompetensiOptions, setKompetensiOptions] = useState([]);
+    const [selectedKompetensi, setSelectedKompetensi] = useState([]);
+    const [searchKompetensi, setSearchKompetensi] = useState('');
+    const [loadingKompetensiOptions, setLoadingKompetensiOptions] = useState(false);
+    const [savingKompetensi, setSavingKompetensi] = useState(false);
 
    // components/pelatihan/modals/DetailJadwalModal.js
 
@@ -59,7 +70,7 @@ useEffect(() => {
         
         console.log('🔍 Roles ditemukan:', roles);
         
-        setUserRoles({
+        setDetectedRoles({
             isAdmin: roles.includes('admin_tambun_raya'),
             isKatim: roles.includes('katim')
         });
@@ -79,6 +90,13 @@ useEffect(() => {
             fetchDetail(jadwal.id);
         }
     }, [show, jadwal]);
+
+    // Reset mode edit kompetensi setiap kali modal dibuka / jadwal berganti
+    useEffect(() => {
+        setEditingKompetensi(false);
+        setSearchKompetensi('');
+        setSelectedKompetensi([]);
+    }, [show, jadwal?.id]);
 
     const fetchDetail = async (id) => {
         setLoading(true);
@@ -204,6 +222,76 @@ useEffect(() => {
         console.log('📋 Peserta setelah filter:', filtered);
         return filtered;
     };
+
+    const handleOpenEditKompetensi = async () => {
+        setEditingKompetensi(true);
+        setSearchKompetensi('');
+        setSelectedKompetensi((detailData?.kompetensi || []).map(kom => kom.id));
+
+        if (kompetensiOptions.length > 0) return;
+
+        setLoadingKompetensiOptions(true);
+        try {
+            const result = await fetchKompetensiOptions(session);
+            if (result.success) {
+                setKompetensiOptions(result.data || []);
+            } else {
+                throw new Error(result.message || 'Gagal memuat daftar kompetensi');
+            }
+        } catch (error) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Gagal Memuat Kompetensi',
+                text: error.message
+            });
+        } finally {
+            setLoadingKompetensiOptions(false);
+        }
+    };
+
+    const handleToggleKompetensi = (idKompetensi) => {
+        setSelectedKompetensi(prev => prev.includes(idKompetensi)
+            ? prev.filter(item => item !== idKompetensi)
+            : [...prev, idKompetensi]
+        );
+    };
+
+    const handleSaveKompetensi = async () => {
+        setSavingKompetensi(true);
+        try {
+            const result = await updateKompetensiJadwal(session, jadwal.id, selectedKompetensi);
+            if (!result.success) {
+                throw new Error(result.message || 'Gagal menyimpan kompetensi terkait');
+            }
+
+            await Swal.fire({
+                icon: 'success',
+                title: 'Berhasil',
+                text: 'Kompetensi terkait berhasil disimpan',
+                timer: 1500,
+                showConfirmButton: false
+            });
+
+            setEditingKompetensi(false);
+            await fetchDetail(jadwal.id);
+        } catch (error) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Gagal Menyimpan',
+                text: error.message
+            });
+        } finally {
+            setSavingKompetensi(false);
+        }
+    };
+
+    const filteredKompetensiOptions = kompetensiOptions.filter(kom => {
+        const keyword = searchKompetensi.trim().toLowerCase();
+        if (!keyword) return true;
+        return `${kom.kode_kompetensi} ${kom.nama_kompetensi} ${kom.nama_fungsi || ''}`
+            .toLowerCase()
+            .includes(keyword);
+    });
 
     if (!show || !jadwal) return null;
 
@@ -494,7 +582,94 @@ useEffect(() => {
                             {/* Tab Kompetensi */}
                             {activeTab === 'kompetensi' && (
                                 <div>
-                                    {detailData?.kompetensi?.length > 0 ? (
+                                    {userRoles.isAdmin && !editingKompetensi && (
+                                        <div className="flex items-start justify-between gap-3 mb-4">
+                                            <p className="text-xs text-gray-500">
+                                                Kompetensi terkait tersimpan pada master pelatihan, sehingga perubahan
+                                                berlaku untuk semua jadwal yang memakai pelatihan ini.
+                                            </p>
+                                            <button
+                                                type="button"
+                                                onClick={handleOpenEditKompetensi}
+                                                className="px-3 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 whitespace-nowrap"
+                                            >
+                                                {detailData?.kompetensi?.length > 0 ? 'Edit Kompetensi' : 'Tambah Kompetensi'}
+                                            </button>
+                                        </div>
+                                    )}
+
+                                    {editingKompetensi ? (
+                                        <div className="space-y-3">
+                                            <input
+                                                type="text"
+                                                value={searchKompetensi}
+                                                onChange={(e) => setSearchKompetensi(e.target.value)}
+                                                placeholder="Cari kode / nama kompetensi / fungsi..."
+                                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                disabled={savingKompetensi}
+                                            />
+
+                                            <p className="text-xs text-gray-500">
+                                                {selectedKompetensi.length} kompetensi dipilih
+                                            </p>
+
+                                            {loadingKompetensiOptions ? (
+                                                <div className="flex justify-center py-8">
+                                                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                                                </div>
+                                            ) : (
+                                                <div className="max-h-72 overflow-y-auto border border-gray-200 rounded-lg divide-y divide-gray-200">
+                                                    {filteredKompetensiOptions.length > 0 ? (
+                                                        filteredKompetensiOptions.map(kom => (
+                                                            <label
+                                                                key={kom.id}
+                                                                className="flex items-start gap-3 p-3 hover:bg-gray-50 cursor-pointer"
+                                                            >
+                                                                <input
+                                                                    type="checkbox"
+                                                                    checked={selectedKompetensi.includes(kom.id)}
+                                                                    onChange={() => handleToggleKompetensi(kom.id)}
+                                                                    className="mt-1"
+                                                                    disabled={savingKompetensi}
+                                                                />
+                                                                <span className="text-sm">
+                                                                    <span className="block font-medium">
+                                                                        {kom.kode_kompetensi} - {kom.nama_kompetensi}
+                                                                    </span>
+                                                                    <span className="text-gray-500">
+                                                                        Fungsi: {kom.nama_fungsi || '-'}
+                                                                    </span>
+                                                                </span>
+                                                            </label>
+                                                        ))
+                                                    ) : (
+                                                        <div className="text-center py-6 text-sm text-gray-500">
+                                                            Kompetensi tidak ditemukan
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            )}
+
+                                            <div className="flex justify-end gap-3 pt-2">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setEditingKompetensi(false)}
+                                                    className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+                                                    disabled={savingKompetensi}
+                                                >
+                                                    Batal
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={handleSaveKompetensi}
+                                                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-blue-300"
+                                                    disabled={savingKompetensi || loadingKompetensiOptions}
+                                                >
+                                                    {savingKompetensi ? 'Menyimpan...' : 'Simpan'}
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ) : detailData?.kompetensi?.length > 0 ? (
                                         <div className="space-y-2">
                                             {detailData.kompetensi.map(kom => (
                                                 <div key={kom.id} className="bg-gray-50 p-3 rounded-lg">
