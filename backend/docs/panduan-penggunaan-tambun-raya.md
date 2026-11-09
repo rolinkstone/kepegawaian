@@ -611,7 +611,7 @@ Catatan: tombol **Export Data** pada tab Kompetensi belum berfungsi.
   - **Kolom:** pilihan (checkbox) - No - Pegawai (nama & NIP) - Jabatan - Jenjang - Fungsi - Kompetensi (kode, nama, badge **Wajib**, peran) - **Prioritas** (dropdown: Mutlak / Perlu / Penting, boleh dikosongkan) - **Diisi Oleh** (nama & waktu)
   - **Bulk:** centang beberapa baris lalu klik **Terapkan Prioritas (n)**, pilih nilai pada modal, klik **Simpan**. Pilihan baris tetap tersimpan saat berpindah halaman.
 - **Tab Rekap per Kompetensi:** satu baris = satu kompetensi per jenjang (data pegawai dikelompokkan).
-  - **Filter:** Cari nama pegawai/NIP - Jabatan - Jenjang - Fungsi - **Status Isian** (**Belum diisi** / **Sudah diisi semua**) - tombol **Muat ulang** dan **Reset**
+  - **Filter:** Cari nama pegawai/NIP - **Cari kode/nama kompetensi** - Jabatan - Jenjang - Fungsi - **Status Isian** (**Belum diisi** / **Sudah diisi semua**) - tombol **Muat ulang** dan **Reset**
   - **Kolom:** No - Nama Kompetensi (kode, nama, peran) - **Prioritas** (sub-kolom **Mutlak / Perlu / Penting**, masing-masing berupa centang + jumlah pegawai) - Jenjang - **Pegawai** (tombol **Lihat (n pegawai)**)
   - **Modal daftar pegawai:** menampilkan semua pegawai pada kompetensi + jenjang tersebut (nama, NIP, jabatan, fungsi) beserta isian berupa **centang Mutlak / Perlu / Penting**. Centang salah satu untuk menyimpan; centang ulang pada nilai yang sama untuk menghapus isian. Tersedia pencarian nama/NIP di dalam modal dan kolom **Belum diisi** pada tabel.
 - **Tab Rekap per Pegawai:** satu baris = satu pegawai (jumlah kompetensi per prioritas).

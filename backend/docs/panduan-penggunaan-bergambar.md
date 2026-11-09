@@ -223,6 +223,7 @@ Halaman ini memiliki **tiga tab**:
 | Elemen (tab Rekap per Kompetensi) | Penjelasan |
 | --- | --- |
 | **Cari nama pegawai / NIP** | Pencarian pegawai; hanya baris yang memuat pegawai tersebut yang tampil. |
+| **Cari kode / nama kompetensi** | Pencarian kompetensi (kode atau nama); hanya baris kompetensi yang cocok yang tampil. |
 | **Jabatan / Jenjang / Fungsi** | Filter sesuai data pegawai. |
 | **Status Isian** | **Belum diisi** menampilkan kompetensi + jenjang yang masih punya pegawai belum diisi prioritasnya; **Sudah diisi semua** menampilkan yang sudah lengkap. |
 | Kolom tabel | **No**, **Nama Kompetensi** (kode, nama, peran), **Prioritas**, **Jenjang** (nama + level), **Pegawai**. |

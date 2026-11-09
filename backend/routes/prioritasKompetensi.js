@@ -260,7 +260,16 @@ router.get('/rekap', keycloakAuth, async (req, res) => {
     const isAdmin = isAdminTambunRaya(req.user);
     console.log(`📊 ${username} mengakses rekap prioritas kompetensi`);
 
-    const { search = '', id_jabatan, id_jenjang, id_fungsi, status_isi, page = 1, pageSize = 25 } = req.query;
+    const {
+        search = '',
+        search_kompetensi = '',
+        id_jabatan,
+        id_jenjang,
+        id_fungsi,
+        status_isi,
+        page = 1,
+        pageSize = 25
+    } = req.query;
     const currentPage = Math.max(parseInt(page, 10) || 1, 1);
     const limit = Math.min(Math.max(parseInt(pageSize, 10) || 25, 1), 200);
     const offset = (currentPage - 1) * limit;
@@ -303,6 +312,12 @@ router.get('/rekap', keycloakAuth, async (req, res) => {
         if (id_fungsi) {
             conditions.push('u.id_fungsi = ?');
             params.push(parseInt(id_fungsi, 10));
+        }
+
+        const searchKompetensi = String(search_kompetensi || '').trim();
+        if (searchKompetensi) {
+            conditions.push('(mk.kode_kompetensi LIKE ? OR mk.nama_kompetensi LIKE ?)');
+            params.push(`%${searchKompetensi}%`, `%${searchKompetensi}%`);
         }
 
         const whereClause = conditions.join(' AND ');

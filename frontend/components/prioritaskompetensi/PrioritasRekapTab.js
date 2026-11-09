@@ -56,12 +56,14 @@ const PrioritasRekapTab = ({ session, options = { jabatan: [], jenjang: [], fung
   const [pagination, setPagination] = useState({ current: 1, pageSize: 25, total: 0 });
   const [filters, setFilters] = useState({
     search: '',
+    search_kompetensi: '',
     id_jabatan: undefined,
     id_jenjang: undefined,
     id_fungsi: undefined,
     status_isi: undefined
   });
   const [searchInput, setSearchInput] = useState('');
+  const [searchKompetensiInput, setSearchKompetensiInput] = useState('');
   const [modalSearch, setModalSearch] = useState('');
   const [modal, setModal] = useState({
     open: false,
@@ -79,6 +81,7 @@ const PrioritasRekapTab = ({ session, options = { jabatan: [], jenjang: [], fung
     try {
       const result = await fetchRekapPrioritasKompetensi(session, {
         search: filters.search,
+        search_kompetensi: filters.search_kompetensi,
         id_jabatan: filters.id_jabatan,
         id_jenjang: filters.id_jenjang,
         id_fungsi: filters.id_fungsi,
@@ -106,6 +109,7 @@ const PrioritasRekapTab = ({ session, options = { jabatan: [], jenjang: [], fung
   }, [
     session,
     filters.search,
+    filters.search_kompetensi,
     filters.id_jabatan,
     filters.id_jenjang,
     filters.id_fungsi,
@@ -127,6 +131,20 @@ const PrioritasRekapTab = ({ session, options = { jabatan: [], jenjang: [], fung
 
     return () => clearTimeout(timer);
   }, [searchInput]);
+
+  // Debounce pencarian nama/kode kompetensi
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setPagination(prev => ({ ...prev, current: 1 }));
+      setFilters(prev => (
+        prev.search_kompetensi === searchKompetensiInput
+          ? prev
+          : { ...prev, search_kompetensi: searchKompetensiInput }
+      ));
+    }, 400);
+
+    return () => clearTimeout(timer);
+  }, [searchKompetensiInput]);
 
   // ========== MODAL DAFTAR PEGAWAI ==========
   const loadEmployees = async (row, search = '') => {
@@ -362,13 +380,22 @@ const PrioritasRekapTab = ({ session, options = { jabatan: [], jenjang: [], fung
     <>
       <Card style={{ borderRadius: 12 }} bodyStyle={{ padding: 16 }}>
         <Row gutter={[12, 12]} style={{ marginBottom: 16 }}>
-          <Col xs={24} md={5}>
+          <Col xs={24} md={4}>
             <Input
               allowClear
               prefix={<SearchOutlined />}
               placeholder="Cari nama pegawai / NIP"
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
+            />
+          </Col>
+          <Col xs={24} md={4}>
+            <Input
+              allowClear
+              prefix={<SearchOutlined />}
+              placeholder="Cari kode / nama kompetensi"
+              value={searchKompetensiInput}
+              onChange={(e) => setSearchKompetensiInput(e.target.value)}
             />
           </Col>
           <Col xs={12} md={3}>
@@ -427,7 +454,7 @@ const PrioritasRekapTab = ({ session, options = { jabatan: [], jenjang: [], fung
               options={STATUS_ISI_OPTIONS}
             />
           </Col>
-          <Col xs={24} md={7}>
+          <Col xs={24} md={4}>
             <Space>
               <Tooltip title="Muat ulang data">
                 <Button icon={<ReloadOutlined />} onClick={() => fetchRekap(true)} loading={loading} />
@@ -436,9 +463,11 @@ const PrioritasRekapTab = ({ session, options = { jabatan: [], jenjang: [], fung
                 icon={<ClearOutlined />}
                 onClick={() => {
                   setSearchInput('');
+                  setSearchKompetensiInput('');
                   setPagination(prev => ({ ...prev, current: 1 }));
                   setFilters({
                     search: '',
+                    search_kompetensi: '',
                     id_jabatan: undefined,
                     id_jenjang: undefined,
                     id_fungsi: undefined,
