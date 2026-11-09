@@ -440,6 +440,7 @@ const kompetensiWajibRoutes = require('./routes/kompetensiWajib');
 const pegawaiPeranRoutes = require('./routes/pegawaiPeran');
 const perencanaanRoutes = require('./routes/perencanaan');
 const kompetensiPegawaiRoutes = require('./routes/kompetensiPegawai');
+const prioritasKompetensiRoutes = require('./routes/prioritasKompetensi');
 
 // ========== MOUNT ROUTES ==========
 app.use('/api/auth', authRoutes);
@@ -454,6 +455,7 @@ app.use('/api/kompetensi-wajib', kompetensiWajibRoutes);
 app.use('/api/pegawai-peran', pegawaiPeranRoutes);
 app.use('/api/perencanaan', perencanaanRoutes);
 app.use('/api/kompetensi-pegawai', kompetensiPegawaiRoutes);
+app.use('/api/prioritas-kompetensi', prioritasKompetensiRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {

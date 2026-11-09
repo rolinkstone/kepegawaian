@@ -584,7 +584,7 @@ useEffect(() => {
                 type: 'valid',
                 label: 'Valid',
                 color: 'bg-green-100 text-green-800',
-                message: `Diverifikasi oleh ${item.verified_by_nama} pada ${new Date(item.verified_at).toLocaleDateString('id-ID')}`,
+                message: `Diverifikasi oleh ${item.verified_by_nama || item.verified_by} pada ${new Date(item.verified_at).toLocaleDateString('id-ID')}`,
                 canEdit: false,
                 canDelete: isAdminOrKatim,
                 icon: '✓'
@@ -596,7 +596,7 @@ useEffect(() => {
                 type: 'invalid',
                 label: 'Tidak Valid',
                 color: 'bg-red-100 text-red-800',
-                message: `Ditolak oleh ${item.verified_by_nama}. ${item.keterangan ? 'Keterangan: ' + item.keterangan : ''}`,
+                message: `Ditolak oleh ${item.verified_by_nama || item.verified_by}. ${item.keterangan ? 'Keterangan: ' + item.keterangan : ''}`,
                 canEdit: true,
                 canDelete: isAdminOrKatim,
                 icon: '✗'
@@ -608,7 +608,7 @@ useEffect(() => {
                 type: 'revision',
                 label: 'Perlu Revisi',
                 color: 'bg-amber-100 text-amber-800',
-                message: `Perlu revisi oleh ${item.verified_by_nama}. ${item.keterangan ? 'Keterangan: ' + item.keterangan : ''}`,
+                message: `Perlu revisi oleh ${item.verified_by_nama || item.verified_by}. ${item.keterangan ? 'Keterangan: ' + item.keterangan : ''}`,
                 canEdit: true,
                 canDelete: isAdminOrKatim,
                 icon: '↻'
@@ -695,11 +695,15 @@ useEffect(() => {
             const result = await verifyUserKompetensi(session, id, data);
 
             if (result.success) {
+                const isReturnToUser = Boolean(data?.is_return_to_user);
+
                 Swal.fire({
-                    icon: 'success',
-                    title: 'Berhasil',
-                    text: 'Status kompetensi berhasil diverifikasi',
-                    timer: 1500,
+                    icon: isReturnToUser ? 'info' : 'success',
+                    title: isReturnToUser ? 'Dikembalikan ke Pegawai' : 'Berhasil',
+                    text: isReturnToUser
+                        ? 'Data dikembalikan ke pegawai agar dilengkapi/mengunggah sertifikat'
+                        : 'Status kompetensi berhasil diverifikasi',
+                    timer: 1800,
                     showConfirmButton: false
                 });
                 fetchData(false);

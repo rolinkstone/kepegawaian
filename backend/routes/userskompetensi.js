@@ -555,6 +555,14 @@ router.post('/', keycloakAuth, upload.single('bukti'), async (req, res) => {
             });
         }
 
+        // Sertifikat/bukti wajib diunggah
+        if (!bukti) {
+            return res.status(400).json({
+                success: false,
+                message: 'Sertifikat/bukti wajib diunggah'
+            });
+        }
+
         // Cek unique constraint
         const [existing] = await db.query(
             'SELECT id FROM kepegawaian.user_kompetensi WHERE id_user = ? AND id_kompetensi = ?',
@@ -668,6 +676,14 @@ router.put('/:id', keycloakAuth, upload.single('bukti'), async (req, res) => {
             return res.status(404).json({
                 success: false,
                 message: 'Data tidak ditemukan'
+            });
+        }
+
+        // Sertifikat/bukti wajib: harus ada file baru atau file lama tersimpan
+        if (!buktiBaru && !oldData[0].bukti) {
+            return res.status(400).json({
+                success: false,
+                message: 'Sertifikat/bukti wajib diunggah'
             });
         }
 
@@ -931,6 +947,28 @@ router.patch('/:id/verify', keycloakAuth, async (req, res) => {
     try {
         // verified_by menyimpan nama user yang melakukan verifikasi
         const verifierName = req.user?.name || 'Admin';
+
+        // Sertifikat/bukti wajib ada sebelum hasil verifikasi dinyatakan Valid
+        if (hasil_verif === 'Valid') {
+            const [sertifikat] = await db.query(
+                'SELECT bukti FROM kepegawaian.user_kompetensi WHERE id = ?',
+                [id]
+            );
+
+            if (sertifikat.length === 0) {
+                return res.status(404).json({
+                    success: false,
+                    message: 'Data user kompetensi tidak ditemukan'
+                });
+            }
+
+            if (!sertifikat[0].bukti) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Sertifikat/bukti belum diunggah. Gunakan tombol "Kembalikan ke Pegawai" agar pegawai mengunggah sertifikatnya terlebih dahulu.'
+                });
+            }
+        }
 
         const query = `
             UPDATE kepegawaian.user_kompetensi

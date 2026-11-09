@@ -201,7 +201,7 @@ const DetailModal = ({ show, onClose, data, getStatusBadge }) => {
                             <div className="grid grid-cols-2 gap-3">
                                 <div>
                                     <p className="text-xs text-gray-500">Verifikator</p>
-                                    <p className="font-medium text-gray-900">{data.verified_by_nama || '-'}</p>
+                                    <p className="font-medium text-gray-900">{data.verified_by_nama || data.verified_by || '-'}</p>
                                 </div>
                                 <div>
                                     <p className="text-xs text-gray-500">Tanggal</p>

@@ -233,6 +233,9 @@ const UserskompetensiForm = ({ show, onClose, onSuccess, editingData, options, u
             
             setSelectedFile(file);
             setFormData(prev => ({ ...prev, bukti: file.name }));
+            if (errors.bukti) {
+                setErrors(prev => ({ ...prev, bukti: null }));
+            }
             
             const previewUrl = URL.createObjectURL(file);
             setPreviewFile({
@@ -257,7 +260,12 @@ const UserskompetensiForm = ({ show, onClose, onSuccess, editingData, options, u
         if (!formData.tanggal_dipenuhi || formData.tanggal_dipenuhi === '') {
             newErrors.tanggal_dipenuhi = 'Tanggal dipenuhi harus diisi';
         }
-        
+
+        // Sertifikat/bukti wajib: file baru, atau file lama saat mengedit
+        if (!selectedFile && !editingData?.bukti) {
+            newErrors.bukti = 'Sertifikat/bukti wajib diunggah';
+        }
+
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
     };
@@ -269,7 +277,7 @@ const UserskompetensiForm = ({ show, onClose, onSuccess, editingData, options, u
             Swal.fire({
                 icon: 'warning',
                 title: 'Validasi Gagal',
-                text: 'Harap lengkapi semua field yang wajib diisi'
+                text: 'Harap lengkapi semua field yang wajib diisi, termasuk unggah sertifikat/bukti'
             });
             return;
         }
@@ -595,17 +603,22 @@ const UserskompetensiForm = ({ show, onClose, onSuccess, editingData, options, u
                     {/* Upload File */}
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Upload Sertifikat/Bukti
+                            Upload Sertifikat/Bukti <span className="text-red-500">*</span>
                         </label>
                         <input
                             type="file"
                             onChange={handleFileChange}
                             accept=".pdf,.jpg,.jpeg,.png"
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                                errors.bukti ? 'border-red-500' : 'border-gray-300'
+                            }`}
                             disabled={loading}
                         />
+                        {errors.bukti && (
+                            <p className="mt-1 text-sm text-red-600">{errors.bukti}</p>
+                        )}
                         <p className="text-xs text-gray-500 mt-1">
-                            Format: PDF, JPG, PNG. Maksimal 2MB
+                            Wajib diunggah. Format: PDF, JPG, PNG. Maksimal 2MB
                         </p>
                         
                         {previewFile && (

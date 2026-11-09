@@ -5,7 +5,7 @@ import { useState, useEffect } from 'react';
 import { 
   FaHome, FaBox, FaUsers, FaShoppingCart, FaCog, FaSignOutAlt, 
   FaTruck, FaBalanceScale, FaDatabase,  FaBookOpen, FaCreditCard, FaBell, FaClipboardList, FaSearch,
-  FaTimesCircle, FaUserGraduate, FaFolderOpen, FaCertificate
+  FaTimesCircle, FaUserGraduate, FaFolderOpen, FaCertificate, FaStar
 } from 'react-icons/fa';
 
 import { useSession, signOut } from 'next-auth/react';
@@ -198,6 +198,13 @@ export default function DashboardLayout({ children }) {
     label: 'Standar Kompetensi', 
     icon: <FaBookOpen />
     
+  },
+
+  // Menu Prioritas Kompetensi (Mutlak / Perlu / Penting)
+  {
+    href: '/prioritas_kompetensi',
+    label: 'Prioritas Kompetensi',
+    icon: <FaStar />
   },
 
    

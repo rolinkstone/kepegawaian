@@ -42,9 +42,9 @@ Aplikasi ini digunakan oleh **tiga role** berikut:
 
 | Role (Keycloak) | Sebutan di aplikasi | Hak akses utama |
 | --- | --- | --- |
-| `admin_tambun_raya` | **Admin Tambun Raya** | Akses penuh: kelola seluruh master data, data pegawai, kompetensi wajib, jadwal & master pelatihan, **verifikasi sertifikat**, perencanaan, serta melihat semua data pemenuhan |
+| `admin_tambun_raya` | **Admin Tambun Raya** | Akses penuh: kelola seluruh master data, data pegawai, kompetensi wajib, **prioritas kompetensi** (Mutlak/Perlu/Penting), jadwal & master pelatihan, **verifikasi sertifikat**, perencanaan, serta melihat semua data pemenuhan |
 | `katim` | **Ketua Tim** | View-only pada master data & pegawai; dapat **membuat & mengelola jadwal pelatihan**, mengundang peserta, publikasi, ubah kehadiran, tandai kompetensi terpenuhi, **Pantau Sertifikat**, kelola **Perencanaan**, serta lihat & hapus **Riwayat Pelatihan** pegawai |
-| `user` | **Pegawai** | Melihat **data kompetensinya sendiri**, menerima undangan pelatihan, dan mengunggah sertifikat kompetensi |
+| `user` | **Pegawai** | Melihat **data kompetensinya sendiri**, mengisi **prioritas kompetensi** miliknya, menerima undangan pelatihan, dan mengunggah sertifikat kompetensi |
 
 **Catatan:** role ditetapkan pada server Keycloak, bukan di dalam aplikasi. Bila role Anda belum sesuai, hubungi administrator.
 
@@ -55,6 +55,7 @@ Aplikasi ini digunakan oleh **tiga role** berikut:
 | Home | **Beranda** | `/` | Semua |
 | Peta Kompetensi | **Reference** | `/master` | Semua (tulis hanya Admin Tambun Raya) |
 | Peta Kompetensi | **Standar Kompetensi** | `/standar_kompetensi` | Semua (hanya baca) |
+| Peta Kompetensi | **Prioritas Kompetensi** | `/prioritas_kompetensi` | Semua (Admin: semua pegawai; Pegawai: dirinya sendiri) |
 | Perencanaan | **Perencanaan** | `/perencanaan` | **Admin Tambun Raya dan Katim** |
 | Profil | **Profil Kompetensi** | `/pegawai` | Semua (kelola hanya Admin Tambun Raya) |
 | Profil | **Pemenuhan per Peran** | `/pegawai/peran` | Semua |
@@ -208,6 +209,20 @@ Halaman ini adalah hasil gabungan dari mapping kompetensi (satu baris = satu kom
 - Tombol **Refresh Data**, **Export Data** (Excel/PDF), dan **Cetak**.
 - Halaman ini **tidak memiliki fitur tambah/ubah/hapus**.
 
+## Langkah 3B - Menetapkan Prioritas Kompetensi (menu Prioritas Kompetensi)
+
+Menu ini melengkapi data standar kompetensi dengan isian **Prioritas** bernilai **Mutlak**, **Perlu**, atau **Penting** untuk setiap pegawai per kompetensi.
+
+1. Buka menu **Prioritas Kompetensi**.
+2. Gunakan filter: **Cari nama pegawai / NIP**, **Jabatan**, **Jenjang**, **Fungsi**, dan **Prioritas** (termasuk **Belum diisi**).
+3. Isi satu baris: pilih nilai pada kolom **Prioritas** (boleh dikosongkan untuk menghapus isian).
+4. Isi banyak baris sekaligus (bulk): centang baris yang diinginkan (pilihan bertahan saat pindah halaman), klik **Terapkan Prioritas (n)**, pilih nilai, lalu **Simpan**. Nilai yang sudah ada akan ditimpa.
+5. Buka tab **Rekap per Kompetensi** untuk melihat data per **kompetensi + jenjang**. Kolom **Prioritas** berisi sub-kolom **Mutlak / Perlu / Penting** (centang + jumlah pegawai). Klik **Lihat (n pegawai)** pada kolom **Pegawai** untuk membuka modal daftar nama pegawai, lalu isi prioritas tiap pegawai dengan **centang** (centang ulang untuk menghapus).
+6. Buka tab **Rekap per Pegawai** untuk melihat data per **pegawai**. Kolom **Prioritas** berisi sub-kolom **Mutlak / Perlu / Penting** (centang + jumlah kompetensi). Klik **Lihat (n kompetensi)** pada kolom **Kompetensi** untuk membuka modal daftar kompetensi pegawai tersebut, lalu isi prioritas tiap kompetensi dengan **centang**.
+7. Kartu ringkasan di atas tabel menampilkan jumlah baris: **Total**, **Mutlak**, **Perlu**, **Penting**, dan **Belum Diisi**.
+
+**Catatan:** baris yang muncul adalah pasangan pegawai x kompetensi standar pegawai tersebut (hasil mapping jabatan + jenjang + peran). Kolom **Diisi Oleh** mencatat pengisi terakhir dan waktunya.
+
 ## Langkah 4 - Menetapkan Kompetensi Wajib Tahunan (menu Jadwal Pelatihan > tab Kompetensi Wajib)
 
 1. Buka menu **Jadwal Pelatihan**.
@@ -323,6 +338,12 @@ Verifikasi adalah kewenangan **eksklusif Admin Tambun Raya**.
    - Nama Anda otomatis tercatat sebagai verifikator pada blok **Verifikator (Admin yang Login)** dan **Ringkasan Verifikasi**.
 5. Klik **Verifikasi**.
 
+**Bila sertifikat/bukti belum diunggah:**
+
+- Hasil verifikasi **Valid** tidak dapat dipilih (tombol **Verifikasi** akan menolak) karena belum ada dokumen yang diverifikasi.
+- Gunakan tombol **Kembalikan ke Pegawai**. Data otomatis diubah menjadi status **Dalam Proses** dengan hasil **Perlu Revisi**, dan Anda wajib mengisi **Keterangan/alasan pengembalian** (misalnya *"Sertifikat belum diunggah, silakan unggah sertifikat kompetensi."*).
+- Pegawai akan melihat badge **Perlu Revisi** beserta keterangan Anda, lalu dapat klik **Edit** untuk mengunggah sertifikat. Setelah diunggah, data kembali **Belum Diverifikasi** untuk diverifikasi ulang.
+
 **Arti hasil:**
 
 - **Lulus + Valid** - kompetensi dinyatakan **SUDAH MEMENUHI** dan ikut dihitung pada dashboard, pemenuhan peran, dan pemenuhan per kompetensi.
@@ -366,6 +387,7 @@ Gunakan dua halaman ini sebagai bahan laporan; keduanya punya tombol **Export** 
 | --- | --- |
 | Tambah/Edit/Hapus Jabatan, Jenjang, Fungsi, Peran, Kompetensi & Mapping | Ya |
 | Tambah/Edit/Nonaktifkan pegawai | Ya |
+| Mengisi **Prioritas Kompetensi** (Mutlak/Perlu/Penting) pegawai, satuan atau bulk | Ya |
 | Analisis Kenaikan Jenjang pegawai | Ya |
 | Menetapkan & menghapus Kompetensi Wajib tahunan | Ya |
 | Membuat/Edit/Hapus Master Pelatihan | Ya |
@@ -442,6 +464,7 @@ Role **Pegawai** berfokus pada **kompetensi diri sendiri** dan **undangan pelati
 | --- | --- |
 | Melihat **Beranda** pribadi (kompetensi wajib, progress, grafik) | Ya |
 | Melihat **Reference** & **Standar Kompetensi** (baca saja) | Ya |
+| Mengisi **Prioritas Kompetensi** milik sendiri (Mutlak/Perlu/Penting), satuan atau bulk | Ya (hanya dirinya sendiri) |
 | Melihat **Profil Kompetensi** - **hanya data diri sendiri** | Ya |
 | **Pemenuhan per Peran** & **Pemenuhan per Kompetensi** (data semua pegawai) | Ya |
 | Menerima/menolak **undangan pelatihan** | Ya |
@@ -479,7 +502,7 @@ Data pada Beranda **diperbarui otomatis setiap 30 detik**, saat Anda kembali ke 
 | **Tanggal Dipenuhi** | Wajib |
 | **Nilai (0-100)** | Opsional (boleh desimal) |
 | **Status** | Dalam Proses (default) / Lulus / Tidak Lulus |
-| **Upload Sertifikat/Bukti** | Opsional - PDF, JPG, JPEG, atau PNG, **maksimal 2 MB** |
+| **Upload Sertifikat/Bukti** | **Wajib** - PDF, JPG, JPEG, atau PNG, **maksimal 2 MB**. Data tidak dapat disimpan bila sertifikat/bukti belum diunggah. |
 
 4. Klik **Simpan**.
 5. Data masuk dengan status **Belum Diverifikasi** dan menunggu tindakan Admin Tambun Raya.
@@ -575,6 +598,28 @@ Catatan: tombol **Export Data** pada tab Kompetensi belum berfungsi.
 - **Modal:** **Detail Standar Kompetensi**, **Export Standar Kompetensi** (Excel / PDF / Print), **Statistik** (per Jenjang / Jabatan / Fungsi)
 - **Tombol header:** Refresh Data - Export Data - Cetak
 - **Hanya baca** - tidak ada tambah/ubah/hapus.
+
+## 6.3A Prioritas Kompetensi
+
+**Route:** `/prioritas_kompetensi`
+
+**Judul:** Prioritas Kompetensi - "Penetapan prioritas kebutuhan kompetensi pegawai: Mutlak, Perlu, atau Penting."
+
+- **Kartu ringkasan:** Total Baris - Mutlak - Perlu - Penting - Belum Diisi
+- **Tab Data Prioritas:** satu baris = satu pegawai x satu kompetensi.
+  - **Filter:** Cari nama pegawai/NIP - Jabatan - Jenjang - Fungsi - Prioritas (termasuk **Belum diisi**), tombol **Muat ulang** dan **Reset**
+  - **Kolom:** pilihan (checkbox) - No - Pegawai (nama & NIP) - Jabatan - Jenjang - Fungsi - Kompetensi (kode, nama, badge **Wajib**, peran) - **Prioritas** (dropdown: Mutlak / Perlu / Penting, boleh dikosongkan) - **Diisi Oleh** (nama & waktu)
+  - **Bulk:** centang beberapa baris lalu klik **Terapkan Prioritas (n)**, pilih nilai pada modal, klik **Simpan**. Pilihan baris tetap tersimpan saat berpindah halaman.
+- **Tab Rekap per Kompetensi:** satu baris = satu kompetensi per jenjang (data pegawai dikelompokkan).
+  - **Filter:** Cari nama pegawai/NIP - Jabatan - Jenjang - Fungsi - **Status Isian** (**Belum diisi** / **Sudah diisi semua**) - tombol **Muat ulang** dan **Reset**
+  - **Kolom:** No - Nama Kompetensi (kode, nama, peran) - **Prioritas** (sub-kolom **Mutlak / Perlu / Penting**, masing-masing berupa centang + jumlah pegawai) - Jenjang - **Pegawai** (tombol **Lihat (n pegawai)**)
+  - **Modal daftar pegawai:** menampilkan semua pegawai pada kompetensi + jenjang tersebut (nama, NIP, jabatan, fungsi) beserta isian berupa **centang Mutlak / Perlu / Penting**. Centang salah satu untuk menyimpan; centang ulang pada nilai yang sama untuk menghapus isian. Tersedia pencarian nama/NIP di dalam modal dan kolom **Belum diisi** pada tabel.
+- **Tab Rekap per Pegawai:** satu baris = satu pegawai (jumlah kompetensi per prioritas).
+  - **Filter:** Cari nama pegawai/NIP - Jabatan - Jenjang - Fungsi - **Status Isian** (**Belum diisi** / **Sudah diisi semua**) - tombol **Muat ulang** dan **Reset**
+  - **Kolom:** No - Pegawai (nama & NIP) - Jabatan - Jenjang (nama & level) - Fungsi - **Prioritas** (sub-kolom **Mutlak / Perlu / Penting**, masing-masing berupa centang + jumlah kompetensi) - **Kompetensi** (tombol **Lihat (n kompetensi)** dan jumlah **Belum diisi**)
+  - **Modal daftar kompetensi:** menampilkan semua kompetensi standar milik pegawai tersebut (kode, nama, badge **Wajib**, peran) beserta isian **centang Mutlak / Perlu / Penting** per kompetensi. Centang ulang nilai yang sama untuk menghapus isian. Tersedia pencarian kode/nama kompetensi.
+- **Hak akses:** Admin Tambun Raya dapat mengisi untuk semua pegawai; pegawai hanya dapat mengisi prioritas miliknya sendiri.
+- **Penyimpanan:** tabel `user_kompetensi_prioritas` (1 baris per pegawai + kompetensi).
 
 ## 6.4 Perencanaan
 
@@ -768,7 +813,7 @@ Pada tab **Kompetensi Terkait**, Admin Tambun Raya dapat menekan **Tambah Kompet
 
 # PENUTUP
 
-Panduan ini mencakup seluruh modul aktif aplikasi: **Beranda, Reference (Master Data), Standar Kompetensi, Perencanaan, Profil Kompetensi, Pemenuhan per Peran, Pemenuhan per Kompetensi, Jadwal Pelatihan (Jadwal / Master / Kompetensi Wajib), dan Riwayat Pelatihan** - dengan alur kerja terpisah untuk **Admin Tambun Raya**, **Katim**, dan **Pegawai**.
+Panduan ini mencakup seluruh modul aktif aplikasi: **Beranda, Reference (Master Data), Standar Kompetensi, Prioritas Kompetensi, Perencanaan, Profil Kompetensi, Pemenuhan per Peran, Pemenuhan per Kompetensi, Jadwal Pelatihan (Jadwal / Master / Kompetensi Wajib), dan Riwayat Pelatihan** - dengan alur kerja terpisah untuk **Admin Tambun Raya**, **Katim**, dan **Pegawai**.
 
 **TAMBUN RAYA - Talenta Aparatur Mumpuni**
 

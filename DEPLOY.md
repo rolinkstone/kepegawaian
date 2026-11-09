@@ -312,3 +312,28 @@ WHERE table_schema = DATABASE() AND table_name = 'jadwal_pelatihan'
   AND column_name = 'link_pelatihan';
 ```
 
+### 9c. Tabel Prioritas Kompetensi (007)
+
+`backend/migrations/007_create_user_kompetensi_prioritas.sql` membuat tabel
+`user_kompetensi_prioritas` untuk menu **Prioritas Kompetensi**
+(Mutlak / Perlu / Penting). Tanpa tabel ini, halaman
+`/prioritas_kompetensi` akan gagal memuat data. Jalankan sekali:
+
+```bash
+docker compose exec -T db mysql -u"$DB_USER" -p"$DB_PASSWORD" "$DB_NAME" \
+  < backend/migrations/007_create_user_kompetensi_prioritas.sql
+```
+
+Atau dari host:
+
+```bash
+mysql -u <user> -p <nama_db> < backend/migrations/007_create_user_kompetensi_prioritas.sql
+```
+
+Verifikasi (harus menampilkan 1 baris):
+
+```sql
+SELECT table_name FROM information_schema.tables
+WHERE table_schema = DATABASE() AND table_name = 'user_kompetensi_prioritas';
+```
+

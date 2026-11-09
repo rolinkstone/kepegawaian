@@ -161,6 +161,15 @@ const VerifyModal = ({ show, onClose, data, onConfirm }) => {
             return;
         }
 
+        if (!data.bukti && hasilVerif === 'Valid') {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Sertifikat Belum Diunggah',
+                text: 'Hasil verifikasi "Valid" memerlukan sertifikat/bukti. Gunakan tombol "Kembalikan ke Pegawai" agar pegawai mengunggah sertifikatnya terlebih dahulu.'
+            });
+            return;
+        }
+
         setLoading(true);
         
         try {
@@ -178,6 +187,52 @@ const VerifyModal = ({ show, onClose, data, onConfirm }) => {
                 icon: 'error',
                 title: 'Error',
                 text: error.message || 'Gagal melakukan verifikasi'
+            });
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // Kembalikan data ke pegawai (mis. sertifikat belum diunggah) tanpa
+    // menyatakan valid/tidak valid. Status direset ke "Dalam Proses".
+    const handleReturnToUser = async () => {
+        const defaultKeterangan = data.bukti
+            ? ''
+            : 'Sertifikat/bukti belum diunggah. Silakan unggah sertifikat/bukti kompetensi.';
+
+        const { value: alasan, isConfirmed } = await Swal.fire({
+            icon: 'question',
+            title: 'Kembalikan ke Pegawai',
+            html: `Data akan dikembalikan dengan status <b>Dalam Proses</b> dan hasil verifikasi <b>Perlu Revisi</b> agar pegawai dapat melengkapi data/mengunggah sertifikat.`,
+            input: 'textarea',
+            inputLabel: 'Keterangan / alasan pengembalian (wajib)',
+            inputValue: keterangan || defaultKeterangan,
+            inputValidator: (value) => (!value || !value.trim() ? 'Keterangan wajib diisi' : null),
+            showCancelButton: true,
+            confirmButtonText: 'Ya, Kembalikan',
+            cancelButtonText: 'Batal'
+        });
+
+        if (!isConfirmed) return;
+
+        setLoading(true);
+
+        try {
+            setKeterangan(alasan.trim());
+            await onConfirm(data.id, {
+                status: 'Dalam Proses',
+                hasil_verif: 'Perlu Revisi',
+                keterangan: alasan.trim(),
+                verified_by: adminInfo.name,
+                verified_by_nip: adminInfo.nip,
+                is_return_to_user: true
+            });
+        } catch (error) {
+            console.error('Error returning to user:', error);
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: error.message || 'Gagal mengembalikan data ke pegawai'
             });
         } finally {
             setLoading(false);
@@ -331,6 +386,9 @@ const VerifyModal = ({ show, onClose, data, onConfirm }) => {
                             <p className="text-sm text-red-600">
                                 {preview.error}
                                 <span className="block text-xs text-gray-500 break-all mt-1">{data.bukti}</span>
+                                <span className="block text-xs text-gray-600 mt-2">
+                                    Bila berkas tidak dapat dibuka, gunakan tombol <strong>Kembalikan ke Pegawai</strong> agar sertifikat diunggah ulang.
+                                </span>
                             </p>
                         ) : preview.kind === 'image' ? (
                             <a href={preview.url} target="_blank" rel="noopener noreferrer" title="Buka ukuran penuh">
@@ -354,6 +412,16 @@ const VerifyModal = ({ show, onClose, data, onConfirm }) => {
 
                         {data.bukti && !preview.error && (
                             <p className="mt-2 text-xs text-gray-500 break-all">File: {data.bukti}</p>
+                        )}
+
+                        {!data.bukti && (
+                            <div className="mt-3 p-3 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-800">
+                                <p className="font-medium">Sertifikat/bukti belum diunggah</p>
+                                <p className="mt-1">
+                                    Data ini tidak dapat diverifikasi sebagai <strong>Valid</strong>. Gunakan tombol{' '}
+                                    <strong>Kembalikan ke Pegawai</strong> agar pegawai mengunggah sertifikat/bukti terlebih dahulu.
+                                </p>
+                            </div>
                         )}
                     </div>
 
@@ -449,7 +517,16 @@ const VerifyModal = ({ show, onClose, data, onConfirm }) => {
                     </div>
 
                     {/* Tombol Aksi */}
-                    <div className="flex justify-end gap-3 pt-4 border-t">
+                    <div className="flex flex-wrap items-center justify-end gap-3 pt-4 border-t">
+                        <button
+                            type="button"
+                            onClick={handleReturnToUser}
+                            disabled={loading}
+                            className="px-4 py-2 border border-amber-400 text-amber-700 rounded-lg hover:bg-amber-50 disabled:opacity-50 transition-colors mr-auto"
+                            title="Kembalikan data ke pegawai untuk dilengkapi/diunggah ulang"
+                        >
+                            Kembalikan ke Pegawai
+                        </button>
                         <button
                             type="button"
                             onClick={onClose}

@@ -64,7 +64,7 @@ Menu **Home** lalu **Beranda** (route `/`). Halaman ini otomatis menyegarkan dat
 
 | Bagian | Isi dan fungsinya |
 | --- | --- |
-| **Sidebar kiri** | Navigasi utama, terbagi grup: **Home**, **Peta Kompetensi** (Reference, Standar Kompetensi), **Perencanaan**, **Profil** (Profil Kompetensi, Pemenuhan per Peran, Pemenuhan per Kompetensi), **Pemenuhan Kompetensi** (Jadwal Pelatihan, Riwayat Pelatihan). Menu aktif ditandai warna biru. Ikon **☰** menutup/membuka sidebar. |
+| **Sidebar kiri** | Navigasi utama, terbagi grup: **Home**, **Peta Kompetensi** (Reference, Standar Kompetensi, Prioritas Kompetensi), **Perencanaan**, **Profil** (Profil Kompetensi, Pemenuhan per Peran, Pemenuhan per Kompetensi), **Pemenuhan Kompetensi** (Jadwal Pelatihan, Riwayat Pelatihan). Menu aktif ditandai warna biru. Ikon **☰** menutup/membuka sidebar. |
 | **Header atas** | Judul halaman (**Dashboard** di Beranda), ikon lonceng notifikasi, nama pengguna, **badge role** (pada gambar: `admin_tambun_raya`), dan avatar inisial. |
 | **Kartu sambutan** | **"Selamat Datang, {nama}!"**, badge role (**Admin Tambun Raya**), nama instansi, **NIP: ... | jabatan**, **Fungsi: ...**, dan **Login Terakhir** (tanggal dan jam login terakhir). |
 | **Banner "Kompetensi yang harus diverifikasi"** | Khusus Admin Tambun Raya dan Katim. Menampilkan badge jumlah kompetensi yang belum diverifikasi, daftar pegawai beserta jumlah kompetensi yang menunggu, tiga contoh kompetensi (kode + nama + tag **Menunggu**), tautan **Lihat semua kompetensi user**, dan **Verifikasi sekarang**. |
@@ -192,6 +192,63 @@ Menu **Peta Kompetensi** lalu **Standar Kompetensi** (route `/standar_kompetensi
 | **Refresh Data** | Memuat ulang data dari server. |
 
 Tab **Statistik** menampilkan rekap jumlah standar kompetensi **per Jenjang**, **per Jabatan**, dan **per Fungsi**.
+
+---
+
+# BAB 4A - PRIORITAS KOMPETENSI
+
+Menu **Peta Kompetensi** lalu **Prioritas Kompetensi** (route `/prioritas_kompetensi`). Modul ini **melengkapi** standar kompetensi dengan isian **Prioritas**: **Mutlak**, **Perlu**, atau **Penting** - untuk setiap pegawai per kompetensi.
+
+Satu baris = satu pasangan **pegawai x kompetensi standar pegawai tersebut** (hasil pemetaan jabatan + jenjang + peran).
+
+Halaman ini memiliki **tiga tab**:
+
+1. **Data Prioritas** - satu baris = satu pegawai x satu kompetensi.
+2. **Rekap per Kompetensi** - satu baris = satu kompetensi per jenjang; pegawai dikelompokkan dan diisi lewat modal.
+3. **Rekap per Pegawai** - satu baris = satu pegawai; kompetensinya dikelompokkan dan diisi lewat modal.
+
+| Elemen (tab Data Prioritas) | Penjelasan |
+| --- | --- |
+| **Kartu ringkasan** | **Total Baris**, **Mutlak**, **Perlu**, **Penting**, dan **Belum Diisi**. |
+| **Cari nama pegawai / NIP** | Pencarian pegawai (nama atau NIP). |
+| **Jabatan / Jenjang / Fungsi** | Filter sesuai data pegawai. |
+| **Prioritas** | Filter status isian; pilihan **Belum diisi** menampilkan baris yang belum punya prioritas. |
+| Kolom tabel | **No**, **Pegawai** (nama & NIP), **Jabatan**, **Jenjang**, **Fungsi**, **Kompetensi** (kode, nama, badge **Wajib**, peran), **Prioritas**, **Diisi Oleh** (nama & waktu). |
+| **Kolom Prioritas** | Dropdown per baris: **Mutlak / Perlu / Penting**. Kosongkan pilihan untuk menghapus isian. Perubahan langsung tersimpan. |
+| **Terapkan Prioritas (n)** | Isian **bulk**: centang beberapa baris (pilihan bertahan saat berpindah halaman), klik tombol ini, pilih nilai pada modal, lalu **Simpan**. Nilai lama ditimpa. |
+| **Reset** | Mengembalikan seluruh filter ke kondisi awal. |
+
+**Tab Rekap per Kompetensi** - satu baris = satu kompetensi per jenjang.
+
+| Elemen (tab Rekap per Kompetensi) | Penjelasan |
+| --- | --- |
+| **Cari nama pegawai / NIP** | Pencarian pegawai; hanya baris yang memuat pegawai tersebut yang tampil. |
+| **Jabatan / Jenjang / Fungsi** | Filter sesuai data pegawai. |
+| **Status Isian** | **Belum diisi** menampilkan kompetensi + jenjang yang masih punya pegawai belum diisi prioritasnya; **Sudah diisi semua** menampilkan yang sudah lengkap. |
+| Kolom tabel | **No**, **Nama Kompetensi** (kode, nama, peran), **Prioritas**, **Jenjang** (nama + level), **Pegawai**. |
+| **Kolom Prioritas** | Grup kolom **Mutlak / Perlu / Penting**; setiap sub-kolom berisi **centang** (aktif bila ada pegawai dengan prioritas tersebut) dan **jumlah pegawai**. |
+| **Kolom Pegawai** | Tombol **Lihat (n pegawai)** dan jumlah **Belum diisi**. |
+| **Modal daftar pegawai** | Menampilkan semua pegawai pada kompetensi + jenjang itu (nama, NIP, jabatan, fungsi). Isian berupa **centang Mutlak / Perlu / Penting** per pegawai: centang salah satu untuk menyimpan, centang ulang nilai yang sama untuk menghapus. Tersedia pencarian nama/NIP dan status tersimpan langsung. |
+
+**Tab Rekap per Pegawai** - satu baris = satu pegawai.
+
+| Elemen (tab Rekap per Pegawai) | Penjelasan |
+| --- | --- |
+| **Cari nama pegawai / NIP** | Pencarian pegawai (nama atau NIP). |
+| **Jabatan / Jenjang / Fungsi** | Filter sesuai data pegawai. |
+| **Status Isian** | **Belum diisi** menampilkan pegawai yang masih punya kompetensi belum diisi prioritasnya; **Sudah diisi semua** menampilkan yang sudah lengkap. |
+| Kolom tabel | **No**, **Pegawai** (nama & NIP), **Jabatan**, **Jenjang** (nama + level), **Fungsi**, **Prioritas**, **Kompetensi**. |
+| **Kolom Prioritas** | Grup kolom **Mutlak / Perlu / Penting**; setiap sub-kolom berisi **centang** (aktif bila pegawai punya kompetensi dengan prioritas tersebut) dan **jumlah kompetensi**. |
+| **Kolom Kompetensi** | Tombol **Lihat (n kompetensi)** dan jumlah **Belum diisi**. |
+| **Modal daftar kompetensi** | Menampilkan semua kompetensi standar milik pegawai itu (kode, nama, badge **Wajib**, peran). Isian berupa **centang Mutlak / Perlu / Penting** per kompetensi: centang salah satu untuk menyimpan, centang ulang nilai yang sama untuk menghapus. Tersedia pencarian kode/nama kompetensi. |
+
+**Hak akses:** **Admin Tambun Raya** dapat mengisi untuk semua pegawai; **Pegawai** hanya dapat mengisi prioritas miliknya sendiri (centang pegawai lain nonaktif).
+
+**Arti nilai prioritas (saran penggunaan):**
+
+- **Mutlak** - wajib dimiliki; kekurangan pada kompetensi ini harus segera dipenuhi.
+- **Perlu** - dibutuhkan untuk menjalankan tugas; dipenuhi setelah yang mutlak.
+- **Penting** - menunjang kinerja; dipenuhi bila ada kesempatan.
 
 ---
 
@@ -476,7 +533,7 @@ Menu **Pemenuhan Kompetensi** lalu **Riwayat Pelatihan** (route `/users_kompeten
 | **Tanggal Dipenuhi** | Ya | Tanggal kompetensi diperoleh. |
 | **Nilai (0-100)** | Tidak | Nilai/score; boleh desimal. |
 | **Status** | Tidak | **Lulus**, **Tidak Lulus**, atau **Dalam Proses** (default: *Dalam Proses*). |
-| **Upload Sertifikat/Bukti** | Tidak | Berkas PDF, JPG, atau PNG dengan ukuran **maksimal 2 MB** (*"Format: PDF, JPG, PNG. Maksimal 2MB"*). |
+| **Upload Sertifikat/Bukti** | Ya | Wajib diunggah. Berkas PDF, JPG, atau PNG dengan ukuran **maksimal 2 MB** (*"Wajib diunggah. Format: PDF, JPG, PNG. Maksimal 2MB"*). |
 | **Batal** / **Simpan** | - | Setelah disimpan, data berstatus **Belum Diverifikasi** dan menunggu verifikasi Admin Tambun Raya. |
 
 Bila hasil verifikasi bernilai **Tidak Valid** atau **Perlu Revisi**, pemilik data dapat menekan **Edit**, memperbaiki isian/unggahan, lalu **Simpan**. Hasil verifikasi lama otomatis dihapus dan status kembali **Belum Diverifikasi**.
@@ -496,6 +553,9 @@ Bila hasil verifikasi bernilai **Tidak Valid** atau **Perlu Revisi**, pemilik da
 | Blok **Verifikasi Sebelumnya** | - | Menampilkan riwayat verifikasi (diverifikasi oleh, pada, keterangan) bila data pernah diverifikasi. |
 | **Ringkasan Verifikasi** | - | Verifikator, status baru, hasil verifikasi, keterangan, dan waktu verifikasi. |
 | **Batal** / **Verifikasi** | - | Tombol **Verifikasi** nonaktif sampai Status dan Hasil Verifikasi dipilih. |
+| **Kembalikan ke Pegawai** | - | Mengembalikan data ke pegawai dengan status **Dalam Proses** dan hasil **Perlu Revisi**. Keterangan/alasan wajib diisi. Gunakan bila sertifikat/bukti belum diunggah atau data perlu dilengkapi. |
+
+**Bila sertifikat/bukti belum diunggah:** blok **Sertifikat / Bukti** menampilkan peringatan kuning, hasil verifikasi **Valid** ditolak, dan admin diarahkan memakai tombol **Kembalikan ke Pegawai**. Pegawai kemudian melihat badge **Perlu Revisi** beserta keterangan dan dapat mengunggah sertifikat melalui tombol **Edit**; setelah itu data kembali **Belum Diverifikasi**.
 
 **Syarat kompetensi dianggap sudah memenuhi:** status **Lulus** dan hasil verifikasi **Valid**. Hanya kombinasi inilah yang dihitung pada Beranda, Pemenuhan per Peran, dan Pemenuhan per Kompetensi.
 
@@ -508,13 +568,14 @@ Bila hasil verifikasi bernilai **Tidak Valid** atau **Perlu Revisi**, pemilik da
 1. **Reference** - isi/rapikan master data: Jabatan, Jenjang, Fungsi, Peran, lalu Kompetensi beserta mapping (jabatan + jenjang + peran, tandai **Wajib**).
 2. **Profil Kompetensi** - tambahkan data pegawai (NIP 18 digit, fungsi, jabatan, jenjang, peran), perbaiki bila ada perubahan, nonaktifkan pegawai yang tidak lagi aktif.
 3. **Standar Kompetensi** - periksa hasil pemetaan kompetensi.
-4. **Jadwal Pelatihan > Kompetensi Wajib** - tetapkan daftar kompetensi wajib tahun berjalan.
-5. **Jadwal Pelatihan > Master Pelatihan** - buat master pelatihan beserta kompetensi terkait.
-6. **Jadwal Pelatihan > Jadwal Pelatihan** - buat jadwal, undang peserta, publikasikan, mulai, catat kehadiran, selesaikan, tandai kompetensi terpenuhi.
-7. **Jadwal Pelatihan > Pantau** - awasi peserta yang belum mengunggah sertifikat.
-8. **Riwayat Pelatihan** - verifikasi sertifikat/bukti kompetensi pegawai (**Lulus + Valid**).
-9. **Perencanaan** - unggah dokumen perencanaan pengembangan kompetensi.
-10. **Pemenuhan per Peran** dan **Pemenuhan per Kompetensi** - cetak/ekspor laporan pemenuhan (CSV).
+4. **Prioritas Kompetensi** - tetapkan prioritas **Mutlak / Perlu / Penting** per pegawai per kompetensi (bisa satuan atau **bulk** dengan mencentang banyak baris).
+5. **Jadwal Pelatihan > Kompetensi Wajib** - tetapkan daftar kompetensi wajib tahun berjalan.
+6. **Jadwal Pelatihan > Master Pelatihan** - buat master pelatihan beserta kompetensi terkait.
+7. **Jadwal Pelatihan > Jadwal Pelatihan** - buat jadwal, undang peserta, publikasikan, mulai, catat kehadiran, selesaikan, tandai kompetensi terpenuhi.
+8. **Jadwal Pelatihan > Pantau** - awasi peserta yang belum mengunggah sertifikat.
+9. **Riwayat Pelatihan** - verifikasi sertifikat/bukti kompetensi pegawai (**Lulus + Valid**).
+10. **Perencanaan** - unggah dokumen perencanaan pengembangan kompetensi.
+11. **Pemenuhan per Peran** dan **Pemenuhan per Kompetensi** - cetak/ekspor laporan pemenuhan (CSV).
 
 ## 11.2 Ketua Tim (Katim)
 
@@ -535,6 +596,7 @@ Katim **tidak** dapat memverifikasi sertifikat dan **tidak** dapat mengubah mast
 4. **Riwayat Pelatihan** - pantau kolom **Status / Hasil** dan **Verifikator**. Bila hasilnya **Tidak Valid** atau **Perlu Revisi**, klik **Edit**, perbaiki, lalu simpan.
 5. **Pemenuhan per Peran** dan **Pemenuhan per Kompetensi** - lihat posisi kompetensi Anda dan cari tahu pegawai lain yang sudah bersertifikat.
 6. **Standar Kompetensi** - lihat kompetensi yang disyaratkan untuk suatu jabatan/jenjang.
+7. **Prioritas Kompetensi** - isi sendiri prioritas **Mutlak / Perlu / Penting** untuk kompetensi Anda (satuan atau **bulk**).
 
 ---
 
@@ -585,7 +647,7 @@ Katim **tidak** dapat memverifikasi sertifikat dan **tidak** dapat mengubah mast
 
 # PENUTUP
 
-Panduan bergambar ini memuat seluruh modul aktif aplikasi TAMBUN RAYA: **Login, Beranda, Reference (Master Data), Standar Kompetensi, Perencanaan, Profil Kompetensi, Pemenuhan per Peran, Pemenuhan per Kompetensi, Jadwal Pelatihan (Jadwal, Master, Kompetensi Wajib), dan Riwayat Pelatihan**, lengkap dengan penjelasan setiap isian untuk role **Admin Tambun Raya**, **Katim**, dan **Pegawai**.
+Panduan bergambar ini memuat seluruh modul aktif aplikasi TAMBUN RAYA: **Login, Beranda, Reference (Master Data), Standar Kompetensi, Prioritas Kompetensi, Perencanaan, Profil Kompetensi, Pemenuhan per Peran, Pemenuhan per Kompetensi, Jadwal Pelatihan (Jadwal, Master, Kompetensi Wajib), dan Riwayat Pelatihan**, lengkap dengan penjelasan setiap isian untuk role **Admin Tambun Raya**, **Katim**, dan **Pegawai**.
 
 **TAMBUN RAYA - Talenta Aparatur Mumpuni**
 
