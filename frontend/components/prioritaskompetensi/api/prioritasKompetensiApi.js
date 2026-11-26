@@ -161,6 +161,46 @@ export const bulkUpdatePrioritasKompetensi = async (session, items, prioritas) =
 };
 
 /**
+ * GET /prioritas-kompetensi/grafik-kompetensi — rekap per kompetensi untuk grafik
+ */
+export const fetchGrafikKompetensi = async (session, params = {}) => {
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL;
+    const query = new URLSearchParams();
+
+    Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined && value !== null && value !== '') {
+            query.append(key, value);
+        }
+    });
+
+    const queryString = query.toString();
+    const url = `${baseUrl}/prioritas-kompetensi/grafik-kompetensi${queryString ? `?${queryString}` : ''}`;
+
+    return requestJson(session, url);
+};
+
+/**
+ * GET /prioritas-kompetensi/opsi-kompetensi — daftar kompetensi untuk dropdown filter
+ */
+export const fetchOpsiKompetensi = async (session, params = {}) => {
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL;
+    const query = new URLSearchParams();
+
+    Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined && value !== null && value !== '') {
+            query.append(key, value);
+        }
+    });
+
+    const queryString = query.toString();
+    const url = `${baseUrl}/prioritas-kompetensi/opsi-kompetensi${queryString ? `?${queryString}` : ''}`;
+
+    const result = await requestJson(session, url);
+
+    return result.success && Array.isArray(result.data) ? result.data : [];
+};
+
+/**
  * Ambil opsi master untuk filter jabatan/jenjang/fungsi
  */
 const fetchMasterOptions = async (session, path) => {
@@ -171,11 +211,12 @@ const fetchMasterOptions = async (session, path) => {
 };
 
 export const fetchFilterOptions = async (session) => {
-    const [jabatan, jenjang, fungsi] = await Promise.all([
+    const [jabatan, jenjang, fungsi, kompetensi] = await Promise.all([
         fetchMasterOptions(session, 'jabatan'),
         fetchMasterOptions(session, 'jenjang'),
-        fetchMasterOptions(session, 'fungsi')
+        fetchMasterOptions(session, 'fungsi'),
+        fetchOpsiKompetensi(session)
     ]);
 
-    return { jabatan, jenjang, fungsi };
+    return { jabatan, jenjang, fungsi, kompetensi };
 };

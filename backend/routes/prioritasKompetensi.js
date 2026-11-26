@@ -28,6 +28,38 @@ const PAIRS_SUBQUERY = `
 `;
 
 /**
+ * Normalisasi parameter id_kompetensi (bisa angka, string "1", atau "1,2,3")
+ * menjadi array angka valid. Mengembalikan array kosong bila tidak ada.
+ */
+function parseKompetensiIds(value) {
+    if (value === undefined || value === null || value === '') return [];
+
+    const raw = Array.isArray(value) ? value : String(value).split(',');
+    const ids = [];
+
+    for (const item of raw) {
+        const parsed = parseInt(String(item).trim(), 10);
+        if (Number.isInteger(parsed) && parsed > 0 && !ids.includes(parsed)) {
+            ids.push(parsed);
+        }
+    }
+
+    return ids.slice(0, 200);
+}
+
+/**
+ * Tambahkan kondisi filter kompetensi ke daftar kondisi/params.
+ * Memakai placeholder dinamis supaya aman untuk satu maupun banyak ID.
+ */
+function pushKompetensiFilter(conditions, params, idKompetensiList) {
+    if (!idKompetensiList || idKompetensiList.length === 0) return;
+
+    const placeholders = idKompetensiList.map(() => '?').join(', ');
+    conditions.push(`mk.id IN (${placeholders})`);
+    params.push(...idKompetensiList);
+}
+
+/**
  * Ambil ID pegawai (kepegawaian.user.id) milik user yang login.
  */
 async function getOwnPegawaiId(req) {
@@ -79,10 +111,13 @@ router.get('/', keycloakAuth, async (req, res) => {
         id_jabatan,
         id_jenjang,
         id_fungsi,
+        id_kompetensi,
         prioritas,
         page = 1,
         pageSize = 25
     } = req.query;
+
+    const kompetensiIds = parseKompetensiIds(id_kompetensi);
 
     const currentPage = Math.max(parseInt(page, 10) || 1, 1);
     const limit = Math.min(Math.max(parseInt(pageSize, 10) || 25, 1), 200);
@@ -125,6 +160,8 @@ router.get('/', keycloakAuth, async (req, res) => {
             scopeConditions.push('u.id_fungsi = ?');
             scopeParams.push(parseInt(id_fungsi, 10));
         }
+
+        pushKompetensiFilter(scopeConditions, scopeParams, kompetensiIds);
 
         // ===== Filter prioritas (hanya untuk data & total) =====
         const dataConditions = [...scopeConditions];
@@ -266,10 +303,12 @@ router.get('/rekap', keycloakAuth, async (req, res) => {
         id_jabatan,
         id_jenjang,
         id_fungsi,
+        id_kompetensi,
         status_isi,
         page = 1,
         pageSize = 25
     } = req.query;
+    const kompetensiIds = parseKompetensiIds(id_kompetensi);
     const currentPage = Math.max(parseInt(page, 10) || 1, 1);
     const limit = Math.min(Math.max(parseInt(pageSize, 10) || 25, 1), 200);
     const offset = (currentPage - 1) * limit;
@@ -313,6 +352,8 @@ router.get('/rekap', keycloakAuth, async (req, res) => {
             conditions.push('u.id_fungsi = ?');
             params.push(parseInt(id_fungsi, 10));
         }
+
+        pushKompetensiFilter(conditions, params, kompetensiIds);
 
         const searchKompetensi = String(search_kompetensi || '').trim();
         if (searchKompetensi) {
@@ -509,7 +550,8 @@ router.get('/rekap-pegawai', keycloakAuth, async (req, res) => {
     const isAdmin = isAdminTambunRaya(req.user);
     console.log(`📊 ${username} mengakses rekap prioritas per pegawai`);
 
-    const { search = '', id_jabatan, id_jenjang, id_fungsi, status_isi, page = 1, pageSize = 25 } = req.query;
+    const { search = '', id_jabatan, id_jenjang, id_fungsi, id_kompetensi, status_isi, page = 1, pageSize = 25 } = req.query;
+    const kompetensiIds = parseKompetensiIds(id_kompetensi);
     const currentPage = Math.max(parseInt(page, 10) || 1, 1);
     const limit = Math.min(Math.max(parseInt(pageSize, 10) || 25, 1), 200);
     const offset = (currentPage - 1) * limit;
@@ -553,6 +595,8 @@ router.get('/rekap-pegawai', keycloakAuth, async (req, res) => {
             conditions.push('u.id_fungsi = ?');
             params.push(parseInt(id_fungsi, 10));
         }
+
+        pushKompetensiFilter(conditions, params, kompetensiIds);
 
         const whereClause = conditions.join(' AND ');
 
@@ -729,6 +773,283 @@ router.get('/detail-pegawai', keycloakAuth, async (req, res) => {
         });
     } catch (error) {
         console.error('❌ Error fetching detail prioritas pegawai:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Terjadi kesalahan server',
+            error: error.message
+        });
+    }
+});
+
+/**
+ * GET /api/prioritas-kompetensi/grafik-kompetensi
+ * Rekap per KOMPETENSI (bukan per pegawai): berapa baris yang sudah dipetakan
+ * ke Mutlak / Perlu / Penting dan berapa yang belum. Dipakai tab Grafik supaya
+ * grafik hanya menampilkan nama kompetensi.
+ *
+ * status_isi:
+ *   'belum'    -> kompetensi yang belum punya isian prioritas sama sekali
+ *   'sebagian' -> sudah diisi sebagian, masih ada yang kosong
+ *   'lengkap'  -> semua baris kompetensi itu sudah diisi
+ *   'sudah'    -> gabungan 'sebagian' + 'lengkap'
+ */
+router.get('/grafik-kompetensi', keycloakAuth, async (req, res) => {
+    const username = getUsername(req.user);
+    const isAdmin = isAdminTambunRaya(req.user);
+    console.log(`📊 ${username} mengakses grafik prioritas per kompetensi`);
+
+    const {
+        search = '',
+        id_jabatan,
+        id_jenjang,
+        id_fungsi,
+        id_kompetensi,
+        status_isi,
+        page = 1,
+        pageSize = 20
+    } = req.query;
+
+    const kompetensiIds = parseKompetensiIds(id_kompetensi);
+    const currentPage = Math.max(parseInt(page, 10) || 1, 1);
+    const limit = Math.min(Math.max(parseInt(pageSize, 10) || 20, 1), 200);
+    const offset = (currentPage - 1) * limit;
+
+    try {
+        const conditions = [
+            'u.is_active = 1',
+            '(mk.id_fungsi = u.id_fungsi OR p.is_lintas_fungsi = 1)'
+        ];
+        const params = [];
+
+        if (!isAdmin) {
+            const ownId = await getOwnPegawaiId(req);
+            if (!ownId) {
+                return res.status(404).json({
+                    success: false,
+                    message: 'Data pegawai Anda tidak ditemukan'
+                });
+            }
+            conditions.push('u.id = ?');
+            params.push(ownId);
+        }
+
+        if (id_jabatan) {
+            conditions.push('u.id_jabatan = ?');
+            params.push(parseInt(id_jabatan, 10));
+        }
+
+        if (id_jenjang) {
+            conditions.push('u.id_jenjang = ?');
+            params.push(parseInt(id_jenjang, 10));
+        }
+
+        if (id_fungsi) {
+            conditions.push('u.id_fungsi = ?');
+            params.push(parseInt(id_fungsi, 10));
+        }
+
+        pushKompetensiFilter(conditions, params, kompetensiIds);
+
+        const searchTerm = String(search || '').trim();
+        if (searchTerm) {
+            conditions.push('(mk.kode_kompetensi LIKE ? OR mk.nama_kompetensi LIKE ?)');
+            params.push(`%${searchTerm}%`, `%${searchTerm}%`);
+        }
+
+        const whereClause = conditions.join(' AND ');
+
+        // Ekspresi agregat dipakai ulang di count maupun query data.
+        const sumber = `
+            FROM kepegawaian.user u
+            JOIN kepegawaian.kompetensi_mapping km
+                ON km.id_jabatan = u.id_jabatan
+               AND km.id_jenjang = u.id_jenjang
+               AND FIND_IN_SET(km.id_peran, u.id_peran) > 0
+            JOIN kepegawaian.master_kompetensi mk ON mk.id = km.id_kompetensi
+            LEFT JOIN kepegawaian.fungsi f ON f.id = mk.id_fungsi
+            JOIN kepegawaian.peran p ON p.id = km.id_peran
+            JOIN kepegawaian.jenjang jg ON jg.id = u.id_jenjang
+            LEFT JOIN kepegawaian.user_kompetensi_prioritas ukp
+                ON ukp.id_user = u.id AND ukp.id_kompetensi = mk.id
+            WHERE ${whereClause}
+        `;
+
+        const belumExpr = "COUNT(DISTINCT CASE WHEN ukp.prioritas IS NULL THEN CONCAT(u.id, ':', mk.id) END)";
+        const terisiExpr = "COUNT(DISTINCT CASE WHEN ukp.prioritas IS NOT NULL THEN CONCAT(u.id, ':', mk.id) END)";
+
+        let having = '';
+        if (status_isi === 'belum') {
+            having = `HAVING ${terisiExpr} = 0`;
+        } else if (status_isi === 'lengkap') {
+            having = `HAVING ${belumExpr} = 0`;
+        } else if (status_isi === 'sebagian') {
+            having = `HAVING ${terisiExpr} > 0 AND ${belumExpr} > 0`;
+        } else if (status_isi === 'sudah') {
+            having = `HAVING ${terisiExpr} > 0`;
+        }
+
+        const [countRows] = await db.query(`
+            SELECT COUNT(*) AS total FROM (
+                SELECT mk.id
+                ${sumber}
+                GROUP BY mk.id
+                ${having}
+            ) t
+        `, params);
+
+        const total = Number(countRows[0]?.total || 0);
+
+        const [rows] = await db.query(`
+            SELECT
+                mk.id AS id_kompetensi,
+                mk.kode_kompetensi,
+                mk.nama_kompetensi,
+                f.nama_fungsi,
+                COUNT(DISTINCT u.id) AS total_pegawai,
+                COUNT(DISTINCT jg.id) AS jumlah_jenjang,
+                COUNT(DISTINCT jg.id, u.id, mk.id) AS total_baris,
+                COUNT(DISTINCT CASE WHEN ukp.prioritas = 'Mutlak' THEN CONCAT(u.id, ':', mk.id) END) AS jumlah_mutlak,
+                COUNT(DISTINCT CASE WHEN ukp.prioritas = 'Perlu' THEN CONCAT(u.id, ':', mk.id) END) AS jumlah_perlu,
+                COUNT(DISTINCT CASE WHEN ukp.prioritas = 'Penting' THEN CONCAT(u.id, ':', mk.id) END) AS jumlah_penting,
+                ${belumExpr} AS jumlah_belum
+            ${sumber}
+            GROUP BY mk.id, mk.kode_kompetensi, mk.nama_kompetensi, f.nama_fungsi
+            ${having}
+            ORDER BY jumlah_belum DESC, mk.nama_kompetensi ASC
+            LIMIT ? OFFSET ?
+        `, [...params, limit, offset]);
+
+        const data = rows.map(row => {
+            const mutlak = Number(row.jumlah_mutlak || 0);
+            const perlu = Number(row.jumlah_perlu || 0);
+            const penting = Number(row.jumlah_penting || 0);
+            const belum = Number(row.jumlah_belum || 0);
+            const terisi = mutlak + perlu + penting;
+
+            return {
+                ...row,
+                jumlah_mutlak: mutlak,
+                jumlah_perlu: perlu,
+                jumlah_penting: penting,
+                jumlah_belum: belum,
+                total_baris: Number(row.total_baris || 0),
+                total_pegawai: Number(row.total_pegawai || 0),
+                jumlah_jenjang: Number(row.jumlah_jenjang || 0),
+                jumlah_terisi: terisi,
+                // sudah dipetakan = minimal satu baris punya prioritas
+                status: terisi === 0 ? 'belum' : (belum === 0 ? 'lengkap' : 'sebagian')
+            };
+        });
+
+        // Ringkasan untuk grafik: jumlah KOMPETENSI per status + distribusi baris.
+        const [ringkasanRows] = await db.query(`
+            SELECT
+                COUNT(*) AS total_kompetensi,
+                SUM(CASE WHEN terisi = 0 THEN 1 ELSE 0 END) AS kompetensi_belum,
+                SUM(CASE WHEN terisi > 0 AND belum > 0 THEN 1 ELSE 0 END) AS kompetensi_sebagian,
+                SUM(CASE WHEN terisi > 0 AND belum = 0 THEN 1 ELSE 0 END) AS kompetensi_lengkap,
+                SUM(CASE WHEN terisi > 0 THEN 1 ELSE 0 END) AS kompetensi_sudah,
+                SUM(mutlak) AS baris_mutlak,
+                SUM(perlu) AS baris_perlu,
+                SUM(penting) AS baris_penting,
+                SUM(belum) AS baris_belum
+            FROM (
+                SELECT
+                    mk.id,
+                    COUNT(DISTINCT CASE WHEN ukp.prioritas = 'Mutlak' THEN CONCAT(u.id, ':', mk.id) END) AS mutlak,
+                    COUNT(DISTINCT CASE WHEN ukp.prioritas = 'Perlu' THEN CONCAT(u.id, ':', mk.id) END) AS perlu,
+                    COUNT(DISTINCT CASE WHEN ukp.prioritas = 'Penting' THEN CONCAT(u.id, ':', mk.id) END) AS penting,
+                    ${belumExpr} AS belum,
+                    ${terisiExpr} AS terisi
+                ${sumber}
+                GROUP BY mk.id
+            ) s
+        `, params);
+
+        const r = ringkasanRows[0] || {};
+        const summary = {
+            total_kompetensi: Number(r.total_kompetensi || 0),
+            kompetensi_belum: Number(r.kompetensi_belum || 0),
+            kompetensi_sebagian: Number(r.kompetensi_sebagian || 0),
+            kompetensi_lengkap: Number(r.kompetensi_lengkap || 0),
+            kompetensi_sudah: Number(r.kompetensi_sudah || 0),
+            baris_mutlak: Number(r.baris_mutlak || 0),
+            baris_perlu: Number(r.baris_perlu || 0),
+            baris_penting: Number(r.baris_penting || 0),
+            baris_belum: Number(r.baris_belum || 0)
+        };
+
+        res.status(200).json({
+            success: true,
+            message: 'Grafik prioritas per kompetensi berhasil diambil',
+            data,
+            total,
+            page: currentPage,
+            pageSize: limit,
+            summary,
+            timestamp: new Date().toISOString()
+        });
+    } catch (error) {
+        console.error('❌ Error fetching grafik prioritas per kompetensi:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Terjadi kesalahan server',
+            error: error.message
+        });
+    }
+});
+
+/**
+ * GET /api/prioritas-kompetensi/opsi-kompetensi
+ * Daftar kompetensi ringkas untuk mengisi dropdown filter (id, kode, nama,
+ * fungsi). Sengaja tidak memuat mapping per jabatan seperti endpoint master
+ * supaya ringan walau jumlah kompetensi mencapai ratusan.
+ * Parameter opsional: id_fungsi (batasi ke satu fungsi) dan search.
+ */
+router.get('/opsi-kompetensi', keycloakAuth, async (req, res) => {
+    const { id_fungsi, search = '' } = req.query;
+
+    try {
+        const conditions = ['1 = 1'];
+        const params = [];
+
+        if (id_fungsi) {
+            const fungsiId = parseInt(id_fungsi, 10);
+            if (Number.isInteger(fungsiId) && fungsiId > 0) {
+                conditions.push('(mk.id_fungsi = ? OR p.is_lintas_fungsi = 1)');
+                params.push(fungsiId);
+            }
+        }
+
+        const searchTerm = String(search || '').trim();
+        if (searchTerm) {
+            conditions.push('(mk.kode_kompetensi LIKE ? OR mk.nama_kompetensi LIKE ?)');
+            params.push(`%${searchTerm}%`, `%${searchTerm}%`);
+        }
+
+        const [rows] = await db.query(`
+            SELECT DISTINCT
+                mk.id,
+                mk.kode_kompetensi,
+                mk.nama_kompetensi,
+                mk.id_fungsi,
+                f.nama_fungsi
+            FROM kepegawaian.master_kompetensi mk
+            LEFT JOIN kepegawaian.fungsi f ON f.id = mk.id_fungsi
+            LEFT JOIN kepegawaian.peran p ON p.id = mk.id_peran
+            WHERE ${conditions.join(' AND ')}
+            ORDER BY mk.kode_kompetensi ASC
+        `, params);
+
+        res.status(200).json({
+            success: true,
+            message: 'Opsi kompetensi berhasil diambil',
+            data: rows,
+            count: rows.length,
+            timestamp: new Date().toISOString()
+        });
+    } catch (error) {
+        console.error('❌ Error fetching opsi kompetensi:', error);
         res.status(500).json({
             success: false,
             message: 'Terjadi kesalahan server',

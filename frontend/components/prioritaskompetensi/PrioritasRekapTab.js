@@ -50,7 +50,7 @@ const STATUS_ISI_OPTIONS = [
 
 const rowKeyOf = (record) => `${record.id_kompetensi}::${record.id_jenjang}`;
 
-const PrioritasRekapTab = ({ session, options = { jabatan: [], jenjang: [], fungsi: [] } }) => {
+const PrioritasRekapTab = ({ session, options = { jabatan: [], jenjang: [], fungsi: [], kompetensi: [] } }) => {
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(false);
   const [pagination, setPagination] = useState({ current: 1, pageSize: 25, total: 0 });
@@ -60,6 +60,7 @@ const PrioritasRekapTab = ({ session, options = { jabatan: [], jenjang: [], fung
     id_jabatan: undefined,
     id_jenjang: undefined,
     id_fungsi: undefined,
+    id_kompetensi: [],
     status_isi: undefined
   });
   const [searchInput, setSearchInput] = useState('');
@@ -85,6 +86,7 @@ const PrioritasRekapTab = ({ session, options = { jabatan: [], jenjang: [], fung
         id_jabatan: filters.id_jabatan,
         id_jenjang: filters.id_jenjang,
         id_fungsi: filters.id_fungsi,
+        id_kompetensi: filters.id_kompetensi.length > 0 ? filters.id_kompetensi.join(',') : undefined,
         status_isi: filters.status_isi,
         page: pagination.current,
         pageSize: pagination.pageSize
@@ -113,6 +115,7 @@ const PrioritasRekapTab = ({ session, options = { jabatan: [], jenjang: [], fung
     filters.id_jabatan,
     filters.id_jenjang,
     filters.id_fungsi,
+    filters.id_kompetensi,
     filters.status_isi,
     pagination.current,
     pagination.pageSize
@@ -238,6 +241,10 @@ const PrioritasRekapTab = ({ session, options = { jabatan: [], jenjang: [], fung
   const jabatanOptions = options.jabatan.map(item => ({ value: item.id, label: item.nama_jabatan }));
   const jenjangOptions = options.jenjang.map(item => ({ value: item.id, label: item.nama_jenjang }));
   const fungsiOptions = options.fungsi.map(item => ({ value: item.id, label: item.nama_fungsi }));
+  const kompetensiOptions = (options.kompetensi || []).map(item => ({
+    value: item.id,
+    label: `${item.kode_kompetensi} — ${item.nama_kompetensi}${item.nama_fungsi ? ` (${item.nama_fungsi})` : ''}`
+  }));
 
   // ========== KOLOM TABEL REKAP ==========
   const columns = [
@@ -471,6 +478,7 @@ const PrioritasRekapTab = ({ session, options = { jabatan: [], jenjang: [], fung
                     id_jabatan: undefined,
                     id_jenjang: undefined,
                     id_fungsi: undefined,
+                    id_kompetensi: [],
                     status_isi: undefined
                   });
                 }}
@@ -478,6 +486,36 @@ const PrioritasRekapTab = ({ session, options = { jabatan: [], jenjang: [], fung
                 Reset
               </Button>
             </Space>
+          </Col>
+        </Row>
+
+        <Row gutter={[12, 12]} style={{ marginBottom: 16 }}>
+          <Col xs={24} md={14}>
+            <Select
+              mode="multiple"
+              allowClear
+              style={{ width: '100%' }}
+              placeholder="Semua Kompetensi (bisa pilih lebih dari satu)"
+              value={filters.id_kompetensi}
+              onChange={(value) => {
+                setPagination(prev => ({ ...prev, current: 1 }));
+                setFilters(prev => ({ ...prev, id_kompetensi: value || [] }));
+              }}
+              options={kompetensiOptions}
+              showSearch
+              optionFilterProp="label"
+              maxTagCount="responsive"
+              filterOption={(input, option) =>
+                String(option?.label || '').toLowerCase().includes(input.toLowerCase())
+              }
+            />
+          </Col>
+          <Col xs={24} md={10}>
+            <Text type="secondary" style={{ fontSize: 12 }}>
+              {filters.id_kompetensi.length > 0
+                ? `${filters.id_kompetensi.length} kompetensi dipilih — rekap dibatasi ke kompetensi tersebut.`
+                : `Filter kompetensi: ${(options.kompetensi || []).length} kompetensi tersedia.`}
+            </Text>
           </Col>
         </Row>
 
